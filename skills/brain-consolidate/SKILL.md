@@ -5,13 +5,20 @@ description: Consolidation cycle — Batch process completed tasks, propose sina
 
 # brain-consolidate Skill — Consolidation Cycle
 
-**Purpose:** Batch process all completed tasks since last consolidation. Review proposed sinapse updates, surface escalation candidates, generate health report, update weights in brain.db. Always propose — never auto-update without developer approval.
+## Pipeline Position
 
-**Token Budget:** 15k in / 8k out
+```
+brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+                                                                                                       ↑ you are here
+```
+
+**Purpose:** Batch process completed tasks since last consolidation. Review proposed sinapse updates, surface escalation candidates (sole owner of proposal generation), generate health report, update weights. Always propose — never auto-update without developer approval.
+
+**Token Budget:** 15-25k in / 8k out (varies by proposal count)
 
 **Trigger:**
 - Developer invokes: `/brain-consolidate`
-- Auto-suggested after 5 completed tasks
+- Auto-suggested by TaskCompleted hook after 5 completed tasks
 - Recommended after major feature milestones
 
 ## Workflow
@@ -73,30 +80,46 @@ Developer choices per update:
 
 Track tallies: N approved / N rejected / N modified.
 
-### Step 4: Escalation Check
+### Step 4: Escalation Proposal Generation (Sole Owner)
 
-Run pattern escalation query on brain.db:
+**brain-consolidate is the ONLY skill that creates escalation proposals.** brain-lesson detects and flags candidates; brain-consolidate reviews, deduplicates, and generates the proposal.
+
+Query brain.db for promotion candidates:
 
 ```sql
-SELECT domain, tag, COUNT(*) as lesson_count, array_agg(id) as lesson_ids
+SELECT domain, tags, COUNT(*) as lesson_count, GROUP_CONCAT(id) as lesson_ids
 FROM lessons
-WHERE escalated = 0
-GROUP BY domain, tag
-HAVING COUNT(*) >= 3
+WHERE status = 'promotion_candidate'
+GROUP BY domain, tags
 ORDER BY lesson_count DESC
 ```
 
-For each escalation candidate:
-- Read all 3+ matching lessons from disk (cortex/*/lessons/ or lessons/cross-domain/)
-- Extract common pattern/rule
-- Read hippocampus/conventions.md — check if this pattern is already documented
-- If NOT already documented:
-  - Draft convention text (same style as existing conventions.md entries)
-  - Write to: `lessons/inbox/escalation-PROPOSAL-XXXXXX.md`
-  - Output to developer: "⚠ Escalation detected: [N] [domain] lessons on [pattern name]. Review: lessons/inbox/escalation-PROPOSAL-XXXXXX.md"
-- If already documented:
-  - Mark those lessons as escalated=1 in brain.db
-  - Output: "✓ [N] [domain] lessons match existing convention [name]. Marked escalated."
+For each candidate group:
+
+**4a: Deduplicate** — Check if another proposal already exists for this pattern in `.brain/lessons/inbox/escalation-PROPOSAL-*.md`. If yes, skip.
+
+**4b: Check existing conventions** — Read hippocampus/conventions.md. If this pattern is already documented:
+- Set `status: promoted` on all matching lessons in brain.db
+- Output: "✓ [N] [domain] lessons match existing convention [name]. Marked promoted."
+
+**4c: Generate proposal** — If NOT already documented:
+- Read all matching lesson files from disk
+- Extract the common rule/pattern
+- Draft convention text (same style as conventions.md entries)
+- Write to: `.brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md`
+- Output to developer:
+  ```
+  ⚠ ESCALATION PROPOSAL: [pattern name]
+  Domain: [domain]
+  Source lessons: [N] (lesson-XXXX, lesson-YYYY, lesson-ZZZZ)
+  Review: .brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md
+  Actions: approve → hippocampus/conventions.md | reject → discard | modify → edit and resubmit
+  ```
+
+**4d: On approval** — Developer approves the proposal:
+1. Move convention text to hippocampus/conventions.md
+2. Set `status: promoted` on all source lessons
+3. Delete the proposal file
 
 ### Step 5: Generate brain-health.md
 
@@ -151,7 +174,7 @@ consolidation_cycle: [N]
 |---|---|---|---|
 | escalation-PROPOSAL-001.md | lesson-0001, 0002, 0004 | "Tenant isolation failure modes" | ⏳ Awaiting developer review |
 
-**Action:** Review lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to hippocampus/conventions.md.
+**Action:** Review .brain/lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to hippocampus/conventions.md.
 
 ---
 
@@ -211,75 +234,17 @@ For each unused sinapse (not accessed in past N days):
 - Apply decay: weight -= 0.005 per day since last access (e.g., 30 days unused = 0.15 point decay)
 - Note: weight cannot go below 0.1
 
-For each escalated lesson:
-- Set escalated = 1 in lessons table
-- Do NOT update sinapse weights (lesson escalation is orthogonal to sinapse usage)
+For each promoted lesson:
+- Set status = 'promoted' in lessons table
+- Do NOT update sinapse weights (lesson promotion is orthogonal to sinapse usage)
 
-### Step 6.5: Archive Context Files (Learning Loop)
+### Step 6.5: Verify Archival
 
-**Before clearing working-memory, preserve completed context files for pattern analysis:**
+**Note:** Per-task archival is owned by the TaskCompleted hook (runs after each task). By the time brain-consolidate runs, context files should already be in `progress/completed-contexts/`.
 
-For each completed task:
-
-1. **Move context files to permanent archive:**
-   ```bash
-   mv working-memory/[task-id]-codex-context.md \
-      progress/completed-contexts/[task-id]-codex-context.md
-
-   mv working-memory/[task-id]-opus-context.md \
-      progress/completed-contexts/[task-id]-opus-context.md
-
-   mv working-memory/[task-id]-completion-record.md \
-      progress/completed-contexts/[task-id]-completion-record.md
-   ```
-
-2. **Create outcome analysis file:**
-   ```
-   Create: progress/completed-contexts/[task-id]-OUTCOME.md
-
-   ---
-   task_id: [uuid]
-   status: success | failed
-   root_cause: [if failed]
-   context_size: [N lines]
-   sinapses_loaded: [N]
-   created_at: [ISO8601]
-   ---
-
-   # Task [task-id] — Outcome Analysis
-
-   ## Result
-   [Brief outcome: successful / bug found / failed]
-
-   ## What Context Had
-   - Sinapses: [N] (domains: backend, frontend)
-   - Lessons: [N] (domains: backend, cross-domain)
-   - Code examples: [N] patterns shown
-
-   ## What Worked Well
-   - [Pattern A was helpful]
-   - [Pattern B prevented mistake X]
-
-   ## What Was Missing (if any)
-   - [Missing context: should have loaded lesson-00NN]
-   - [Missing pattern: need new sinapse for cortex/backend]
-
-   ## For Future Improvements
-   - Create lesson-XXXX.md: [pattern found]
-   - Update sinapse-YYYY.md: [became stale]
-   - Add example code: [new pattern]
-   ```
-
-3. **Output archival status:**
-   ```
-   Archived [N] context files to progress/completed-contexts/:
-     - [N] codex-context.md files
-     - [N] opus-context.md files
-     - [N] completion-record.md files
-     - [N] OUTCOME.md analysis files
-
-   These files form permanent learning record for pattern analysis.
-   ```
+If any context files remain in `working-memory/` that should have been archived:
+- Move them to `progress/completed-contexts/[task-id]-[original-name].md`
+- Flag: "TaskCompleted hook may have failed for task [task-id] — manual archival required"
 
 ---
 
@@ -304,7 +269,7 @@ After consolidation completes, output to developer:
 Sinapse updates: [Y] approved / [R] rejected / [M] modified
 Escalation proposals: [N] surfaced
   - [A] approved → moving to hippocampus/conventions.md
-  - [P] pending review → in lessons/inbox/escalation-*.md
+  - [P] pending review → in .brain/lessons/inbox/escalation-*.md
   - [D] dismissed → discarded
 
 Context files archived: [N] task contexts → progress/completed-contexts/

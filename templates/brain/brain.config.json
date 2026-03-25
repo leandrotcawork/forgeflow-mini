@@ -1,5 +1,6 @@
 {
   "brain_id": "brain-default",
+  "hooks_note": "Hook triggers below are ASPIRATIONAL — they describe intended behavior but require Claude Code settings.json hook implementation. Active real hooks: SessionStart and TaskCompleted (see README.md).",
   "version": "0.1.0",
   "created_at": "2026-03-24T10:00:00Z",
   "project_root": ".",
@@ -116,7 +117,7 @@
     "persistent_mind_cache": "working-memory/agent-state.md"
   },
   "token_budgets": {
-    "context_mapper": { "in": 4000, "out": 1000 },
+    "context_mapper": { "in": 4000, "out": 2000 },
     "mckinsey_layer": { "in": 20000, "out": 8000, "high_stakes_only": true },
     "planner": { "in": 15000, "out": 5000 },
     "implementer": { "in": 40000, "out": 20000 },
@@ -131,5 +132,11 @@
   "lesson_escalation": {
     "threshold": 3,
     "action": "propose_hippocampus_convention"
+  },
+  "weight_decay": {
+    "enabled": true,
+    "rate_per_day": 0.005,
+    "min_weight": 0.1,
+    "max_stale_days": 90
   }
 }

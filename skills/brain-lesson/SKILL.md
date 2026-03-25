@@ -49,24 +49,37 @@ Lessons are stored in **distributed domain-specific directories**:
 - **Cross-domain lessons** → `lessons/cross-domain/lesson-XXXXX.md`
   - Lessons that span multiple domains (auth, events, process rules)
 
-- **Inbox (temporary)** → `lessons/inbox/lesson-XXXXX.md`
+- **Inbox (temporary)** → `.brain/lessons/inbox/lesson-XXXXX.md`
   - Unclassified lessons awaiting categorization
 
 **Lesson format** (all regions):
 
 ```markdown
 ---
+# Required fields
 id: lesson-XXXXX
 title: [Brief lesson title]
-region: [cortex/backend | cortex/frontend | cortex/database | cortex/infra | lessons/cross-domain]
-tags: [domain, layer, trigger]
-links:
-  - [related sinapse]
-  - [related sinapse]
-severity: [critical | high | medium | low]
-occurrence_count: 1
-status: inbox
-created_at: [ISO timestamp]
+scope: domain-local | cross-domain
+domain: backend | frontend | database | infra | analytics
+affected_domains: []                     # populated only if scope = cross-domain
+status: draft                            # see Lifecycle below
+parent_synapse: null                     # sinapse-id if this extends a known pattern
+tags: [domain, layer, trigger-type]
+severity: critical | high | medium | low
+created_from: YYYY-MM-DD-<slug>          # task-id that produced this lesson
+source_agent: brain-lesson               # which skill created it
+recurrence_count: 1
+promotion_candidate: false
+related_links: []                        # related lesson or sinapse ids
+created_at: [ISO8601]
+updated_at: [ISO8601]
+
+# Optional fields
+supersedes: null                         # lesson-id if this replaces an older lesson
+superseded_by: null                      # lesson-id if a newer lesson replaced this one
+confidence: high | medium | low
+root_cause_type: misuse | gap | regression | assumption
+evidence: null                           # brief evidence description
 ---
 
 # Lesson XXXXX — [Title]
@@ -89,122 +102,75 @@ created_at: [ISO timestamp]
 [Code example or scenario showing the issue]
 ```
 
+### Lesson Lifecycle
+
+```
+draft → active → promotion_candidate → promoted
+  ↓                     ↓
+archived            archived
+  ↓                     ↓
+superseded          superseded
+```
+
+| Status | Meaning | Who Sets It |
+|--------|---------|-------------|
+| `draft` | Just created by brain-lesson, pending review | brain-lesson (auto) |
+| `active` | Confirmed lesson, available to brain-map for context loading | Developer (manual) or brain-consolidate |
+| `promotion_candidate` | 3+ lessons share same domain+tag pattern, flagged for hippocampus promotion | brain-lesson Step 4 |
+| `promoted` | Convention added to hippocampus/conventions.md | brain-consolidate (after approval) |
+| `archived` | No longer relevant, kept for history | Developer or brain-consolidate |
+| `superseded` | Replaced by a newer lesson — set `superseded_by` field | brain-lesson (when creating replacement) |
+
 **Curation rule:** A lesson survives only if it satisfies ALL three criteria:
 1. **Cross-domain applicability** — applies to multiple features, not just one
 2. **Prevents repeated mistakes** — captures a pattern that causes failures if violated
 3. **Architectural, not cosmetic** — describes structure/boundaries, not styling/implementation
 
-### Step 4: Check for Escalation
+### Step 4: Check for Promotion Candidacy
 
-Query brain.db for escalation candidates:
+Query brain.db for recurrence patterns:
 
 ```sql
-SELECT domain, tags, COUNT(*) as lesson_count, array_agg(id) as lesson_ids
+SELECT domain, tags, COUNT(*) as lesson_count, GROUP_CONCAT(id) as lesson_ids
 FROM lessons
-WHERE status = 'inbox'
+WHERE status IN ('draft', 'active')
 GROUP BY domain, tags
 HAVING COUNT(*) >= 3
 ORDER BY lesson_count DESC
 ```
 
-For each escalation candidate (3+ lessons with same domain + tag):
+For each group with 3+ lessons sharing the same domain + tag:
 
-**Step 4a: Extract Common Pattern**
+**Step 4a: Flag as Promotion Candidate**
 1. Read all 3+ matching lesson files from disk
 2. Identify the common rule/pattern they all illustrate
-3. Write pattern statement (1–2 sentences)
+3. Set `status: promotion_candidate` and `promotion_candidate: true` on all matching lessons
+4. Update `recurrence_count` on each lesson to reflect the actual count
 
-**Step 4b: Draft Convention**
-Create convention text in the style of `hippocampus/conventions.md`:
+**Step 4b: Output Detection Notice**
 
-```markdown
-## [Pattern Name]
-
-**Applies to:** [domain/layer]
-
-**Rule:** [Generalized rule from 3+ lessons]
-
-**Why:** [Impact of violation, e.g., "Prevents data leaks / test flakes / performance regressions"]
-
-**Examples:**
-- [[lesson-XXXX]] — [scenario]
-- [[lesson-YYYY]] — [scenario]
-- [[lesson-ZZZZ]] — [scenario]
-
-**Checklist:**
-- [ ] [Check 1]
-- [ ] [Check 2]
-- [ ] [Check 3]
 ```
+PROMOTION CANDIDATE DETECTED
 
-**Step 4c: Create Escalation Proposal File**
-
-Write to: `lessons/inbox/escalation-PROPOSAL-[timestamp].md`
-
-```markdown
----
-type: escalation-proposal
-domain: [backend | frontend | database | infra | process]
-source_lessons: [lesson-XXXX, lesson-YYYY, lesson-ZZZZ]
-proposed_section: hippocampus/conventions.md
-status: pending
-created_at: [ISO 8601]
----
-
-# Escalation Proposal: [Pattern Name]
-
-## Evidence: 3+ Lessons on Same Pattern
-[List the 3+ source lessons with brief scenario for each]
-
-## Proposed Convention
-[Draft convention text from Step 4b above]
-
-## Approval Required
-To approve this escalation:
-1. Review the proposed convention
-2. Edit if needed, or accept as-is
-3. Add to `hippocampus/conventions.md` under the appropriate section
-4. Mark all source lessons as escalated=1 in brain.db
-5. Delete this proposal file (escalation-PROPOSAL-*.md)
-
-## If Rejected
-If you decide this pattern is NOT a convention (one-off or too specific):
-1. Delete this proposal file
-2. Keep the lessons as-is
-3. Mark lessons as escalated=0 (remains unescalated)
-```
-
-**Step 4d: Output to Developer**
-
-Message:
-```
-⚠️  ESCALATION DETECTED
-
-Domain: [backend/frontend/database/infra/process]
-Pattern: [pattern name]
+Domain: [backend/frontend/database/infra]
+Pattern: [common pattern name]
 Count: [N] lessons (lesson-XXXX, lesson-YYYY, lesson-ZZZZ)
-Status: ⏳ Awaiting approval
-
-Review proposal: .brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md
-
-Actions:
-- [ ] Approve → move convention to hippocampus/conventions.md
-- [ ] Reject → delete proposal, keep lessons as individual records
-- [ ] Modify → edit proposal and re-submit
+Status: Flagged for review at next /brain-consolidate cycle
 ```
 
-**Step 4e: Do NOT Auto-Update Hippocampus**
-- Never write to `hippocampus/conventions.md` automatically
-- Always wait for explicit developer approval
-- Escalation proposals sit in `lessons/inbox/` until reviewed
-- The consolidation cycle (`/brain-consolidate`) will surface pending escalations
+**Step 4c: Do NOT Generate Escalation Proposals**
+
+brain-lesson's responsibility ends at detection and flagging. Actual proposal generation, deduplication, convention checking, and approval-facing output are owned exclusively by **brain-consolidate**. brain-lesson must NEVER:
+- Create `escalation-PROPOSAL-*.md` files
+- Write to `hippocampus/conventions.md`
+- Present approval prompts to the developer for escalation
 
 ### Step 5: Update brain.db
 
 Insert new lesson:
 ```sql
-INSERT INTO lessons (id, file_path, domain, severity, occurrence_count)
-VALUES ('lesson-XXXXX', 'lessons/lesson-XXXXX.md', 'backend', 'critical', 1)
+INSERT INTO lessons (id, file_path, title, domain, scope, severity, status, recurrence_count, created_from, source_agent, created_at, updated_at)
+VALUES ('lesson-XXXXX', 'cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
 ```
 
 Update sinapse weights of related sinapses:
@@ -219,19 +185,9 @@ Scenario: 3rd tenant isolation bug found
 1. Create lesson-0037.md: "Another tenant isolation failure"
 2. Query brain.db: Find lessons with tag 'tenant-safety'
 3. Count: lesson-0001, lesson-0002, lesson-0037 = 3
-4. Escalation triggered!
-5. Propose adding to hippocampus/conventions.md:
-
-   New rule:
-   "Every new query must pass tenant isolation checklist:
-    - [ ] BeginTenantTx used
-    - [ ] current_tenant_id() in WHERE
-    - [ ] RLS policy active
-    - [ ] Test with cross-tenant data"
-
-6. Developer reviews and approves
-7. Write to hippocampus (immutable layer)
-8. All 3 lessons link to the new convention
+4. All 3 lessons flagged: status → promotion_candidate
+5. Output: "⚠ PROMOTION CANDIDATE: 3 lessons match [tenant-safety] in backend"
+6. brain-lesson stops here — brain-consolidate owns proposal generation
 ```
 
 ## Example Lessons
@@ -242,15 +198,21 @@ Scenario: 3rd tenant isolation bug found
 ---
 id: lesson-0037
 title: Query without tenant filter leaks data
-region: lessons
+scope: cross-domain
+domain: backend
+affected_domains: [backend, database]
+status: active
+parent_synapse: sinapses/tenant-isolation-flow
 tags: [tenant-isolation, adapter, bug]
-links:
-  - sinapses/tenant-isolation-flow
-  - cortex/database/index
 severity: critical
-occurrence_count: 1
-status: inbox
+created_from: 2026-03-24-fix-tenant-leak
+source_agent: brain-lesson
+recurrence_count: 1
+promotion_candidate: false
+related_links: [sinapses/tenant-isolation-flow, cortex/database/index]
 created_at: 2026-03-24T15:30:00Z
+updated_at: 2026-03-24T15:30:00Z
+root_cause_type: misuse
 ---
 
 # Lesson 0037 — Query without tenant filter leaks data
@@ -281,12 +243,19 @@ Every query must filter by current_tenant_id(). No exceptions.
 ---
 id: lesson-0038
 title: Port forwarding tests need explicit cleanup
-region: lessons
-tags: [testing, process]
+scope: domain-local
+domain: infra
+status: active
+tags: [testing, process, cleanup]
 severity: medium
-occurrence_count: 2
-status: inbox
+created_from: 2026-03-24-test-flake
+source_agent: brain-lesson
+recurrence_count: 2
+promotion_candidate: false
+related_links: []
 created_at: 2026-03-24T16:00:00Z
+updated_at: 2026-03-24T16:30:00Z
+root_cause_type: gap
 ---
 
 # Lesson 0038 — Port forwarding tests need explicit cleanup
@@ -310,11 +279,11 @@ Any test resource must be cleaned up in defer(). No exceptions.
 
 | Scenario | Action |
 |----------|--------|
-| Same lesson exists | Increment occurrence_count, don't create duplicate |
-| Escalation triggered | Create escalation-proposal.md, halt until approved |
-| Related sinapses outdated | Mark for update in working-memory/sinapse-updates.md |
+| Same lesson exists | Increment recurrence_count, don't create duplicate |
+| Promotion candidate detected | Set `status: promotion_candidate` on matching lessons. brain-consolidate handles proposal generation. |
+| Related sinapses outdated | Mark for update in working-memory/sinapse-updates-{task_id}.md |
 | No clear solution found | Mark severity=critical, flag for team discussion |
 
 ---
 
-**Created:** 2026-03-24 | **Phase:** 2 | **Agent Type:** Learner
+**Created:** 2026-03-24 | **Agent Type:** Learner | **Last Updated:** 2026-03-25 (consolidated escalation ownership, strengthened lesson schema)

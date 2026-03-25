@@ -5,6 +5,10 @@ description: McKinsey Layer — Strategic intelligence for high-stakes decisions
 
 # brain-mckinsey Skill — McKinsey Layer
 
+## Pipeline Position
+
+brain-mckinsey is an optional branch invoked by brain-task for `architectural` type tasks. It provides strategic analysis (internal scoring + external research) before implementation proceeds. Not on the default pipeline path.
+
 **Purpose:** For high-stakes architectural decisions only, perform rigorous strategic analysis combining internal scoring against product strategy with parallel external research. Produce a structured recommendation card with ROI estimate and risk assessment.
 
 **Token Budget:** 20k in / 8k out (high-stakes decisions only)

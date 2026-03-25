@@ -1,15 +1,32 @@
 ---
 name: brain-decision
-description: Intelligent task router — classifies complexity, selects model (Codex-first), triggers plan mode, dispatches to brain-task
+description: MANDATORY entry point before any implementation, fix, feature, refactor, or debugging task. If the user says "implement", "fix", "build", "add", "refactor", "change", "create", or "debug" anything in code — YOU MUST invoke this skill FIRST. No exceptions. Classifies complexity, loads context from brain sinapses, selects model, dispatches to brain-task.
 ---
 
 # brain-decision Skill — Intelligent Task Router
 
-**Purpose:** Entry point for all brain-task work. Classifies task complexity, selects optimal model (Codex-first strategy), decides plan mode, and dispatches to implementation.
+## Entry Point Rule
 
-**Token Budget:** 4k in / 1k out (routing only, no heavy computation)
+`brain-decision` is the **mandatory entry point** for all brain-task invocations. No sinapses loaded = no implementation.
 
-**Trigger:** `/brain-task [description]` or `/brain-decision [description]`
+- If the user asks to implement, fix, build, add, refactor, change, create, or debug anything — brain-decision runs first
+- If `/brain-task` is called directly by the user, brain-task internally invokes brain-decision before proceeding
+- `brain-map`, `brain-document`, `brain-consolidate` are pipeline stages — never called directly by the user in normal usage
+
+**The rationalization "this is small, I'll skip" is the one that breaks the workflow.** The complexity score determines what happens — but routing always runs first.
+
+## Pipeline Position
+
+```
+brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+     ↑ you are here
+```
+
+**Purpose:** Classify task complexity, select optimal model (Codex-first), decide plan mode, dispatch to implementation.
+
+**Token Budget:** 4k in / 1k out (routing only)
+
+**Trigger:** Any implementation request (natural language or `/brain-task [description]` or `/brain-decision [description]`)
 
 ---
 
@@ -104,8 +121,8 @@ Complexity | Type | Model | When | Token Budget | Use Case
 20-40 | feature/refactor | Codex | Standard implementation | 60-100k | "Add new module", "Implement feature"
 40-60 | feature/refactor | Codex | Complex feature, multi-file | 100-150k | "Refactor auth", "Add analytics"
 60-75 | debugging | Opus | Code failing, unfamiliar error | 120-150k | "Stuck on bug", "Pattern unknown"
+75+ | debugging/critical | Opus (+ plan) | Critical debugging or security issue | 150-200k | "Data leak", "Integrity error"
 75+ | architectural | Codex (+ plan) | Major system decision | 150-200k | "Should we...", "New architecture"
-75+ | critical bug | Opus (+ plan) | Critical security/data issue | 150-200k | "Data leak", "Integrity error"
 ```
 
 **Decision Tree:**
@@ -130,6 +147,12 @@ Task complexity score calculated
     → Opus better at root cause analysis
     → Check plan mode trigger
     → Dispatch to brain-task [opus]
+
+  ELSE IF score >= 75 AND (type == "debugging" OR risk == "critical"):
+    → Route to: Opus + Plan Mode
+    → Critical debugging/security requires root cause analysis
+    → ALWAYS enter plan mode
+    → Dispatch to brain-task [opus] with plan
 
   ELSE IF score >= 75:
     → Route to: Codex + Plan Mode
@@ -191,16 +214,16 @@ Generate context and dispatch to selected model:
    - --task "[description]"
    - --model "codex"
 
-3. brain-task Step 1: brain-map (load context)
-4. brain-task Step 2: implement (codex executes)
-5. brain-task Step 3: brain-document (propose sinapses)
-6. brain-task Step 4: auto-consolidate (every 5 tasks)
+3. brain-task Step 1: Load Context (brain-map assembles sinapses)
+4. brain-task Step 2: Generate Execution Context (codex-context-{task_id}.md)
+5. brain-task Step 3: Execute Implementation (Codex/Opus/Claude)
+6. [TaskCompleted hook]: documentation → archival → commit → consolidation check
 ```
 
 **For Opus (debugging only):**
 
 ```
-1. Generate debugging context: working-memory/opus-debug-context.md
+1. Generate debugging context: working-memory/opus-debug-context-{task_id}.md
    - Error message (full stack trace)
    - What was attempted
    - Related sinapses (debugging patterns)
@@ -208,86 +231,32 @@ Generate context and dispatch to selected model:
 
 2. Invoke brain-task [opus]:
    - --debug
-   - --context working-memory/opus-debug-context.md
+   - --context working-memory/opus-debug-context-{task_id}.md
    - --task "[description]"
 
 3. Opus analyzes root cause, proposes fix, executes
 ```
 
-**For Haiku:**
+**For Haiku (lightweight brain-task):**
 
 ```
-1. Simple dispatch: brain-task [haiku] --task "[description]"
-2. No context file needed (trivial tasks)
-3. Execute immediately
+1. Dispatch: brain-task --lightweight --task "[description]"
+2. brain-map loads Tier 1 only (~4k tokens, no Tier 2/3)
+3. No codex-context.md generated (context packet is sufficient)
+4. Claude implements directly using context packet
+5. Still traceable: TaskCompleted hook still fires
+6. Still documented: activity.md entry, working-memory artifacts created
 ```
 
----
-
-### Step 6: Context File Format (for Codex MCP)
-
-When dispatching to Codex, create `working-memory/codex-context.md`:
-
-```markdown
----
-task_id: [uuid]
-complexity_score: [0-100]
-model: codex
-created_at: [ISO8601]
----
-
-# Task
-
-[Task description from user]
-
-## Acceptance Criteria
-
-- [ ] [Specific requirement 1]
-- [ ] [Specific requirement 2]
-- [ ] [Tests passing]
-- [ ] [No linting errors]
-
-## Context: Relevant Sinapses
-
-### Architecture Patterns
-- [[sinapse-id]] Title: [how to use this pattern]
-- [[sinapse-id]] Title: [another pattern]
-
-### Common Mistakes (DO NOT DO)
-- ❌ [Mistake pattern 1] → Use [correct pattern] instead
-- ❌ [Mistake pattern 2] → See [sinapse-id] for example
-
-## Code Examples from Codebase
-
-### Pattern 1: [Pattern Name]
-\`\`\`go
-// From apps/server_core/internal/modules/[module]/adapters/[file].go
-// CORRECT: This is how we do X
-[code snippet]
-\`\`\`
-
-### Pattern 2: [Pattern Name]
-\`\`\`typescript
-// From apps/web/src/[component].tsx
-// CORRECT: This is how we do Y
-[code snippet]
-\`\`\`
-
-## Previous Similar Work
-
-If this task is similar to a completed lesson:
-- See: lessons/lesson-0042.md — [same pattern, different domain]
-
-## Brain Health Status
-
-- Current brain region: [backend | frontend | database | analytics]
-- Sinapses in this region: [N]
-- Average weight: [0.XX]
-- Staleness: [healthy | stale | very stale]
-- Related escalations: [escalation-XXXXX.md if any]
+**The Haiku path does NOT bypass the Brain lifecycle.** It runs the same pipeline in lightweight mode — reduced context, simpler execution, but still tracked and documented.
 
 ---
-```
+
+### Step 6: Context File Handoff
+
+brain-decision does NOT generate the context file itself. It hands off to brain-task, which:
+1. Calls brain-map (Step 1) to assemble context-packet.md
+2. Generates the execution context file (Step 2) — see brain-task SKILL.md for the canonical codex-context.md and opus-debug-context-{task_id}.md formats
 
 ---
 
@@ -372,11 +341,11 @@ Brain-decision is working when:
 - [ ] `/brain-task "Should we split the monolith?"` → scores 80+ → routes to Codex + plan mode automatic
 - [ ] `/brain-task --plan "Refactor auth"` → forces plan mode even if score < 50
 - [ ] Codex receives codex-context.md with sinapses + code examples
-- [ ] Opus receives opus-debug-context.md with error trace + similar lessons
+- [ ] Opus receives opus-debug-context-{task_id}.md with error trace + similar lessons
 - [ ] Plan mode messages show reason why (score/risk/type)
 - [ ] All routes dispatch to brain-task with correct [model] parameter
 
 ---
 
-**Created:** 2026-03-25 | **Phase:** 5 | **Agent Type:** Router
+**Created:** 2026-03-25 | **Agent Type:** Router
 

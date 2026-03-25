@@ -39,19 +39,19 @@ try {
 
   // Query all sinapses
   const sinapses = db.prepare(`
-    SELECT id, title, region, weight, file_path, updated_at, severity, occurrence_count
+    SELECT id, title, region, weight, file_path, updated_at
     FROM sinapses
     ORDER BY weight DESC
   `).all();
 
-  // Query tags for each sinapse
+  // Parse tags from sinapses.tags JSON column (sinapse_tags table does not exist)
   const tagMap = {};
-  const tags = db.prepare(`
-    SELECT sinapse_id, tag FROM sinapse_tags
-  `).all();
-  tags.forEach(row => {
-    if (!tagMap[row.sinapse_id]) tagMap[row.sinapse_id] = [];
-    tagMap[row.sinapse_id].push(row.tag);
+  const tagRows = db.prepare('SELECT id, tags FROM sinapses').all();
+  tagRows.forEach(row => {
+    try {
+      const parsed = JSON.parse(row.tags || '[]');
+      if (parsed.length > 0) tagMap[row.id] = parsed;
+    } catch (e) { /* skip invalid JSON */ }
   });
 
   // Query all links
@@ -77,7 +77,6 @@ try {
     tags: tagMap[sinapse.id] || [],
     linkCount: (linkMap[sinapse.id] || []).length,
     linksTo: linkMap[sinapse.id] || [],
-    severity: sinapse.severity,
     updatedAt: sinapse.updated_at
   }));
 

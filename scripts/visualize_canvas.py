@@ -51,13 +51,17 @@ def main():
             'weight': r[3]
         })
 
-    # Query tags
+    # Parse tags from sinapses.tags JSON column (sinapse_tags table does not exist)
+    import json as json_lib
     tag_map = {}
-    cursor.execute('SELECT sinapse_id, tag FROM sinapse_tags')
-    for r in cursor.fetchall():
-        if r[0] not in tag_map:
-            tag_map[r[0]] = []
-        tag_map[r[0]].append(r[1])
+    cursor.execute('SELECT id, tags FROM sinapses')
+    for row in cursor.fetchall():
+        try:
+            parsed = json_lib.loads(row[1]) if row[1] else []
+            if parsed:
+                tag_map[row['id'] if isinstance(row, dict) else row[0]] = parsed
+        except (json_lib.JSONDecodeError, TypeError):
+            pass
 
     # Query links
     cursor.execute('SELECT source_id, target_id FROM sinapse_links')
@@ -142,10 +146,10 @@ def main():
 
     # Find and replace the placeholder
     data_json = json.dumps(graph_data)
-    replacement = f'let GRAPH_DATA = {data_json};'
+    replacement = f'const GRAPH_DATA = {data_json};'
 
     # Replace the initData section with embedded data
-    marker = 'let GRAPH_DATA = {'
+    marker = 'const GRAPH_DATA = {'
     if marker in html:
         start = html.find(marker)
         # Find the closing semicolon of the object initialization

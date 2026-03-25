@@ -5,6 +5,10 @@ description: Planner — Convert context packet to structured implementation pla
 
 # brain-plan Skill — Planner
 
+## Pipeline Position
+
+brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (complexity >= 50 or `--plan` flag). It runs between brain-map (context loading) and brain-task Step 3 (implementation). Not on the default pipeline path — only activated for complex tasks requiring architectural planning.
+
 **Purpose:** Take a context packet (from brain-map) and task description, then produce a detailed, step-by-step implementation plan with acceptance criteria, file locations, and estimated token usage.
 
 **Token Budget:** 15k in / 5k out
@@ -71,7 +75,7 @@ Example subtask:
   - contracts/events/v1/ProductMarginCalculated.yaml (create)
 
 **Conventions:**
-  - [[lesson-0003]] Outbox must be atomic
+  - [[cortex/backend/lessons/lesson-0003]] Outbox must be atomic
   - [[metalshopping-event-contracts]] Event schema rules
 
 **Acceptance Criteria:**
@@ -96,7 +100,7 @@ Example:
 Conflict detected in Subtask 2:
   "Wire margin calculation in product service"
 
-  VIOLATES: lesson-0003 (Outbox must be atomic)
+  VIOLATES: cortex/backend/lessons/lesson-0003 (Outbox must be atomic)
 
   Action: Must emit ProductMarginCalculated event in SAME transaction
           as product update, not after Commit().
@@ -123,11 +127,11 @@ Sum all subtask estimates. If total > 80k, warn:
 
 ### Output
 
-Create `working-memory/current-task.md`:
+Create `working-memory/implementation-plan-{task_id}.md`:
 
 ```markdown
 ---
-task_id: [UUID]
+task_id: YYYY-MM-DD-<slug>
 task: [user description]
 domain: [backend | frontend | database | infra | cross-cutting]
 timestamp: [ISO 8601]
@@ -181,4 +185,4 @@ status: planned
 
 ---
 
-**Created:** 2026-03-24 | **Phase:** 2
+**Created:** 2026-03-24

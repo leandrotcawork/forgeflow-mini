@@ -287,6 +287,7 @@ async function persistBrain(projectPath, files) {
     path.join(brainRoot, 'lessons', 'archived'),
     path.join(brainRoot, 'working-memory'),
     path.join(brainRoot, 'progress'),
+    path.join(brainRoot, 'progress', 'completed-contexts'),
   ];
 
   for (const dir of dirs) {
@@ -298,6 +299,13 @@ async function persistBrain(projectPath, files) {
     }
   }
 
+  // Create progress/activity.md if it does not exist
+  const activityPath = path.join(brainRoot, 'progress', 'activity.md');
+  if (!fs.existsSync(activityPath)) {
+    fs.writeFileSync(activityPath, '# Brain Activity Log\n\n<!-- Auto-appended by TaskCompleted hook. One entry per brain-task. -->\n', 'utf-8');
+    log(colors.green, '  ✓ Created progress/activity.md');
+  }
+
   // Write files
   for (const [relativePath, content] of Object.entries(files)) {
     const filePath = path.join(brainRoot, relativePath);
@@ -306,6 +314,19 @@ async function persistBrain(projectPath, files) {
       log(colors.green, `  ✓ Wrote ${relativePath}`);
     } catch (err) {
       log(colors.yellow, `  ✗ Failed to write ${relativePath}: ${err.message}`);
+    }
+  }
+
+  // Copy brain.config.json from plugin template
+  const pluginRoot = path.resolve(__dirname, '..');
+  const configTemplate = path.join(pluginRoot, 'templates', 'brain', 'brain.config.json');
+  const configDest = path.join(brainRoot, 'brain.config.json');
+  if (fs.existsSync(configTemplate) && !fs.existsSync(configDest)) {
+    try {
+      fs.copyFileSync(configTemplate, configDest);
+      log(colors.green, '  ✓ Copied brain.config.json from template');
+    } catch (err) {
+      log(colors.yellow, `  ✗ Could not copy brain.config.json: ${err.message}`);
     }
   }
 

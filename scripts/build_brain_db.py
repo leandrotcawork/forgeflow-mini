@@ -10,10 +10,12 @@ Usage:
   python build_brain_db.py                    (defaults to .brain)
 """
 
+import argparse
 import os
 import sys
 import sqlite3
 import re
+import json as json_lib
 from pathlib import Path
 from datetime import datetime
 
@@ -37,15 +39,20 @@ def is_lesson(file_path):
 def parse_yaml_dict(yaml_str):
     """Simple YAML parser for frontmatter (no external deps)."""
     result = {}
-    for line in yaml_str.split('\n'):
-        line = line.strip()
-        if not line or line.startswith('#'):
+    lines = yaml_str.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            i += 1
             continue
 
-        if ':' not in line:
+        if ':' not in stripped:
+            i += 1
             continue
 
-        key, value = line.split(':', 1)
+        key, value = stripped.split(':', 1)
         key = key.strip()
         value = value.strip()
 
@@ -53,6 +60,28 @@ def parse_yaml_dict(yaml_str):
         if value.startswith('[') and value.endswith(']'):
             value = value[1:-1]
             value = [v.strip().strip('"\'') for v in value.split(',')]
+        # Handle YAML block lists (key with empty value followed by - items)
+        elif value == '':
+            # Check if next lines are block list items
+            block_items = []
+            j = i + 1
+            while j < len(lines):
+                next_line = lines[j]
+                next_stripped = next_line.strip()
+                if next_stripped.startswith('- '):
+                    block_items.append(next_stripped[2:].strip().strip('"\''))
+                    j += 1
+                elif not next_stripped:
+                    j += 1
+                else:
+                    break
+            if block_items:
+                value = block_items
+                i = j
+                result[key] = value
+                continue
+            else:
+                value = ''
         # Handle booleans
         elif value.lower() == 'true':
             value = True
@@ -69,11 +98,13 @@ def parse_yaml_dict(yaml_str):
             value = value.strip('"\'')
 
         result[key] = value
+        i += 1
 
     return result
 
 def parse_frontmatter(content):
     """Parse YAML frontmatter from markdown file."""
+    content = content.replace('\r\n', '\n').replace('\r', '\n')
     if not content.startswith('---'):
         return None, content
 
@@ -84,13 +115,13 @@ def parse_frontmatter(content):
             body = match.group(2)
             frontmatter = parse_yaml_dict(yaml_str) or {}
             return frontmatter, body
-    except:
+    except Exception:
         pass
 
     return None, content
 
 def scan_brain_files(brain_path):
-    """Scan all .md files in brain directory (except hippocampus)."""
+    """Scan all .md files in brain directory."""
     files = []
     brain_root = Path(brain_path)
 
@@ -99,10 +130,6 @@ def scan_brain_files(brain_path):
         return files
 
     for md_file in brain_root.rglob('*.md'):
-        # Skip hippocampus files
-        if 'hippocampus' in md_file.parts:
-            continue
-
         rel_path = md_file.relative_to(brain_root)
         files.append(str(rel_path).replace('\\', '/'))
 
@@ -114,7 +141,7 @@ def load_file_content(brain_path, file_path):
     try:
         with open(full_path, 'r', encoding='utf-8') as f:
             return f.read()
-    except:
+    except Exception:
         return None
 
 def create_tables(conn):
@@ -123,68 +150,89 @@ def create_tables(conn):
 
     # Drop existing tables
     cursor.execute('DROP TABLE IF EXISTS sinapse_links')
-    cursor.execute('DROP TABLE IF EXISTS sinapse_tags')
     cursor.execute('DROP TABLE IF EXISTS lessons')
-    cursor.execute('DROP TABLE IF EXISTS tasks')
+    cursor.execute('DROP TABLE IF EXISTS consolidation_log')
     cursor.execute('DROP TABLE IF EXISTS sinapses')
 
-    # Create sinapses table
+    # Create sinapses table — canonical schema
     cursor.execute('''
-        CREATE TABLE sinapses (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            region TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            weight REAL DEFAULT 0.5,
-            updated_at TEXT NOT NULL,
+        CREATE TABLE IF NOT EXISTS sinapses (
+            id            TEXT PRIMARY KEY,
+            file_path     TEXT NOT NULL,
+            title         TEXT NOT NULL,
+            region        TEXT NOT NULL,
+            tags          TEXT DEFAULT '[]',
+            links         TEXT DEFAULT '[]',
+            content       TEXT,
+            weight        REAL NOT NULL DEFAULT 0.50,
             last_accessed TEXT,
-            severity TEXT,
-            occurrence_count INTEGER DEFAULT 1
+            usage_count   INTEGER NOT NULL DEFAULT 0,
+            created_at    TEXT NOT NULL,
+            updated_at    TEXT NOT NULL
         )
     ''')
 
-    # Create sinapse_tags table
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapses_region ON sinapses(region)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapses_weight ON sinapses(weight DESC)')
+
+    # Create sinapse_links table with PK and FK
     cursor.execute('''
-        CREATE TABLE sinapse_tags (
-            sinapse_id TEXT,
-            tag TEXT
+        CREATE TABLE IF NOT EXISTS sinapse_links (
+            source_id TEXT NOT NULL,
+            target_id TEXT NOT NULL,
+            PRIMARY KEY (source_id, target_id),
+            FOREIGN KEY (source_id) REFERENCES sinapses(id) ON DELETE CASCADE,
+            FOREIGN KEY (target_id) REFERENCES sinapses(id) ON DELETE CASCADE
         )
     ''')
 
-    # Create sinapse_links table
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapse_links_source ON sinapse_links(source_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapse_links_target ON sinapse_links(target_id)')
+
+    # Create lessons table — aligned with docs/brain-db-schema.sql
     cursor.execute('''
-        CREATE TABLE sinapse_links (
-            source_id TEXT,
-            target_id TEXT
+        CREATE TABLE IF NOT EXISTS lessons (
+            id               TEXT PRIMARY KEY,
+            file_path        TEXT NOT NULL,
+            title            TEXT NOT NULL,
+            domain           TEXT NOT NULL,
+            scope            TEXT NOT NULL DEFAULT 'domain-local',
+            affected_domains TEXT DEFAULT '[]',
+            tags             TEXT DEFAULT '[]',
+            severity         TEXT NOT NULL DEFAULT 'medium',
+            status           TEXT NOT NULL DEFAULT 'draft',
+            parent_synapse   TEXT,
+            recurrence_count INTEGER NOT NULL DEFAULT 1,
+            promotion_candidate INTEGER NOT NULL DEFAULT 0,
+            created_from     TEXT,
+            source_agent     TEXT DEFAULT 'brain-lesson',
+            supersedes       TEXT,
+            superseded_by    TEXT,
+            confidence       TEXT DEFAULT 'medium',
+            root_cause_type  TEXT,
+            evidence         TEXT,
+            weight           REAL NOT NULL DEFAULT 0.50,
+            related_links    TEXT DEFAULT '[]',
+            created_at       TEXT NOT NULL,
+            updated_at       TEXT NOT NULL
         )
     ''')
 
-    # Create lessons table
-    cursor.execute('''
-        CREATE TABLE lessons (
-            id TEXT PRIMARY KEY,
-            file_path TEXT NOT NULL,
-            domain TEXT NOT NULL,
-            title TEXT,
-            severity TEXT,
-            occurrence_count INTEGER DEFAULT 1,
-            escalated INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'inbox',
-            created_at TEXT
-        )
-    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_domain ON lessons(domain)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_status ON lessons(status)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_severity ON lessons(severity)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_domain_tags ON lessons(domain, tags)')
 
-    # Create tasks table
+    # Create consolidation_log table
     cursor.execute('''
-        CREATE TABLE tasks (
-            id TEXT PRIMARY KEY,
-            description TEXT,
-            status TEXT,
-            created_at TEXT,
-            completed_at TEXT,
-            sinapses_loaded TEXT,
-            token_usage INTEGER,
-            outcome TEXT
+        CREATE TABLE IF NOT EXISTS consolidation_log (
+            cycle_number         INTEGER PRIMARY KEY AUTOINCREMENT,
+            tasks_reviewed       INTEGER NOT NULL DEFAULT 0,
+            proposals_approved   INTEGER NOT NULL DEFAULT 0,
+            proposals_rejected   INTEGER NOT NULL DEFAULT 0,
+            escalations_surfaced INTEGER NOT NULL DEFAULT 0,
+            sinapses_reweighted  INTEGER NOT NULL DEFAULT 0,
+            created_at           TEXT NOT NULL
         )
     ''')
 
@@ -192,11 +240,10 @@ def create_tables(conn):
 
 def main():
     # Parse arguments
-    brain_path = '.brain'
-    for i, arg in enumerate(sys.argv[1:]):
-        if arg == '--brain-path' and i + 1 < len(sys.argv) - 1:
-            brain_path = sys.argv[i + 2]
-            break
+    parser = argparse.ArgumentParser(description='Build brain.db from .brain/ markdown files')
+    parser.add_argument('--brain-path', default='.brain', help='Path to .brain directory')
+    args = parser.parse_args()
+    brain_path = args.brain_path
 
     print('[Brain] Building brain.db...')
     print(f'   Source: {brain_path}')
@@ -221,7 +268,6 @@ def main():
     # Process files
     sinapses_count = 0
     lessons_count = 0
-    tags_count = 0
     links_count = 0
     cursor = conn.cursor()
 
@@ -235,67 +281,85 @@ def main():
             continue
 
         record_id = frontmatter.get('id', '')
+        if not record_id:
+            print(f'  [Warn] Skipping {file_path}: missing "id" in frontmatter')
+            continue
         title = frontmatter.get('title', '')
         region = frontmatter.get('region', '')
         tags = frontmatter.get('tags', [])
         links = frontmatter.get('links', [])
         weight = frontmatter.get('weight', 0.5)
         updated_at = frontmatter.get('updated_at', datetime.now().isoformat())
-        severity = frontmatter.get('severity', '')
-        occurrence_count = frontmatter.get('occurrence_count', 1)
 
         # Route to correct table
         if is_lesson(file_path):
             domain = extract_domain_from_path(file_path)
-            status = frontmatter.get('status', 'inbox')
-            escalated = frontmatter.get('escalated', 0)
+            scope = frontmatter.get('scope', 'domain-local')
+            severity = frontmatter.get('severity', 'medium')
+            status = frontmatter.get('status', 'draft')
+            recurrence_count = frontmatter.get('recurrence_count', frontmatter.get('occurrence_count', 1))
+            promotion_candidate = 1 if frontmatter.get('promotion_candidate', False) else 0
+            created_from = frontmatter.get('created_from', '')
+            source_agent = frontmatter.get('source_agent', 'brain-lesson')
             created_at = frontmatter.get('created_at', datetime.now().isoformat())
+            updated_at_val = frontmatter.get('updated_at', created_at)
+
+            if isinstance(tags, list):
+                tags = sorted(tags)
+            tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
+
+            affected_domains = frontmatter.get('affected_domains', [])
+            affected_domains_json = json_lib.dumps(affected_domains) if isinstance(affected_domains, list) else '[]'
+            parent_synapse = frontmatter.get('parent_synapse', None)
+            supersedes = frontmatter.get('supersedes', None)
+            superseded_by = frontmatter.get('superseded_by', None)
+            confidence = frontmatter.get('confidence', 'medium')
+            root_cause_type = frontmatter.get('root_cause_type', None)
+            evidence = frontmatter.get('evidence', None)
+            related_links = frontmatter.get('related_links', [])
+            related_links_json = json_lib.dumps(related_links) if isinstance(related_links, list) else '[]'
 
             try:
                 cursor.execute('''
-                    INSERT INTO lessons (id, file_path, domain, title, severity, occurrence_count, escalated, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (record_id, file_path, domain, title, severity, occurrence_count, escalated, status, created_at))
+                    INSERT INTO lessons (id, file_path, title, domain, scope, affected_domains, tags, severity, status, parent_synapse, recurrence_count, promotion_candidate, created_from, source_agent, supersedes, superseded_by, confidence, root_cause_type, evidence, weight, related_links, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (record_id, file_path, title, domain, scope, affected_domains_json, tags_json, severity, status, parent_synapse, recurrence_count, promotion_candidate, created_from, source_agent, supersedes, superseded_by, confidence, root_cause_type, evidence, weight, related_links_json, created_at, updated_at_val))
                 lessons_count += 1
             except Exception as e:
                 print(f'[Warn] Error inserting lesson {record_id}: {e}')
         else:
             # Sinapse
+            if isinstance(tags, list):
+                tags = sorted(tags)
+            tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
+            links_json = json_lib.dumps(links) if isinstance(links, list) else (links if links else '[]')
+            created_at_val = frontmatter.get('created_at', datetime.now().isoformat())
+
             try:
                 cursor.execute('''
-                    INSERT INTO sinapses (id, title, region, file_path, weight, updated_at, severity, occurrence_count)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (record_id, title, region, file_path, weight, updated_at, severity, occurrence_count))
+                    INSERT INTO sinapses (id, file_path, title, region, tags, links, content, weight, last_accessed, usage_count, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (record_id, file_path, title, region, tags_json, links_json, body, weight, None, 0, created_at_val, updated_at))
                 sinapses_count += 1
             except Exception as e:
                 print(f'[Warn] Error inserting sinapse {record_id}: {e}')
 
-        # Insert tags
-        if tags:
-            for tag in tags:
-                try:
-                    cursor.execute('INSERT INTO sinapse_tags (sinapse_id, tag) VALUES (?, ?)', (record_id, tag))
-                    tags_count += 1
-                except:
-                    pass
-
-        # Insert links
+        # Insert links into sinapse_links
         if links:
             for target_id in links:
                 try:
                     cursor.execute('INSERT INTO sinapse_links (source_id, target_id) VALUES (?, ?)', (record_id, target_id))
                     links_count += 1
-                except:
+                except Exception:
                     pass
 
     conn.commit()
     conn.close()
 
-    print(f'\n[OK] Tables created: sinapses, sinapse_tags, sinapse_links, lessons, tasks')
+    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log')
     print(f'[Files] Scanned {len(files)} .md files')
     print(f'   -> {sinapses_count} sinapses indexed')
     print(f'   -> {lessons_count} lessons indexed')
-    print(f'   -> {tags_count} tags')
     print(f'   -> {links_count} links')
     print(f'[OK] brain.db built successfully')
     print(f'\nDatabase: {os.path.abspath(db_path)}')

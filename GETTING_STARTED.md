@@ -13,7 +13,7 @@ Copy the forgeflow-mini directory to your Claude Code plugins directory:
 cp -r forgeflow-mini ~/.claude/plugins/
 
 # Option B: Use as submodule in project
-git submodule add [your-repo-url] forgeflow-mini
+git submodule add https://github.com/leandrotcawork/forgeflow-mini.git forgeflow-mini
 ```
 
 ---
@@ -39,30 +39,35 @@ git submodule add [your-repo-url] forgeflow-mini
 **Then restart Claude Code.**
 
 Now when you type `/`, you should see:
+- /brain-init
+- /brain-decision
 - /brain-task
+- /brain-plan
+- /brain-mckinsey
+- /brain-map
+- /brain-document
 - /brain-status
 - /brain-consolidate
 - /brain-codex-review
 - /brain-lesson
-- /brain-map
-- /brain-document
 
 ---
 
 ## Step 3: Initialize Brain for Your Project
 
-From your project root:
+From inside a Claude Code session in your project root:
 
-```bash
-node forgeflow-mini/scripts/init.js --project-path .
+```
+/brain-init
 ```
 
 This creates:
-- `.brain/` directory structure
-- `hippocampus/` (architecture, conventions, decisions)
-- `cortex/` (domain knowledge)
-- `brain.db` (SQLite index)
-- `brain-graph.html` (3D visualization)
+- `.brain/hippocampus/` — architecture, conventions, strategy, decisions
+- `.brain/cortex/<domain>/` — domain knowledge sinapses + domain-local lessons
+- `.brain/lessons/` — cross-domain, inbox, archived lesson directories
+- `.brain/working-memory/` — ephemeral task artifacts
+- `.brain/progress/` — activity log, health reports, completed context archives
+- `.brain/brain.db` — SQLite index (built by `python scripts/build_brain_db.py`)
 
 ---
 
@@ -207,10 +212,10 @@ This batch-reviews all sinapses updates:
 ### Brain Not Loading Sinapses
 
 ```bash
-python forgeflow-mini/scripts/build_brain_db.py
+python ~/.claude/plugins/forgeflow-mini/scripts/build_brain_db.py --brain-path .brain
 ```
 
-This rebuilds brain.db from .md files in .brain/ directory.
+This rebuilds brain.db from .md files in `.brain/`. Schema source of truth: `docs/brain-db-schema.sql`.
 
 ### Help
 
@@ -259,10 +264,10 @@ Edit `.brain/brain.config.json` to customize:
 ## Ready?
 
 ```
-1. Copy forgeflow-mini to ~/.claude/plugins/
+1. Clone/copy forgeflow-mini to ~/.claude/plugins/
 2. Edit ~/.claude/settings.json (register skills)
 3. Restart Claude Code
-4. node forgeflow-mini/scripts/init.js --project-path .
+4. /brain-init  (inside a Claude Code session)
 5. /brain-task "Your first task"
 ```
 
