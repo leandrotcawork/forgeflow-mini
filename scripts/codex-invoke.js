@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 
 /**
+ * ⚠️  [STUB] — Workflow Reference Only
+ *
+ * This script demonstrates the intended Codex MCP invocation flow but does NOT
+ * actually call any MCP server. It reads the context file, validates it, and
+ * returns a placeholder response.
+ *
+ * In production, brain-task handles Codex invocation directly through the
+ * Claude Code MCP tool interface. See: skills/brain-task/SKILL.md → Step 3.
+ */
+
+/**
  * codex-invoke.js
  *
  * Invokes Codex via MCP server (codex-cli) with prepared context

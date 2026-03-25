@@ -15,11 +15,17 @@ cursor = conn.cursor()
 cursor.execute('SELECT id, title, region, weight, updated_at FROM sinapses ORDER BY weight DESC')
 sinapses = [{'id': r[0], 'title': r[1], 'region': r[2], 'weight': r[3], 'updatedAt': r[4]} for r in cursor.fetchall()]
 
+# Parse tags from sinapses.tags JSON column (sinapse_tags table does not exist)
+import json as json_lib
 tag_map = {}
-cursor.execute('SELECT sinapse_id, tag FROM sinapse_tags')
-for r in cursor.fetchall():
-    if r[0] not in tag_map: tag_map[r[0]] = []
-    tag_map[r[0]].append(r[1])
+cursor.execute('SELECT id, tags FROM sinapses')
+for row in cursor.fetchall():
+    try:
+        parsed = json_lib.loads(row[1]) if row[1] else []
+        if parsed:
+            tag_map[row['id'] if isinstance(row, dict) else row[0]] = parsed
+    except (json_lib.JSONDecodeError, TypeError):
+        pass
 
 cursor.execute('SELECT source_id, target_id FROM sinapse_links')
 links = [{'source_id': r[0], 'target_id': r[1]} for r in cursor.fetchall()]

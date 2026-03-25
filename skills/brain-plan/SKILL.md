@@ -5,6 +5,10 @@ description: Planner — Convert context packet to structured implementation pla
 
 # brain-plan Skill — Planner
 
+## Pipeline Position
+
+brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (complexity >= 50 or `--plan` flag). It runs between brain-map (context loading) and brain-task Step 3 (implementation). Not on the default pipeline path — only activated for complex tasks requiring architectural planning.
+
 **Purpose:** Take a context packet (from brain-map) and task description, then produce a detailed, step-by-step implementation plan with acceptance criteria, file locations, and estimated token usage.
 
 **Token Budget:** 15k in / 5k out

@@ -49,7 +49,7 @@ Lessons are stored in **distributed domain-specific directories**:
 - **Cross-domain lessons** → `lessons/cross-domain/lesson-XXXXX.md`
   - Lessons that span multiple domains (auth, events, process rules)
 
-- **Inbox (temporary)** → `lessons/inbox/lesson-XXXXX.md`
+- **Inbox (temporary)** → `.brain/lessons/inbox/lesson-XXXXX.md`
   - Unclassified lessons awaiting categorization
 
 **Lesson format** (all regions):
@@ -131,7 +131,7 @@ superseded          superseded
 Query brain.db for recurrence patterns:
 
 ```sql
-SELECT domain, tags, COUNT(*) as lesson_count, array_agg(id) as lesson_ids
+SELECT domain, tags, COUNT(*) as lesson_count, GROUP_CONCAT(id) as lesson_ids
 FROM lessons
 WHERE status IN ('draft', 'active')
 GROUP BY domain, tags
@@ -169,8 +169,8 @@ brain-lesson's responsibility ends at detection and flagging. Actual proposal ge
 
 Insert new lesson:
 ```sql
-INSERT INTO lessons (id, file_path, domain, scope, severity, status, recurrence_count, created_from, source_agent, created_at, updated_at)
-VALUES ('lesson-XXXXX', 'cortex/backend/lessons/lesson-XXXXX.md', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
+INSERT INTO lessons (id, file_path, title, domain, scope, severity, status, recurrence_count, created_from, source_agent, created_at, updated_at)
+VALUES ('lesson-XXXXX', 'cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
 ```
 
 Update sinapse weights of related sinapses:
@@ -185,19 +185,9 @@ Scenario: 3rd tenant isolation bug found
 1. Create lesson-0037.md: "Another tenant isolation failure"
 2. Query brain.db: Find lessons with tag 'tenant-safety'
 3. Count: lesson-0001, lesson-0002, lesson-0037 = 3
-4. Escalation triggered!
-5. Propose adding to hippocampus/conventions.md:
-
-   New rule:
-   "Every new query must pass tenant isolation checklist:
-    - [ ] BeginTenantTx used
-    - [ ] current_tenant_id() in WHERE
-    - [ ] RLS policy active
-    - [ ] Test with cross-tenant data"
-
-6. Developer reviews and approves
-7. Write to hippocampus (immutable layer)
-8. All 3 lessons link to the new convention
+4. All 3 lessons flagged: status → promotion_candidate
+5. Output: "⚠ PROMOTION CANDIDATE: 3 lessons match [tenant-safety] in backend"
+6. brain-lesson stops here — brain-consolidate owns proposal generation
 ```
 
 ## Example Lessons
@@ -289,9 +279,9 @@ Any test resource must be cleaned up in defer(). No exceptions.
 
 | Scenario | Action |
 |----------|--------|
-| Same lesson exists | Increment occurrence_count, don't create duplicate |
+| Same lesson exists | Increment recurrence_count, don't create duplicate |
 | Promotion candidate detected | Set `status: promotion_candidate` on matching lessons. brain-consolidate handles proposal generation. |
-| Related sinapses outdated | Mark for update in working-memory/sinapse-updates.md |
+| Related sinapses outdated | Mark for update in working-memory/sinapse-updates-{task_id}.md |
 | No clear solution found | Mark severity=critical, flag for team discussion |
 
 ---

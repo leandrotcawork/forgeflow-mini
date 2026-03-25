@@ -10,6 +10,7 @@ Usage:
   python build_brain_db.py                    (defaults to .brain)
 """
 
+import argparse
 import os
 import sys
 import sqlite3
@@ -38,15 +39,20 @@ def is_lesson(file_path):
 def parse_yaml_dict(yaml_str):
     """Simple YAML parser for frontmatter (no external deps)."""
     result = {}
-    for line in yaml_str.split('\n'):
-        line = line.strip()
-        if not line or line.startswith('#'):
+    lines = yaml_str.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            i += 1
             continue
 
-        if ':' not in line:
+        if ':' not in stripped:
+            i += 1
             continue
 
-        key, value = line.split(':', 1)
+        key, value = stripped.split(':', 1)
         key = key.strip()
         value = value.strip()
 
@@ -54,6 +60,28 @@ def parse_yaml_dict(yaml_str):
         if value.startswith('[') and value.endswith(']'):
             value = value[1:-1]
             value = [v.strip().strip('"\'') for v in value.split(',')]
+        # Handle YAML block lists (key with empty value followed by - items)
+        elif value == '':
+            # Check if next lines are block list items
+            block_items = []
+            j = i + 1
+            while j < len(lines):
+                next_line = lines[j]
+                next_stripped = next_line.strip()
+                if next_stripped.startswith('- '):
+                    block_items.append(next_stripped[2:].strip().strip('"\''))
+                    j += 1
+                elif not next_stripped:
+                    j += 1
+                else:
+                    break
+            if block_items:
+                value = block_items
+                i = j
+                result[key] = value
+                continue
+            else:
+                value = ''
         # Handle booleans
         elif value.lower() == 'true':
             value = True
@@ -70,11 +98,13 @@ def parse_yaml_dict(yaml_str):
             value = value.strip('"\'')
 
         result[key] = value
+        i += 1
 
     return result
 
 def parse_frontmatter(content):
     """Parse YAML frontmatter from markdown file."""
+    content = content.replace('\r\n', '\n').replace('\r', '\n')
     if not content.startswith('---'):
         return None, content
 
@@ -85,7 +115,7 @@ def parse_frontmatter(content):
             body = match.group(2)
             frontmatter = parse_yaml_dict(yaml_str) or {}
             return frontmatter, body
-    except:
+    except Exception:
         pass
 
     return None, content
@@ -111,7 +141,7 @@ def load_file_content(brain_path, file_path):
     try:
         with open(full_path, 'r', encoding='utf-8') as f:
             return f.read()
-    except:
+    except Exception:
         return None
 
 def create_tables(conn):
@@ -210,11 +240,10 @@ def create_tables(conn):
 
 def main():
     # Parse arguments
-    brain_path = '.brain'
-    for i, arg in enumerate(sys.argv[1:]):
-        if arg == '--brain-path' and i + 1 < len(sys.argv) - 1:
-            brain_path = sys.argv[i + 2]
-            break
+    parser = argparse.ArgumentParser(description='Build brain.db from .brain/ markdown files')
+    parser.add_argument('--brain-path', default='.brain', help='Path to .brain directory')
+    args = parser.parse_args()
+    brain_path = args.brain_path
 
     print('[Brain] Building brain.db...')
     print(f'   Source: {brain_path}')
@@ -252,6 +281,9 @@ def main():
             continue
 
         record_id = frontmatter.get('id', '')
+        if not record_id:
+            print(f'  [Warn] Skipping {file_path}: missing "id" in frontmatter')
+            continue
         title = frontmatter.get('title', '')
         region = frontmatter.get('region', '')
         tags = frontmatter.get('tags', [])
@@ -272,6 +304,8 @@ def main():
             created_at = frontmatter.get('created_at', datetime.now().isoformat())
             updated_at_val = frontmatter.get('updated_at', created_at)
 
+            if isinstance(tags, list):
+                tags = sorted(tags)
             tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
 
             affected_domains = frontmatter.get('affected_domains', [])
@@ -295,6 +329,8 @@ def main():
                 print(f'[Warn] Error inserting lesson {record_id}: {e}')
         else:
             # Sinapse
+            if isinstance(tags, list):
+                tags = sorted(tags)
             tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
             links_json = json_lib.dumps(links) if isinstance(links, list) else (links if links else '[]')
             created_at_val = frontmatter.get('created_at', datetime.now().isoformat())
@@ -314,7 +350,7 @@ def main():
                 try:
                     cursor.execute('INSERT INTO sinapse_links (source_id, target_id) VALUES (?, ?)', (record_id, target_id))
                     links_count += 1
-                except:
+                except Exception:
                     pass
 
     conn.commit()

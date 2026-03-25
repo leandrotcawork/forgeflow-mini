@@ -13,7 +13,16 @@ description: Codex code review agent — validates implementation, finds bugs, c
 
 ---
 
-## When Codex Reviews (Step 2.5)
+## Pipeline Position
+
+```
+brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+                                           ↑ you are here
+```
+
+---
+
+## When Codex Reviews (Step 3.5)
 
 After Codex completes implementation (Step 2), run automatic review:
 

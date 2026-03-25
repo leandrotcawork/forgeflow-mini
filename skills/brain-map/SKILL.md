@@ -92,6 +92,10 @@ LIMIT 3
 SELECT id, title, region, tags, links, weight
 FROM sinapses
 WHERE region LIKE '%{domain}%'
+-- Note: For cross-domain tasks, this query expands to:
+-- WHERE region LIKE 'cortex/%'
+-- This loads sinapses from ALL cortex regions (backend, frontend, database, infra)
+-- The ContextMapper must detect domain='cross-domain' and expand the query accordingly
 ORDER BY weight DESC
 LIMIT 5
 

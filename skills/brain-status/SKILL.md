@@ -23,7 +23,7 @@ From `.brain/brain.db`:
 - Count lessons per region
 - Find latest `updated_at` per region
 - Detect staleness (>30 days, >60 days)
-- Count pending escalations in `lessons/inbox/escalation-*.md`
+- Count pending escalations in `.brain/lessons/inbox/escalation-*.md`
 
 ### Step 2: Assess Health Status
 

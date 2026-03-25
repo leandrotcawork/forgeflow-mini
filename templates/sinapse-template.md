@@ -3,11 +3,9 @@ id: unique-sinapse-identifier
 title: Human-Readable Title
 region: cortex/backend  # or cortex/frontend, cortex/database, cortex/infra, hippocampus, sinapses, lessons
 tags: [tag1, tag2, tag3]  # comma-separated domain/pattern tags
-links:  # [[wikilinks]] to related sinapses
-  - cortex/backend/api
-  - cortex/backend/services
-  - hippocampus/conventions
+links: [cortex/backend/api, cortex/backend/services, hippocampus/conventions]
 weight: 0.5  # 0.0-1.0, auto-updated by brain.db
+created_at: 2026-03-24T10:00:00Z
 updated_at: 2026-03-24T10:00:00Z
 ---
 

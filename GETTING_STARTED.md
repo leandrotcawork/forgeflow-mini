@@ -13,7 +13,7 @@ Copy the forgeflow-mini directory to your Claude Code plugins directory:
 cp -r forgeflow-mini ~/.claude/plugins/
 
 # Option B: Use as submodule in project
-git submodule add [your-repo-url] forgeflow-mini
+git submodule add https://github.com/leandrotcawork/forgeflow-mini.git forgeflow-mini
 ```
 
 ---

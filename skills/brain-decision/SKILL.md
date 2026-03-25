@@ -121,8 +121,8 @@ Complexity | Type | Model | When | Token Budget | Use Case
 20-40 | feature/refactor | Codex | Standard implementation | 60-100k | "Add new module", "Implement feature"
 40-60 | feature/refactor | Codex | Complex feature, multi-file | 100-150k | "Refactor auth", "Add analytics"
 60-75 | debugging | Opus | Code failing, unfamiliar error | 120-150k | "Stuck on bug", "Pattern unknown"
+75+ | debugging/critical | Opus (+ plan) | Critical debugging or security issue | 150-200k | "Data leak", "Integrity error"
 75+ | architectural | Codex (+ plan) | Major system decision | 150-200k | "Should we...", "New architecture"
-75+ | critical bug | Opus (+ plan) | Critical security/data issue | 150-200k | "Data leak", "Integrity error"
 ```
 
 **Decision Tree:**
@@ -147,6 +147,12 @@ Task complexity score calculated
     → Opus better at root cause analysis
     → Check plan mode trigger
     → Dispatch to brain-task [opus]
+
+  ELSE IF score >= 75 AND (type == "debugging" OR risk == "critical"):
+    → Route to: Opus + Plan Mode
+    → Critical debugging/security requires root cause analysis
+    → ALWAYS enter plan mode
+    → Dispatch to brain-task [opus] with plan
 
   ELSE IF score >= 75:
     → Route to: Codex + Plan Mode

@@ -33,7 +33,10 @@ git clone https://github.com/leandrotcawork/forgeflow-mini.git ~/.claude/plugins
   "features": {
     "skills": {
       "auto_load": true,
-      "directories": ["~/.claude/plugins/forgeflow-mini/skills"]
+      "directories": [
+        "~/.claude/plugins/forgeflow-mini/skills",
+        "./.claude/skills"
+      ]
     }
   }
 }

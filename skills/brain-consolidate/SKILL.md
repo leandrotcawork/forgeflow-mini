@@ -14,7 +14,7 @@ brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCo
 
 **Purpose:** Batch process completed tasks since last consolidation. Review proposed sinapse updates, surface escalation candidates (sole owner of proposal generation), generate health report, update weights. Always propose — never auto-update without developer approval.
 
-**Token Budget:** 15k in / 8k out
+**Token Budget:** 15-25k in / 8k out (varies by proposal count)
 
 **Trigger:**
 - Developer invokes: `/brain-consolidate`
@@ -87,7 +87,7 @@ Track tallies: N approved / N rejected / N modified.
 Query brain.db for promotion candidates:
 
 ```sql
-SELECT domain, tags, COUNT(*) as lesson_count, array_agg(id) as lesson_ids
+SELECT domain, tags, COUNT(*) as lesson_count, GROUP_CONCAT(id) as lesson_ids
 FROM lessons
 WHERE status = 'promotion_candidate'
 GROUP BY domain, tags
@@ -96,7 +96,7 @@ ORDER BY lesson_count DESC
 
 For each candidate group:
 
-**4a: Deduplicate** — Check if another proposal already exists for this pattern in `lessons/inbox/escalation-PROPOSAL-*.md`. If yes, skip.
+**4a: Deduplicate** — Check if another proposal already exists for this pattern in `.brain/lessons/inbox/escalation-PROPOSAL-*.md`. If yes, skip.
 
 **4b: Check existing conventions** — Read hippocampus/conventions.md. If this pattern is already documented:
 - Set `status: promoted` on all matching lessons in brain.db
@@ -106,13 +106,13 @@ For each candidate group:
 - Read all matching lesson files from disk
 - Extract the common rule/pattern
 - Draft convention text (same style as conventions.md entries)
-- Write to: `lessons/inbox/escalation-PROPOSAL-[timestamp].md`
+- Write to: `.brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md`
 - Output to developer:
   ```
   ⚠ ESCALATION PROPOSAL: [pattern name]
   Domain: [domain]
   Source lessons: [N] (lesson-XXXX, lesson-YYYY, lesson-ZZZZ)
-  Review: lessons/inbox/escalation-PROPOSAL-[timestamp].md
+  Review: .brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md
   Actions: approve → hippocampus/conventions.md | reject → discard | modify → edit and resubmit
   ```
 
@@ -174,7 +174,7 @@ consolidation_cycle: [N]
 |---|---|---|---|
 | escalation-PROPOSAL-001.md | lesson-0001, 0002, 0004 | "Tenant isolation failure modes" | ⏳ Awaiting developer review |
 
-**Action:** Review lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to hippocampus/conventions.md.
+**Action:** Review .brain/lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to hippocampus/conventions.md.
 
 ---
 
@@ -269,7 +269,7 @@ After consolidation completes, output to developer:
 Sinapse updates: [Y] approved / [R] rejected / [M] modified
 Escalation proposals: [N] surfaced
   - [A] approved → moving to hippocampus/conventions.md
-  - [P] pending review → in lessons/inbox/escalation-*.md
+  - [P] pending review → in .brain/lessons/inbox/escalation-*.md
   - [D] dismissed → discarded
 
 Context files archived: [N] task contexts → progress/completed-contexts/

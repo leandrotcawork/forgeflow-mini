@@ -64,7 +64,7 @@ For each touched domain, answer:
 
 ### Step 3: Propose Sinapse Updates
 
-Never edit directly. Create `working-memory/sinapse-updates.md`:
+Never edit directly. Create `working-memory/sinapse-updates-{task_id}.md`:
 
 ```markdown
 # Proposed Sinapse Updates
@@ -197,7 +197,7 @@ Always show changes as unified diff format:
 
 Never proceed without developer sign-off.
 
-Proposal remains in `working-memory/sinapse-updates.md`.
+Proposal remains in `working-memory/sinapse-updates-{task_id}.md`.
 
 Once approved: Update `.brain/` sinapses atomically.
 

@@ -136,4 +136,4 @@ Initialize a Brain for any project. Scans the project → detects type → gener
 
 ---
 
-**ForgeFlow Mini v0.1**
+**Created:** 2026-03-24 | **Agent Type:** Initializer
