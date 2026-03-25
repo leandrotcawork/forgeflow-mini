@@ -92,9 +92,9 @@ domain: backend          # or ['backend', 'frontend']
 - [x] Update templates/brain/ structure
 - [x] Test end-to-end
 
-### Phase 5.3 (Index) — 1 hour
-- [ ] Update brain.db schema (add domain column)
-- [ ] Update build_brain_db.py to extract domain from path
+### Phase 5.3 (Index) — 1 hour ✅ COMPLETE
+- [x] Update brain.db schema (add domain column)
+- [x] Create build_brain_db.py to extract domain from path
 
 ### Phase 5.4 (Skills) — 2 hours
 - [ ] Update brain-lesson.md with new lifecycle
@@ -118,5 +118,5 @@ domain: backend          # or ['backend', 'frontend']
 
 ---
 
-**Current Phase:** Phase 5.3 (Index schema) — Ready to start
-**Previous Phases:** ✅ Phase 5.1 complete | ✅ Phase 5.2 complete
+**Current Phase:** Phase 5.4 (Skills update) — Ready to start
+**Previous Phases:** ✅ Phase 5.1 complete | ✅ Phase 5.2 complete | ✅ Phase 5.3 complete
