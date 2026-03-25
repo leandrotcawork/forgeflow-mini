@@ -1,0 +1,19 @@
+{
+  "name": "forgeflow-mini",
+  "version": "0.1.0",
+  "description": "Brain-driven development plugin for Claude Code",
+  "author": "ForgeFlow contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leandrotcawork/forgeflow-mini.git"
+  },
+  "homepage": "https://github.com/leandrotcawork/forgeflow-mini",
+  "keywords": [
+    "claude",
+    "plugin",
+    "brain",
+    "knowledge",
+    "development"
+  ]
+}
