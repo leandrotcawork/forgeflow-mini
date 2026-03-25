@@ -1,0 +1,135 @@
+{
+  "brain_id": "brain-default",
+  "version": "0.1.0",
+  "created_at": "2026-03-24T10:00:00Z",
+  "project_root": ".",
+  "brain_root": ".brain",
+  "database": {
+    "path": ".brain/brain.db",
+    "schema_version": 1
+  },
+  "cortex_regions": ["backend", "frontend", "database", "infra"],
+  "hooks": {
+    "pre_tool_use": [
+      {
+        "id": "BRAIN_READ_BEFORE_WRITE",
+        "trigger": "any_code_write",
+        "action": "verify_context_packet_loaded",
+        "enabled": true
+      },
+      {
+        "id": "HIPPOCAMPUS_IMMUTABLE",
+        "trigger": "write_to_hippocampus",
+        "action": "block_and_request_approval",
+        "enabled": true
+      },
+      {
+        "id": "CONTEXT_PACKET_REQUIRED",
+        "trigger": "implementer_starts",
+        "action": "verify_context_mapper_ran",
+        "enabled": true
+      },
+      {
+        "id": "READINESS_GATE",
+        "trigger": "task_dispatch",
+        "action": "run_4_checks",
+        "checks": ["dependency", "context", "conflict", "resource"],
+        "enabled": true
+      },
+      {
+        "id": "LESSON_LOADED",
+        "trigger": "implementer_starts",
+        "action": "verify_relevant_lessons_in_context",
+        "enabled": true
+      },
+      {
+        "id": "STRATEGY_CHECK",
+        "trigger": "mckinsey_layer_runs",
+        "action": "verify_strategy_md_exists",
+        "enabled": true
+      },
+      {
+        "id": "SINAPSE_FORMAT_VALID",
+        "trigger": "new_md_in_brain",
+        "action": "validate_yaml_frontmatter",
+        "enabled": true
+      },
+      {
+        "id": "LESSON_ESCALATION_CHECK",
+        "trigger": "new_lesson_added",
+        "action": "check_if_gte_3_same_type_propose_convention",
+        "enabled": true
+      }
+    ],
+    "post_tool_use": [
+      {
+        "id": "WEIGHT_UPDATE",
+        "trigger": "task_completes",
+        "action": "update_brain_db_weights",
+        "enabled": true
+      },
+      {
+        "id": "WORKING_MEMORY_CLEAR",
+        "trigger": "task_completes",
+        "action": "clear_working_memory",
+        "enabled": true
+      },
+      {
+        "id": "CONSOLIDATION_THRESHOLD",
+        "trigger": "5th_task_completes",
+        "action": "alert_run_brain_consolidate",
+        "enabled": true
+      },
+      {
+        "id": "BACKLINK_UPDATE",
+        "trigger": "wikilink_added",
+        "action": "update_brain_db_backlinks",
+        "enabled": true
+      },
+      {
+        "id": "AGENT_STATE_UPDATE",
+        "trigger": "second_iteration",
+        "action": "load_git_diff_into_agent_state_md",
+        "enabled": true
+      },
+      {
+        "id": "SINAPSE_STALENESS_MARK",
+        "trigger": "cortex_write",
+        "action": "mark_affected_sinapses_for_review",
+        "enabled": true
+      },
+      {
+        "id": "PROGRESS_LOG",
+        "trigger": "any_task_state_change",
+        "action": "append_to_progress_activity_md",
+        "enabled": true
+      }
+    ]
+  },
+  "context_loading": {
+    "tier_1_max_tokens": 4000,
+    "tier_2_max_tokens": 15000,
+    "tier_3_max_tokens": 5000,
+    "tier_1_always_loaded": ["hippocampus_summary", "current_task", "top_3_lessons"],
+    "tier_2_default_count": 5,
+    "tier_3_on_demand": true,
+    "persistent_mind_cache": "working-memory/agent-state.md"
+  },
+  "token_budgets": {
+    "context_mapper": { "in": 4000, "out": 1000 },
+    "mckinsey_layer": { "in": 20000, "out": 8000, "high_stakes_only": true },
+    "planner": { "in": 15000, "out": 5000 },
+    "implementer": { "in": 40000, "out": 20000 },
+    "documenter": { "in": 10000, "out": 5000 },
+    "learner": { "in": 5000, "out": 2000 }
+  },
+  "consolidation": {
+    "trigger": "explicit_command_or_5_tasks",
+    "auto_propose_updates": true,
+    "developer_approval_required": true
+  },
+  "lesson_escalation": {
+    "threshold": 3,
+    "action": "propose_hippocampus_convention"
+  }
+}

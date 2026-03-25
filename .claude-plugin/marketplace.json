@@ -1,0 +1,37 @@
+{
+  "name": "forgeflow-plugins",
+  "owner": {
+    "name": "forgeflow"
+  },
+  "metadata": {
+    "description": "v0.1.0 — Brain-driven development plugin with persistent knowledge system",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "brain-mini",
+      "source": "./",
+      "description": "v0.1.0 - Brain-driven development with 11 AI-powered skills. Initialize project knowledge, map context, plan implementations. Run /brain-mini:brain-init.",
+      "version": "0.1.0",
+      "author": {
+        "name": "ForgeFlow contributors"
+      },
+      "repository": "https://github.com/forgeflow/forgeflow-mini",
+      "homepage": "https://github.com/forgeflow/forgeflow-mini",
+      "license": "MIT",
+      "keywords": [
+        "brain",
+        "knowledge",
+        "development",
+        "context",
+        "persistence",
+        "multi-agent",
+        "planning",
+        "documentation",
+        "code-review",
+        "learning"
+      ],
+      "category": "development"
+    }
+  ]
+}

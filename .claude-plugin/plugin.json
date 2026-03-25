@@ -1,0 +1,12 @@
+{
+  "name": "forgeflow-mini",
+  "description": "Brain-driven development plugin — persistent, evolving knowledge system with 11 multi-agent skills",
+  "version": "0.1.0",
+  "author": {
+    "name": "ForgeFlow contributors"
+  },
+  "homepage": "https://github.com/forgeflow/forgeflow-mini",
+  "repository": "https://github.com/forgeflow/forgeflow-mini",
+  "license": "MIT",
+  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent"]
+}
