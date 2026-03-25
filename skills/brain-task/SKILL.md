@@ -161,16 +161,44 @@ created_at: [ISO8601]
 
 **Flow depends on model selected by brain-decision:**
 
-#### **For Codex Model:**
+#### **For Codex Model (via MCP):**
 
 ```
 1. Context file: codex-context.md (generated in Step 2)
-2. Open the file in your editor (working-memory/codex-context.md)
-3. Invoke Codex VSCode extension with @context
-   - Codex reads prepared context
-   - Generates implementation
-   - You review and integrate
-4. Continue to Step 4 (documentation proposals)
+2. Call codex-cli MCP server:
+   codex_response = invoke MCP tool "codex-execute" with:
+   - context_file: working-memory/codex-context.md
+   - task_id: [uuid from brain-decision]
+   - domain: [backend | frontend | database | infra]
+
+3. codex-cli MCP server does:
+   - Read codex-context.md
+   - Send to Codex VSCode extension API
+   - Receive implementation response
+   - Return response to brain-task
+
+4. You review Codex output and integrate:
+   - Accept changes: commit to files
+   - Reject changes: document reason in task-completion-record.md
+   - Partial accept: merge manually + note deviation
+
+5. Continue to Step 4 (documentation proposals)
+```
+
+**MCP Integration Details:**
+
+```
+MCP Server: codex-cli
+Command: npx @cexll/codex-mcp-server
+Tool: codex-execute
+Inputs:
+  - context_file (path): working-memory/codex-context.md
+  - task_id (uuid): from brain-decision routing
+  - domain (string): extraction domain context
+Outputs:
+  - generated_code (string): implementation from Codex
+  - explanation (string): Codex reasoning
+  - files_affected (array): list of files Codex targets
 ```
 
 #### **For Opus Model (Debugging):**
@@ -182,7 +210,7 @@ created_at: [ISO8601]
    - Check similar lessons (do we have this pattern documented?)
    - Root cause analysis
    - Propose fix
-   - Execute fix
+   - Execute fix (may invoke Opus via claude.ai if needed)
 3. Continue to Step 4 (documentation proposals)
 ```
 
