@@ -207,14 +207,14 @@ This batch-reviews all sinapses updates:
 ### Brain Not Loading Sinapses
 
 ```bash
-node forgeflow-mini/scripts/index.js --brain-path .brain
+python forgeflow-mini/scripts/build_brain_db.py
 ```
 
-This rebuilds brain.db from .md files.
+This rebuilds brain.db from .md files in .brain/ directory.
 
 ### Help
 
-See README.md or forgeflow-mini/docs/ for full documentation.
+See README.md for full documentation, or check individual SKILL.md files in forgeflow-mini/skills/
 
 ---
 

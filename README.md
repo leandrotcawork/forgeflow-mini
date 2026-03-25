@@ -289,14 +289,72 @@ Phase 5 Complete ✅
 
 ---
 
-## Full Documentation
+## Skills Reference
 
-- Architecture: forgeflow-mini/docs/PHASE_5_ARCHITECTURE.md
-- Implementation: forgeflow-mini/docs/PHASE_5_IMPLEMENTATION.md
-- Quick start: forgeflow-mini/PHASE_5_QUICK_START.md
+| Skill | Purpose |
+|-------|---------|
+| `/brain-task [desc]` | Main entry point — intelligent routing to optimal model |
+| `/brain-decision [desc]` | Classify complexity, select model (Haiku/Codex/Opus) |
+| `/brain-map [desc]` | Load relevant sinapses from brain.db (3-tier context) |
+| `/brain-status` | Display brain health, staleness, coverage gaps |
+| `/brain-consolidate` | Batch-review after 5 tasks, propose updates, escalate patterns |
+| `/brain-lesson [desc]` | Capture failure pattern as lesson for future learning |
+| `/brain-codex-review [code]` | Code quality validation (automatic + manual) |
+| `/brain-document` | Propose sinapse updates after task completion |
+| `/brain-plan [desc]` | Show architecture before implementing (used by /brain-task --plan) |
+| `/brain-mckinsey` | Strategic intelligence for high-stakes decisions |
+| `/brain-init` | Initialize Brain for new project |
 
 ---
 
-**Start now:** `/brain-task "your first task"`
+## Getting Started
 
-Brain will handle context, routing, review, and updates. 🧠
+**1. Copy plugin to Claude Code:**
+```bash
+cp -r forgeflow-mini ~/.claude/plugins/
+```
+
+**2. Enable in ~/.claude/settings.json:**
+```json
+{
+  "features": {
+    "skills": {
+      "auto_load": true,
+      "directories": ["~/.claude/plugins/forgeflow-mini/skills"]
+    }
+  }
+}
+```
+
+**3. Restart Claude Code** (full restart required)
+
+**4. Initialize brain for your project:**
+```bash
+cd /path/to/your/project
+node ~/.claude/plugins/forgeflow-mini/scripts/init.js
+```
+
+**5. Start using it:**
+```
+/brain-task "Add dark mode toggle"
+```
+
+---
+
+## How the Brain Works
+
+1. **You describe a task** → `/brain-task "description"`
+2. **brain-decision** classifies complexity, selects model (Haiku/Codex/Opus)
+3. **brain-map** loads relevant knowledge sinapses from brain.db
+4. **Model executes** (Haiku for trivial, Codex for standard, Opus for debugging)
+5. **Code review** runs automatically (Codex validates implementation)
+6. **Learning** — brain proposes sinapse updates, lessons escalate patterns
+7. **Consolidation** — every 5 tasks, brain reweights knowledge by success
+
+The result: **Fast iteration + continuous learning + automatic quality checks**
+
+---
+
+**Start using it now:** `/brain-task "your first task"`
+
+The brain will route intelligently, maintain context, validate code, and learn from every task. 🧠
