@@ -87,10 +87,10 @@ domain: backend          # or ['backend', 'frontend']
 - [x] Fix scripts/init.js reference
 - [x] Fix README.md troubleshooting reference
 
-### Phase 5.2 (Init) — 2 hours
-- [ ] Update scripts/init.js to create distributed lesson dirs
-- [ ] Update templates/brain/ structure
-- [ ] Test end-to-end
+### Phase 5.2 (Init) — 2 hours ✅ COMPLETE
+- [x] Update scripts/init.js to create distributed lesson dirs
+- [x] Update templates/brain/ structure
+- [x] Test end-to-end
 
 ### Phase 5.3 (Index) — 1 hour
 - [ ] Update brain.db schema (add domain column)
@@ -118,5 +118,5 @@ domain: backend          # or ['backend', 'frontend']
 
 ---
 
-**Current Phase:** Phase 5.2 (Init directory structure) — Ready to start
-**Previous Phase:** ✅ Phase 5.1 complete (remove non-existent skill references)
+**Current Phase:** Phase 5.3 (Index schema) — Ready to start
+**Previous Phases:** ✅ Phase 5.1 complete | ✅ Phase 5.2 complete
