@@ -1,42 +1,23 @@
 # ForgeFlow Mini — Getting Started Guide
 
-**TL;DR:** Copy plugin → Register skills in settings.json → Initialize brain → Start using /brain-task
+**TL;DR:** Install plugin from marketplace → Initialize brain → Start using /brain-task
 
 ---
 
 ## Step 1: Install ForgeFlow Plugin
 
-Copy the forgeflow-mini directory to your Claude Code plugins directory:
+Run these commands in your terminal (not inside a Claude Code session):
 
 ```bash
-# Option A: Copy to global plugins
-cp -r forgeflow-mini ~/.claude/plugins/
-
-# Option B: Use as submodule in project
-git submodule add https://github.com/leandrotcawork/forgeflow-mini.git forgeflow-mini
+claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.git
+claude plugin install brain-mini@forgeflow-plugins
 ```
+
+This registers the plugin and all 11 skills automatically.
 
 ---
 
-## Step 2: Register Skills (IMPORTANT!)
-
-**Edit ~/.claude/settings.json and add:**
-
-```json
-{
-  "features": {
-    "skills": {
-      "auto_load": true,
-      "directories": [
-        "~/.claude/plugins/forgeflow-mini/skills",
-        "./.claude/skills"
-      ]
-    }
-  }
-}
-```
-
-**Then restart Claude Code.**
+## Step 2: Restart Claude Code
 
 Now when you type `/`, you should see:
 - /brain-init
@@ -263,12 +244,14 @@ Edit `.brain/brain.config.json` to customize:
 
 ## Ready?
 
-```
-1. Clone/copy forgeflow-mini to ~/.claude/plugins/
-2. Edit ~/.claude/settings.json (register skills)
-3. Restart Claude Code
-4. /brain-init  (inside a Claude Code session)
-5. /brain-task "Your first task"
+```bash
+# Terminal (not inside Claude Code):
+claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.git
+claude plugin install brain-mini@forgeflow-plugins
+
+# Then inside Claude Code:
+/brain-init
+/brain-task "Your first task"
 ```
 
-Done. Brain learns as you work. 🧠
+Done. Brain learns as you work.
