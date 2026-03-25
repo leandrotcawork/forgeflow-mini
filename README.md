@@ -24,27 +24,12 @@ Brain-driven development plugin for Claude Code — persistent knowledge that le
 ## Quickstart
 
 ```bash
-# 1. Clone into plugins directory
-git clone https://github.com/leandrotcawork/forgeflow-mini.git ~/.claude/plugins/forgeflow-mini
+# Terminal (not inside a Claude Code session):
+claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.git
+claude plugin install brain-mini@forgeflow-plugins
 
-# 2. Enable skills in ~/.claude/settings.json
-# Add this to your settings:
-{
-  "features": {
-    "skills": {
-      "auto_load": true,
-      "directories": [
-        "~/.claude/plugins/forgeflow-mini/skills",
-        "./.claude/skills"
-      ]
-    }
-  }
-}
-
-# 3. Restart Claude Code, then inside a session:
+# Then inside Claude Code:
 /brain-init
-
-# 4. Start using it:
 /brain-task "Add dark mode toggle"
 ```
 
