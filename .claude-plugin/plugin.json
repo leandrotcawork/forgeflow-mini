@@ -8,5 +8,64 @@
   "homepage": "https://github.com/forgeflow/forgeflow-mini",
   "repository": "https://github.com/forgeflow/forgeflow-mini",
   "license": "MIT",
-  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent"]
+  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent"],
+  "claude_code": {
+    "skills": [
+      {
+        "name": "brain-init",
+        "description": "Initialize Brain for any project (scan → generate → review → persist)",
+        "trigger": "/brain-init [project-path]"
+      },
+      {
+        "name": "brain-task",
+        "description": "Full task flow: ContextMapper → Planner → Implementer → Documenter",
+        "trigger": "/brain-task \"task description\""
+      },
+      {
+        "name": "brain-map",
+        "description": "ContextMapper: task → weighted sinapse list → context packet",
+        "trigger": "/brain-map \"task description\""
+      },
+      {
+        "name": "brain-plan",
+        "description": "Planner: context packet + task → structured plan",
+        "trigger": "/brain-plan"
+      },
+      {
+        "name": "brain-mckinsey",
+        "description": "Strategic intelligence: internal analysis + external research → recommendation",
+        "trigger": "/brain-mckinsey \"decision to analyze\""
+      },
+      {
+        "name": "brain-document",
+        "description": "Documenter: propose sinapse updates after task completion",
+        "trigger": "/brain-document"
+      },
+      {
+        "name": "brain-lesson",
+        "description": "Learner: capture failure → lesson-XXXX.md",
+        "trigger": "/brain-lesson \"failure description\""
+      },
+      {
+        "name": "brain-consolidate",
+        "description": "Consolidation cycle: review → propose → approve → apply",
+        "trigger": "/brain-consolidate"
+      },
+      {
+        "name": "brain-status",
+        "description": "Health dashboard + brain-graph.html generation",
+        "trigger": "/brain-status"
+      },
+      {
+        "name": "brain-codex-review",
+        "description": "Codex code review agent — validates implementation, finds bugs, checks conventions",
+        "trigger": "/brain-codex-review"
+      },
+      {
+        "name": "brain-decision",
+        "description": "Intelligent task router — classifies complexity, selects model (Codex-first), triggers plan mode, dispatches to brain-task",
+        "trigger": "/brain-decision \"task description\""
+      }
+    ]
+  }
 }

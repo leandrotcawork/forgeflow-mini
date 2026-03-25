@@ -39,11 +39,11 @@ Close the application completely and reopen it.
 
 Type `/` and look for:
 - /brain-task
-- /brain-status  
+- /brain-status
 - /brain-consolidate
 - /brain-codex-review
 - /brain-lesson
-- /brain-adr
+- /brain-decision
 
 If still missing:
 - Check that forgeflow-mini/skills/*.md files exist
@@ -124,14 +124,8 @@ Brain-task automatically routes to:
 # Batch-review sinapses (every 5 tasks)
 /brain-consolidate
 
-# 3D brain visualization
-/brain-graph
-
 # Create failure lesson
 /brain-lesson "What failed and why"
-
-# Record architectural decision (immutable)
-/brain-adr "Why we chose this"
 ```
 
 ---
@@ -261,7 +255,7 @@ Keep $ms for:
 ### No Sinapses Found
 
 ```bash
-node forgeflow-mini/scripts/index.js --brain-path .brain
+/brain-status
 ```
 
 ### Context Packet Wrong Size

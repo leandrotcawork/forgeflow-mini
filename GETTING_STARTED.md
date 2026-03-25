@@ -44,8 +44,6 @@ Now when you type `/`, you should see:
 - /brain-consolidate
 - /brain-codex-review
 - /brain-lesson
-- /brain-adr
-- /brain-graph
 - /brain-map
 - /brain-document
 
@@ -96,9 +94,6 @@ Brain automatically:
 
 # Batch-review sinapses updates (every 5 tasks)
 /brain-consolidate
-
-# View 3D brain visualization
-/brain-graph
 ```
 
 ---

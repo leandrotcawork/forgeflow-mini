@@ -351,8 +351,7 @@ async function main() {
   log(colors.blue, `\n   Next steps:`);
   log(colors.blue, `   1. Review files in ${brainRoot}`);
   log(colors.blue, `   2. Edit hippocampus/strategy.md with your goals`);
-  log(colors.blue, `   3. Run: node scripts/index.js`);
-  log(colors.blue, `   4. Run: /brain-status\n`);
+  log(colors.blue, `   3. Run: /brain-status\n`);
 }
 
 main().catch(err => {
