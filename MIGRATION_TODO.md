@@ -1,8 +1,9 @@
 # ForgeFlow Mini — Migration TODO (Phase 5 Completion)
 
-**Status:** Plugin functional but mid-transition. Architecture > Implementation.
+**Status:** Phase 5.1 complete. Non-existent skill references removed.
 
-**Codex Review:** 2026-03-25
+**Phase 5.1 Completed:** 2026-03-25
+**Next Phase (5.2):** Directory structure improvements
 
 ---
 
@@ -80,10 +81,11 @@ domain: backend          # or ['backend', 'frontend']
 
 ## Priority Fix Order
 
-### Phase 5.1 (Quick) — 30 min
-- [ ] Remove /brain-adr from README, GETTING_STARTED, CLAUDE.md
-- [ ] Remove /brain-graph from docs
-- [ ] Fix scripts/init.js reference
+### Phase 5.1 (Quick) — 30 min ✅ COMPLETE
+- [x] Remove /brain-adr from README, GETTING_STARTED, CLAUDE.md
+- [x] Remove /brain-graph from docs
+- [x] Fix scripts/init.js reference
+- [x] Fix README.md troubleshooting reference
 
 ### Phase 5.2 (Init) — 2 hours
 - [ ] Update scripts/init.js to create distributed lesson dirs
@@ -116,4 +118,5 @@ domain: backend          # or ['backend', 'frontend']
 
 ---
 
-**Next:** Execute Phase 5.1 (remove non-existent skill references)
+**Current Phase:** Phase 5.2 (Init directory structure) — Ready to start
+**Previous Phase:** ✅ Phase 5.1 complete (remove non-existent skill references)
