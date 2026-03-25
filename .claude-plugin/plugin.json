@@ -5,8 +5,8 @@
   "author": {
     "name": "ForgeFlow contributors"
   },
-  "homepage": "https://github.com/forgeflow/forgeflow-mini",
-  "repository": "https://github.com/forgeflow/forgeflow-mini",
+  "homepage": "https://github.com/leandrotcawork/forgeflow-mini",
+  "repository": "https://github.com/leandrotcawork/forgeflow-mini",
   "license": "MIT",
   "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent"],
   "claude_code": {
@@ -23,8 +23,8 @@
       },
       {
         "name": "brain-map",
-        "description": "ContextMapper: task → weighted sinapse list → context packet",
-        "trigger": "/brain-map \"task description\""
+        "description": "ContextMapper: task → weighted sinapse list → context packet (pipeline-internal, called by brain-task Step 1)",
+        "trigger": "/brain-map"
       },
       {
         "name": "brain-plan",
@@ -38,7 +38,7 @@
       },
       {
         "name": "brain-document",
-        "description": "Documenter: propose sinapse updates after task completion",
+        "description": "Documenter: propose sinapse updates after task completion (pipeline-internal, called by TaskCompleted hook)",
         "trigger": "/brain-document"
       },
       {

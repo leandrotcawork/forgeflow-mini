@@ -49,14 +49,34 @@ Initialize a Brain for any project. Scans the project → detects type → gener
 - If YES: proceed to Phase 6
 
 ### Phase 6: Persist to .brain/
-- Create `.brain/` directory structure
+- Create `.brain/` directory structure:
+  - `.brain/hippocampus/`
+  - `.brain/cortex/` — with per-region subdirectories:
+    - `.brain/cortex/backend/` + `.brain/cortex/backend/lessons/`
+    - `.brain/cortex/frontend/` + `.brain/cortex/frontend/lessons/`
+    - `.brain/cortex/database/` + `.brain/cortex/database/lessons/`
+    - `.brain/cortex/infra/` + `.brain/cortex/infra/lessons/`
+  - `.brain/sinapses/`
+  - `.brain/lessons/` — distributed lesson directories:
+    - `.brain/lessons/cross-domain/`
+    - `.brain/lessons/inbox/`
+    - `.brain/lessons/archived/`
+  - `.brain/working-memory/`
+  - `.brain/progress/`
+  - `.brain/progress/completed-contexts/`
 - Write all generated markdown files
 - Copy `brain.config.json` from template
+- Create `.brain/progress/activity.md` with header (required by TaskCompleted hook — append-only, never delete):
+  ```markdown
+  # Brain Activity Log
+  <!-- Auto-appended by TaskCompleted hook. One entry per brain-task. Used by brain-consolidate to batch sinapse updates. -->
+  ```
 - Output: path to `.brain/`, next steps
 
 ### Phase 7: Build Index
-- Run `scripts/index.js` to build `brain.db` from markdown files
-- Output: sinapse count, indexing stats
+- Run `python scripts/build_brain_db.py --brain-path .brain` to build `brain.db` from markdown files
+- Schema source of truth: `docs/brain-db-schema.sql`
+- Output: sinapse count, lessons count, indexing stats
 
 ## Output
 
@@ -116,4 +136,4 @@ Initialize a Brain for any project. Scans the project → detects type → gener
 
 ---
 
-**ForgeFlow Mini v0.1 | Phase 1 Foundation**
+**ForgeFlow Mini v0.1**

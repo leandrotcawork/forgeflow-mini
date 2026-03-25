@@ -71,7 +71,7 @@ Example subtask:
   - contracts/events/v1/ProductMarginCalculated.yaml (create)
 
 **Conventions:**
-  - [[lesson-0003]] Outbox must be atomic
+  - [[cortex/backend/lessons/lesson-0003]] Outbox must be atomic
   - [[metalshopping-event-contracts]] Event schema rules
 
 **Acceptance Criteria:**
@@ -96,7 +96,7 @@ Example:
 Conflict detected in Subtask 2:
   "Wire margin calculation in product service"
 
-  VIOLATES: lesson-0003 (Outbox must be atomic)
+  VIOLATES: cortex/backend/lessons/lesson-0003 (Outbox must be atomic)
 
   Action: Must emit ProductMarginCalculated event in SAME transaction
           as product update, not after Commit().
@@ -123,11 +123,11 @@ Sum all subtask estimates. If total > 80k, warn:
 
 ### Output
 
-Create `working-memory/current-task.md`:
+Create `working-memory/implementation-plan-{task_id}.md`:
 
 ```markdown
 ---
-task_id: [UUID]
+task_id: YYYY-MM-DD-<slug>
 task: [user description]
 domain: [backend | frontend | database | infra | cross-cutting]
 timestamp: [ISO 8601]
@@ -181,4 +181,4 @@ status: planned
 
 ---
 
-**Created:** 2026-03-24 | **Phase:** 2
+**Created:** 2026-03-24

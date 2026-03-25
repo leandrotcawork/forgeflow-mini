@@ -18,7 +18,7 @@ updated_at: 2026-03-24T10:00:00Z
 Markdown body. Link to other sinapses using [[wikilink]] syntax:
 - [[cortex/backend/api]] for API patterns
 - [[hippocampus/conventions]] for naming rules
-- [[lessons/lesson-0001]] for lessons learned
+- [[cortex/backend/lessons/lesson-0001]] for domain-specific lessons
 
 ## Section 2
 

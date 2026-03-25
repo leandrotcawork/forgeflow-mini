@@ -5,14 +5,23 @@ description: Documenter — Propose sinapse updates after task completion
 
 # brain-document Skill — Documenter
 
+## Pipeline Position
+
+```
+brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+                                                                                    ↑ you are here
+```
+
 **Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only — never write without developer approval.
 
 **Token Budget:** 10k in / 5k out
 
 ## Trigger
 
-Activated when:
-- Task status = "completed"
+Called by the **TaskCompleted hook** (settings.json) at Step 3 of the post-task sequence. Not user-facing — invoked automatically after each task completes.
+
+Preconditions (guaranteed by hook):
+- Task implementation is complete
 - Code has been committed
 - Tests passing
 
@@ -246,4 +255,4 @@ Once approved: Update `.brain/` sinapses atomically.
 
 ---
 
-**Created:** 2026-03-24 | **Phase:** 2 | **Agent Type:** Documenter
+**Created:** 2026-03-24 | **Agent Type:** Documenter

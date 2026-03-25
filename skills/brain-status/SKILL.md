@@ -61,7 +61,7 @@ Pending actions:
 
 Run command:
 ```bash
-node forgeflow-mini/scripts/visualize.js --brain-path .brain
+python scripts/generate_viz.py .brain
 ```
 
 Output:

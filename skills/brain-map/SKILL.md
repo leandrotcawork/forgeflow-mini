@@ -5,11 +5,20 @@ description: ContextMapper — Load 3-tier weighted sinapses for task context
 
 # brain-map Skill — ContextMapper
 
-**Purpose:** Load task-relevant sinapses from brain.db using 3-tier weighted loading. Assembles the context packet that brain-task and Codex use.
+## Pipeline Position
+
+```
+brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+                  ↑ you are here
+```
+
+**Purpose:** Load task-relevant sinapses from brain.db using 3-tier weighted loading. Assembles the context packet that brain-task uses.
 
 **Token Budget:** 4-5k tokens (context assembly only, no heavy computation)
 
-**Trigger:** Called by brain-task Step 1 with task description + domain classification
+**Trigger:** Called by brain-task Step 1. Not user-facing — never called directly.
+
+**Lightweight mode:** When brain-task passes `--lightweight`, load Tier 1 only (~4k tokens). Skip Tier 2 and Tier 3. Used for Haiku-scored tasks (complexity < 20).
 
 ---
 
@@ -197,7 +206,7 @@ generated_at: [ISO8601]
 
 This packet will be used by brain-task to generate:
 - codex-context.md (for Codex)
-- opus-debug-context.md (for Opus)
+- opus-debug-context-{task_id}.md (for Opus)
 
 Both add real code examples from the codebase.
 ```
@@ -235,95 +244,21 @@ Output: working-memory/context-packet.md
 
 ---
 
-## Sinapses Query Algorithm
-
-```python
-def load_context_tiers(task_desc, domain, complexity_score):
-    """Load sinapses into 3 tiers."""
-
-    # Tier 1: Always loaded
-    tier1 = load_hippocampus(['architecture', 'conventions'])
-    tier1['lessons'] = query_db(
-        'SELECT * FROM lessons WHERE domain=? ORDER BY weight DESC LIMIT 3',
-        domain
-    )
-    tier1['task'] = task_desc
-
-    # Tier 2: Domain-specific
-    tier2_domain = query_db(
-        'SELECT * FROM sinapses WHERE region LIKE ? ORDER BY weight DESC LIMIT 5',
-        f'%{domain}%'
-    )
-    tier2_cross = query_db(
-        'SELECT * FROM sinapses WHERE region LIKE ? ORDER BY weight DESC LIMIT 2',
-        'sinapses/%'
-    )
-    tier2 = tier2_domain + tier2_cross
-
-    # Load backlinks for Tier 2
-    backlinks = query_db(
-        'SELECT target_id FROM sinapse_links WHERE source_id IN (?)',
-        [s['id'] for s in tier2]
-    )
-    tier2_with_links = add_links_to(tier2, backlinks)
-
-    # Tier 3: On-demand
-    tier3_available = query_db(
-        'SELECT * FROM sinapses WHERE id IN (?) AND id NOT IN (?)',
-        backlinks,
-        [s['id'] for s in tier1 + tier2]
-    )
-
-    # Load Tier 3 only if critical
-    if complexity_score >= 75 or complexity_score < 20:
-        tier3 = tier3_available[:2]  # Load top 2
-    else:
-        tier3 = []  # Mark available but not loaded
-
-    return {
-        'tier1': tier1,  # ~4k tokens
-        'tier2': tier2_with_links,  # ~10-15k tokens
-        'tier3': tier3,  # ~5k tokens if loaded
-        'tier3_available': tier3_available,  # Flag for later
-    }
-```
-
----
-
 ## Lessons Integration
 
-**Domain-aware lesson loading:**
-
-```sql
--- Load lessons by domain (matches Tier 2 domain)
-SELECT id, title, severity, created_at
-FROM lessons
-WHERE domain = ?
-ORDER BY severity DESC, weight DESC
-LIMIT 3
-
--- Include escalation candidates (3+ same type)
-SELECT COUNT(*), domain, tags FROM lessons
-WHERE escalated = 0 AND domain = ?
-GROUP BY tags
-HAVING COUNT(*) >= 3
-```
-
-**Lessons in context packet:**
-- Top 3 by severity (critical first)
-- Show which domain they're from
-- If escalation candidate exists, flag it: "⚠ 3+ lessons suggest: [pattern]"
+Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If promotion candidates are detected (3+ same domain+tag), flag in context packet: "⚠ 3+ lessons suggest: [pattern]".
 
 ---
 
 ## Token Budget Per Tier
 
-| Tier | Token Count | Content | When Loaded |
-|------|------------|---------|-------------|
+| Tier | Tokens | Content | When Loaded |
+|------|--------|---------|-------------|
 | Tier 1 | ~4k | Hippocampus (condensed) + top 3 lessons + task | Always |
-| Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting (top 2) + backlinks | Always |
+| Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting (top 2) + backlinks | Standard + Codex + Opus |
 | Tier 3 | ~5k | Additional linked sinapses | Only if complexity >= 75 or critical |
-| **Typical task total** | **~16-20k** | Tier 1 + 2 | Per task |
+| **Lightweight** | **~4k** | **Tier 1 only** | **Haiku tasks (complexity < 20)** |
+| **Typical total** | **~16-20k** | Tier 1 + 2 | Per task |
 
 ---
 
@@ -368,4 +303,4 @@ brain-map is working when:
 
 ---
 
-**Created:** 2026-03-25 | **Phase:** 5 | **Agent Type:** ContextMapper
+**Created:** 2026-03-25 | **Agent Type:** ContextMapper

@@ -18,9 +18,9 @@ description: Codex code review agent — validates implementation, finds bugs, c
 After Codex completes implementation (Step 2), run automatic review:
 
 ```
-Step 2: Codex implements code
+Step 3: Codex executes implementation
         ↓
-Step 2.5: Codex reviews own code (or reviewer pass)
+Step 3.5: brain-codex-review runs automatically
         ├─ Check: conventions followed
         ├─ Check: tests passing
         ├─ Check: no obvious bugs
@@ -34,7 +34,7 @@ Step 2.5: Codex reviews own code (or reviewer pass)
         ├─ Re-run tests
         └─ Return to review (until clean)
         ↓
-Step 3: brain-document (only after review passes)
+[TaskCompleted hook]: documentation → archival → commit (only after review passes)
 ```
 
 ---
@@ -77,11 +77,12 @@ Step 3: brain-document (only after review passes)
 
 ## Codex Review Output
 
-Generate: `working-memory/codex-review.md`
+Generate: `working-memory/codex-review-{task_id}.md`
 
 ```markdown
 ---
 review_id: [uuid]
+task_id: YYYY-MM-DD-<slug>
 timestamp: [ISO8601]
 implementation_quality: [pass | pass_with_fixes | fail]
 ---
@@ -125,20 +126,20 @@ implementation_quality: [pass | pass_with_fixes | fail]
 
 ## Integration with brain-task
 
-### In brain-task Step 2:
+### In brain-task Step 3:
 
 ```markdown
-## Step 2: implement — Model Execution (60-150k tokens)
+## Step 3: Execute Implementation — Model Execution (60-150k tokens)
 
 ### Codex Path (Primary)
 1. Codex executes implementation
 2. Codex runs internal tests
-3. **→ Step 2.5: Codex reviews own code**
+3. **→ Step 3.5: brain-codex-review validates**
    - Validates conventions
    - Checks for bugs, security, performance
    - Auto-fixes issues found
    - Returns pass/fail verdict
-4. If pass: continue to Step 3
+4. If pass: signal completion → TaskCompleted hook fires
 5. If fail: Codex re-implements until review passes
 ```
 
@@ -240,5 +241,5 @@ Codex review is working when:
 
 ---
 
-**Created:** 2026-03-25 | **Phase:** 5 | **Status:** Ready for integration
+**Created:** 2026-03-25 | **Status:** Ready for integration
 
