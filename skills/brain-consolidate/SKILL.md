@@ -215,6 +215,74 @@ For each escalated lesson:
 - Set escalated = 1 in lessons table
 - Do NOT update sinapse weights (lesson escalation is orthogonal to sinapse usage)
 
+### Step 6.5: Archive Context Files (Learning Loop)
+
+**Before clearing working-memory, preserve completed context files for pattern analysis:**
+
+For each completed task:
+
+1. **Move context files to permanent archive:**
+   ```bash
+   mv working-memory/[task-id]-codex-context.md \
+      progress/completed-contexts/[task-id]-codex-context.md
+
+   mv working-memory/[task-id]-opus-context.md \
+      progress/completed-contexts/[task-id]-opus-context.md
+
+   mv working-memory/[task-id]-completion-record.md \
+      progress/completed-contexts/[task-id]-completion-record.md
+   ```
+
+2. **Create outcome analysis file:**
+   ```
+   Create: progress/completed-contexts/[task-id]-OUTCOME.md
+
+   ---
+   task_id: [uuid]
+   status: success | failed
+   root_cause: [if failed]
+   context_size: [N lines]
+   sinapses_loaded: [N]
+   created_at: [ISO8601]
+   ---
+
+   # Task [task-id] — Outcome Analysis
+
+   ## Result
+   [Brief outcome: successful / bug found / failed]
+
+   ## What Context Had
+   - Sinapses: [N] (domains: backend, frontend)
+   - Lessons: [N] (domains: backend, cross-domain)
+   - Code examples: [N] patterns shown
+
+   ## What Worked Well
+   - [Pattern A was helpful]
+   - [Pattern B prevented mistake X]
+
+   ## What Was Missing (if any)
+   - [Missing context: should have loaded lesson-00NN]
+   - [Missing pattern: need new sinapse for cortex/backend]
+
+   ## For Future Improvements
+   - Create lesson-XXXX.md: [pattern found]
+   - Update sinapse-YYYY.md: [became stale]
+   - Add example code: [new pattern]
+   ```
+
+3. **Output archival status:**
+   ```
+   Archived [N] context files to progress/completed-contexts/:
+     - [N] codex-context.md files
+     - [N] opus-context.md files
+     - [N] completion-record.md files
+     - [N] OUTCOME.md analysis files
+
+   These files form permanent learning record for pattern analysis.
+   ```
+
+---
+
 ### Step 7: Clear Working Memory
 
 After developer approves or explicitly skips:
@@ -222,9 +290,9 @@ After developer approves or explicitly skips:
    - Move task record to `progress/activity.md` (append as log entry)
    - Delete `working-memory/task-XXXXX.md`
    - Delete `working-memory/sinapse-updates-XXXXX.md` (proposal consumed)
-   - Delete `working-memory/context-packet-XXXXX.md` (historical, no longer needed)
+   - Delete `working-memory/context-packet-XXXXX.md` (archived at Step 6.5)
 2. Commit all working-memory deletions with message: "chore: consolidation cycle [N] — clear working memory"
-3. Output: "✓ Working memory cleared. [N] records archived to progress/activity.md."
+3. Output: "✓ Working memory cleared. [N] records archived to progress/activity.md. Context files in progress/completed-contexts/."
 
 ## Output Summary
 
@@ -239,6 +307,11 @@ Escalation proposals: [N] surfaced
   - [P] pending review → in lessons/inbox/escalation-*.md
   - [D] dismissed → discarded
 
+Context files archived: [N] task contexts → progress/completed-contexts/
+  - Codex contexts: [N]
+  - Opus contexts: [N]
+  - Outcome analysis files: [N]
+
 Working memory: [N] records cleared
 Brain.db: [N] sinapses reweighted
 Health report: progress/brain-health.md (generated)
@@ -249,6 +322,7 @@ Action items:
   [ ] Review [N] pending escalation proposals (if any)
   [ ] Address [N] coverage gaps (if any)
   [ ] Archive or update [N] orphaned sinapses (if any)
+  [ ] Analyze OUTCOME.md files in progress/completed-contexts/ for patterns
 ```
 
 ## Anti-Patterns

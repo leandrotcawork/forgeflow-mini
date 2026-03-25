@@ -65,7 +65,7 @@ links:
   - [related sinapse]
 severity: [critical | high | medium | low]
 occurrence_count: 1
-escalated: false
+status: inbox
 created_at: [ISO timestamp]
 ---
 
@@ -99,10 +99,10 @@ created_at: [ISO timestamp]
 Query brain.db for escalation candidates:
 
 ```sql
-SELECT domain, array_agg(tags) as tag_array, COUNT(*) as lesson_count
+SELECT domain, tags, COUNT(*) as lesson_count, array_agg(id) as lesson_ids
 FROM lessons
-WHERE escalated = 0
-GROUP BY domain, tag
+WHERE status = 'inbox'
+GROUP BY domain, tags
 HAVING COUNT(*) >= 3
 ORDER BY lesson_count DESC
 ```
@@ -249,7 +249,7 @@ links:
   - cortex/database/index
 severity: critical
 occurrence_count: 1
-escalated: false
+status: inbox
 created_at: 2026-03-24T15:30:00Z
 ---
 
@@ -285,7 +285,7 @@ region: lessons
 tags: [testing, process]
 severity: medium
 occurrence_count: 2
-escalated: false
+status: inbox
 created_at: 2026-03-24T16:00:00Z
 ---
 
