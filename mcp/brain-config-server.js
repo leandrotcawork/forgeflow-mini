@@ -211,11 +211,27 @@ var SECTIONS = [
 // ---------------------------------------------------------------------------
 
 /**
+ * Split a key path into parts, handling special cases like "linters..ext"
+ * where the key itself contains dots (e.g., file extensions like ".ts").
+ *
+ * "linters..ts" => ["linters", ".ts"]
+ * "a.b.c"       => ["a", "b", "c"]
+ */
+function splitKeyPath(keyPath) {
+  // Special handling for linters keys: "linters.<ext>" where ext starts with "."
+  var lintersMatch = keyPath.match(/^linters\.(\..+)$/);
+  if (lintersMatch) {
+    return ['linters', lintersMatch[1]];
+  }
+  return keyPath.split('.');
+}
+
+/**
  * Get a value from a nested object by dot-separated path.
  * getDeep({a: {b: 1}}, 'a.b') => 1
  */
 function getDeep(obj, keyPath) {
-  var parts = keyPath.split('.');
+  var parts = splitKeyPath(keyPath);
   var current = obj;
   for (var i = 0; i < parts.length; i++) {
     if (current === null || current === undefined || typeof current !== 'object') {
@@ -231,7 +247,7 @@ function getDeep(obj, keyPath) {
  * setDeep({a: {b: 1}}, 'a.b', 2) => {a: {b: 2}}
  */
 function setDeep(obj, keyPath, value) {
-  var parts = keyPath.split('.');
+  var parts = splitKeyPath(keyPath);
   var current = obj;
   for (var i = 0; i < parts.length - 1; i++) {
     if (current[parts[i]] === undefined || current[parts[i]] === null || typeof current[parts[i]] !== 'object') {
@@ -809,6 +825,7 @@ module.exports = {
   brainConfigValidate: brainConfigValidate,
   brainConfigDiff: brainConfigDiff,
   validateValue: validateValue,
+  splitKeyPath: splitKeyPath,
   getDeep: getDeep,
   setDeep: setDeep,
   deepClone: deepClone,
