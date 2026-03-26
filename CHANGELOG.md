@@ -2,6 +2,15 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.5.1] - 2026-03-26
+
+### Added
+- **brain-setup** (new skill) — Interactive configuration wizard for `brain.config.json`. Menu-driven section navigation, markdown table display of current values, inline change validation, before/after diff preview, and change logging to `activity.md`.
+- **MCP config server** (`mcp/brain-config-server.js`) — Pure Node.js, zero npm dependencies. Implements 4 tools: `brain_config_read`, `brain_config_write`, `brain_config_validate`, `brain_config_diff`. Full validation schema for all 50+ configurable fields across 13 sections.
+- **Config validation schema** — Type constraints (string, number, integer, boolean, array, enum, nullable_enum), range checks (min/max), enum enforcement, readonly field protection. Covers: database, hooks, linters, resilience, subagents, learning, context_loading, token_budgets, token_optimization, consolidation, lesson_escalation, weight_decay.
+- **40 tests** for the MCP config server (`tests/brain-config-server.test.js`) — Covers all 4 tools, validation rules, deep get/set helpers, CLI integration, schema completeness, and error handling.
+- **Skill count** — 14 → 15 skills (added brain-setup).
+
 ## [0.3.0] - 2026-03-26
 
 ### Architecture
