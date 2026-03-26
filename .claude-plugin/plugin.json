@@ -1,7 +1,7 @@
 {
   "name": "forgeflow-mini",
   "description": "Brain-driven development plugin — subagent dispatch, 14 skills, 8 hooks, circuit breaker, confidence-scored learning",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "ForgeFlow contributors"
   },
