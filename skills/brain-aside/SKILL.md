@@ -1,9 +1,9 @@
 ﻿---
 name: brain-aside
-description: Answer a quick question without losing current brain-task context â€” auto-saves and restores pipeline state
+description: Answer a quick question without losing current brain-task context -- auto-saves and restores pipeline state
 ---
 
-# brain-aside â€” Quick Question
+# brain-aside -- Quick Question
 
 When the developer asks a question during an active brain-task pipeline:
 
@@ -18,4 +18,4 @@ When the developer asks a question during an active brain-task pipeline:
 If no brain-task is active, just answer the question normally.
 
 ## Token Budget
-Minimal â€” just the question and answer.
+Minimal -- just the question and answer.

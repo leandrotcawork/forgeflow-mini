@@ -1,9 +1,9 @@
 ﻿---
 name: brain-eval
-description: Define success criteria before implementation â€” capability evals and regression evals
+description: Define success criteria before implementation -- capability evals and regression evals
 ---
 
-# brain-eval â€” Eval-Driven Development
+# brain-eval -- Eval-Driven Development
 
 Define testable success criteria BEFORE implementation begins.
 
@@ -35,8 +35,8 @@ Step 6: brain-verify Phase 4 runs eval checks
 
 ## Output Format
 .brain/working-memory/evals-{task_id}.md:
-  - Capability: [description] â†’ [pass condition] â†’ [grader]
-  - Regression: [description] â†’ [test command] â†’ [baseline result]
+  - Capability: [description] -> [pass condition] -> [grader]
+  - Regression: [description] -> [test command] -> [baseline result]
 
 ## Token Budget
 3k in / 2k out

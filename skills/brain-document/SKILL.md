@@ -1,24 +1,24 @@
 ---
 name: brain-document
-description: Documenter â€” Propose sinapse updates after task completion
+description: Documenter -- Propose sinapse updates after task completion
 ---
 
-# brain-document Skill â€” Documenter
+# brain-document Skill -- Documenter
 
 ## Pipeline Position
 
 ```
-brain-decision â†’ brain-map â†’ brain-task (Steps 1-3) â†’ brain-codex-review (Codex only) â†’ brain-document â†’ brain-consolidate
-                                                                                          â†‘ you are here
+brain-decision -> brain-map -> brain-task (Steps 1-3) -> brain-codex-review (Codex only) -> brain-document -> brain-consolidate
+                                                                                          ^ you are here
 ```
 
-**Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only â€” never write without developer approval.
+**Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only -- never write without developer approval.
 
 **Token Budget:** 10k in / 5k out
 
 ## Trigger
 
-Called by brain-task at Step 6 (inline or as subagent), or manually via `/brain-document`. This skill is self-contained â€” it does NOT depend on any hook to be invoked.
+Called by brain-task at Step 6 (inline or as subagent), or manually via `/brain-document`. This skill is self-contained -- it does NOT depend on any hook to be invoked.
 
 For tasks with score < 40 (Haiku/Sonnet tier), brain-task may dispatch this as a Haiku subagent. For tasks with score >= 40 (Codex tier), it always runs inline to preserve full context for complex proposals.
 
@@ -45,13 +45,13 @@ git diff --cached --name-only | grep -E 'apps/|packages/' | extract domain
 Example:
 ```
 apps/server_core/internal/modules/orders/adapters/postgres.go
-  â†’ Domain: backend
+  -> Domain: backend
 
 apps/web/src/pages/Products.tsx
-  â†’ Domain: frontend
+  -> Domain: frontend
 
 migrations/add_product_margin.sql
-  â†’ Domain: database
+  -> Domain: database
 ```
 
 ### Step 2: Assess Knowledge Changes
@@ -67,7 +67,7 @@ For each touched domain, answer:
 - Route to `/brain-lesson` instead
 - Lessons live in `.brain/cortex/<domain>/lessons/` or `.brain/lessons/cross-domain/` (distributed architecture)
 - Anti-patterns are failures that became knowledge, not architectural patterns
-- brain-lesson will handle escalation if 3+ same anti-pattern lessons exist â†’ propose convention
+- brain-lesson will handle escalation if 3+ same anti-pattern lessons exist -> propose convention
 
 ### Step 3: Propose Sinapse Updates
 
@@ -152,17 +152,17 @@ Generate `.brain/working-memory/sinapse-review-{task_id}.md`:
 For each proposed update:
 
 **Option A:** Approve
-  â†’ Update sinapse immediately
-  â†’ Increment weight by +0.02
-  â†’ Record in brain.db
+  -> Update sinapse immediately
+  -> Increment weight by +0.02
+  -> Record in brain.db
 
 **Option B:** Reject
-  â†’ Discard proposal
-  â†’ Record reason (if helpful feedback)
+  -> Discard proposal
+  -> Record reason (if helpful feedback)
 
 **Option C:** Modify
-  â†’ Edit proposal
-  â†’ Resubmit
+  -> Edit proposal
+  -> Resubmit
 ```
 
 ### Step 5: Format as Diffs (Not Full Rewrites)
@@ -204,7 +204,7 @@ Always show changes as unified diff format:
 
 Never proceed without developer sign-off.
 
-Proposal remains in `.brain/working-memory/sinapse-updates-{task_id}.md`. Approval and application are handled by `/brain-consolidate` during the next consolidation cycle, or by the developer manually. brain-document is proposal-only â€” it never writes to cortex sinapses.
+Proposal remains in `.brain/working-memory/sinapse-updates-{task_id}.md`. Approval and application are handled by `/brain-consolidate` during the next consolidation cycle, or by the developer manually. brain-document is proposal-only -- it never writes to cortex sinapses.
 
 ## Example: Full Proposal Cycle
 
@@ -239,9 +239,9 @@ Proposal remains in `.brain/working-memory/sinapse-updates-{task_id}.md`. Approv
 
 **Developer approves all 3 updates**
 
-â†’ All 3 sinapses updated atomically
-â†’ Weights +0.02 each
-â†’ brain.db reindexed
+-> All 3 sinapses updated atomically
+-> Weights +0.02 each
+-> brain.db reindexed
 
 ---
 
