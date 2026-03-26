@@ -567,6 +567,9 @@ function brainConfigValidate(args) {
     if (!config) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
+    if (config && config._readError) {
+      return error('Failed to read brain.config.json: ' + config._readError);
+    }
     return validateFullConfig(config);
   }
 
@@ -575,6 +578,9 @@ function brainConfigValidate(args) {
     var config2 = readJSON(configPath());
     if (!config2) {
       return error('brain.config.json not found. Run /brain-init first.');
+    }
+    if (config2 && config2._readError) {
+      return error('Failed to read brain.config.json: ' + config2._readError);
     }
     return validateSection(config2, args.section);
   }

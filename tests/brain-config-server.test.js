@@ -464,6 +464,15 @@ test('brain_config_validate: detects invalid values in full config', function ()
   assert(result.data.errors[0].key === 'learning.confidence_initial');
 });
 
+test('brain_config_validate: gives useful error for corrupt JSON', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigValidate({});
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say not found: ' + result.error);
+  setupTestConfig(); // restore
+});
+
 // ---------------------------------------------------------------------------
 // Tests: brain_config_diff
 // ---------------------------------------------------------------------------
