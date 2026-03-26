@@ -533,6 +533,15 @@ test('brain_config_diff: errors with no args', function () {
   assert(result.error.indexOf('Provide either') !== -1);
 });
 
+test('brain_config_diff: rejects __proto__ key in changes', function () {
+  setupTestConfig();
+  var result = server.brainConfigDiff({
+    changes: [{ key: '__proto__.polluted', value: true }]
+  });
+  assert(!result.ok);
+  assert(result.error.indexOf('Invalid key') !== -1 || result.error.indexOf('__proto__') !== -1);
+});
+
 // ---------------------------------------------------------------------------
 // Tests: SCHEMA completeness
 // ---------------------------------------------------------------------------

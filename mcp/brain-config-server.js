@@ -690,9 +690,12 @@ function brainConfigDiff(args) {
     for (var i = 0; i < args.changes.length; i++) {
       var change = args.changes[i];
       if (!change.key || change.value === undefined) continue;
+      if (!isSafeKeyPath(change.key)) {
+        return error('Invalid key "' + change.key + '": key segments cannot be __proto__, constructor, or prototype.');
+      }
       setDeep(modified, change.key, change.value);
     }
-  } else if (args.original !== undefined || args.modified !== undefined) {
+  } else if (args.original !== undefined && args.modified !== undefined) {
     if (
       typeof args.original !== 'object' || args.original === null || Array.isArray(args.original) ||
       typeof args.modified !== 'object' || args.modified === null || Array.isArray(args.modified)
