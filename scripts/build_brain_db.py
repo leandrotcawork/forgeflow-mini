@@ -208,7 +208,7 @@ def create_tables(conn):
             source_agent     TEXT DEFAULT 'brain-lesson',
             supersedes       TEXT,
             superseded_by    TEXT,
-            confidence       TEXT DEFAULT 'medium',
+            confidence       REAL DEFAULT 0.30,
             root_cause_type  TEXT,
             evidence         TEXT,
             weight           REAL NOT NULL DEFAULT 0.50,
@@ -369,7 +369,7 @@ def main():
             parent_synapse = frontmatter.get('parent_synapse', None)
             supersedes = frontmatter.get('supersedes', None)
             superseded_by = frontmatter.get('superseded_by', None)
-            confidence = frontmatter.get('confidence', 'medium')
+            confidence = float(frontmatter.get('confidence', 0.3))
             root_cause_type = frontmatter.get('root_cause_type', None)
             evidence = frontmatter.get('evidence', None)
             related_links = frontmatter.get('related_links', [])
