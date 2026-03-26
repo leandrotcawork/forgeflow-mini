@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "total_tasks_completed": 0,
   "total_consolidation_cycles": 0,
   "last_consolidation_at": null,
@@ -15,8 +15,16 @@
     "succeeded": 0,
     "failed_with_fallback": 0,
     "by_model": {
-      "haiku": { "dispatched": 0, "succeeded": 0, "failed": 0 },
-      "sonnet": { "dispatched": 0, "succeeded": 0, "failed": 0 }
+      "haiku": {
+        "dispatched": 0,
+        "succeeded": 0,
+        "failed": 0
+      },
+      "sonnet": {
+        "dispatched": 0,
+        "succeeded": 0,
+        "failed": 0
+      }
     }
   },
   "escalation_velocity": 0.0,
