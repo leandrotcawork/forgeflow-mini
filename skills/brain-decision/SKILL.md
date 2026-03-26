@@ -12,6 +12,8 @@ You are a router. Your job is to classify the task, pick the model, and hand off
 ```
 brain-decision → brain-task (Steps 1→6, all inline, self-contained)
      ↑ you are here — do not jump ahead
+
+brain-decision [plan mode] → brain-map → brain-plan → brain-task (Steps 1→6)
 ```
 
 **What you produce:** A classification (domain, risk, type, score, model, plan mode) that brain-task needs before it can start. Without this, brain-task has no task_id, no model, no domain — it cannot create context files.
@@ -197,19 +199,21 @@ Trigger Plan Mode If:
 **If plan mode triggered:**
 ```
 1. Announce: "🔵 PLAN MODE: [task description]"
-2. Invoke /brain-plan to generate .brain/working-memory/implementation-plan-{task_id}.md
+2. Invoke /brain-map to load context and generate .brain/working-memory/context-packet-{task_id}.md
+   (brain-plan reads this file at Stage 1 — it MUST exist before brain-plan runs)
+3. Invoke /brain-plan — reads context-packet-{task_id}.md and generates .brain/working-memory/implementation-plan-{task_id}.md
    brain-plan produces a Cortex-Linked TDD plan (plan_type: expanded) with:
    - Sinapse index linking conventions to sinapse IDs
    - File structure design (all files before any code)
    - TDD micro-steps (spec-first, acceptance gates, sinapse-linked)
    - Self-review checklist (no placeholders allowed)
    - Dispatch metadata (recommended model per micro-step)
-3. Present plan to developer
-4. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan flag)
+4. Present plan to developer
+5. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan flag)
    brain-task will detect plan_type: expanded and route to Path F (dispatcher mode),
    which executes one subagent per micro-step with spec reviews.
    If --dispatch flag is also passed, parallel dispatch is preferred for independent steps.
-5. ON REJECTION: Preserve plan, end session
+6. ON REJECTION: Preserve plan, end session
 ```
 
 This ensures brain-task always receives a plan file when `plan_mode = true`. Expanded plans (plan_type: expanded) route to brain-task Path F; legacy plans (plan_type: standard or missing) route to Path E.
@@ -273,7 +277,7 @@ Then invoke `brain-task`. brain-task owns Steps 1-3 (context assembly → execut
 
 ### State Persistence
 
-After dispatching, write the classification to `brain-state.json`:
+After dispatching, write the classification to `.brain/working-memory/brain-state.json`:
 
 ```json
 {

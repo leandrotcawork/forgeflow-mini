@@ -23,6 +23,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const READ_ERROR = Symbol('readError');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,9 +49,16 @@ function activityLogPath() {
 function readJSON(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch {
-    return null;
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    var sentinel = {};
+    sentinel[READ_ERROR] = err.message;
+    return sentinel;
   }
+}
+
+function getReadError(obj) {
+  return obj && typeof obj === 'object' ? obj[READ_ERROR] : undefined;
 }
 
 function writeJSON(filePath, data) {
@@ -100,8 +108,8 @@ var SCHEMA = {
   brain_root:   { type: 'string', description: 'Brain directory path', readonly: true },
 
   // database
-  'database.path':           { type: 'string', description: 'Path to brain.db SQLite database' },
-  'database.schema_version': { type: 'integer', min: 1, max: 100, description: 'Database schema version number' },
+  'database.path':           { type: 'string', description: 'Path to brain.db SQLite database', readonly: true },
+  'database.schema_version': { type: 'integer', min: 1, max: 100, description: 'Database schema version number', readonly: true },
 
   // cortex_regions
   'cortex_regions': { type: 'array', items: 'string', description: 'List of active cortex region names' },
@@ -226,6 +234,16 @@ function splitKeyPath(keyPath) {
   return keyPath.split('.');
 }
 
+var DANGEROUS_KEY_SEGMENTS = ['__proto__', 'constructor', 'prototype'];
+
+function isSafeKeyPath(keyPath) {
+  var parts = splitKeyPath(keyPath);
+  for (var i = 0; i < parts.length; i++) {
+    if (DANGEROUS_KEY_SEGMENTS.indexOf(parts[i]) !== -1) return false;
+  }
+  return true;
+}
+
 /**
  * Get a value from a nested object by dot-separated path.
  * getDeep({a: {b: 1}}, 'a.b') => 1
@@ -247,6 +265,7 @@ function getDeep(obj, keyPath) {
  * setDeep({a: {b: 1}}, 'a.b', 2) => {a: {b: 2}}
  */
 function setDeep(obj, keyPath, value) {
+  if (!isSafeKeyPath(keyPath)) { return; }
   var parts = splitKeyPath(keyPath);
   var current = obj;
   for (var i = 0; i < parts.length - 1; i++) {
@@ -308,8 +327,8 @@ function validateValue(schemaEntry, value) {
 
   // Type: number (float)
   if (type === 'number') {
-    if (typeof value !== 'number') {
-      return { valid: false, error: 'Expected number, got ' + typeof value + '.' };
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return { valid: false, error: 'Expected finite number, got ' + value + '.' };
     }
     if (schemaEntry.min !== undefined && value < schemaEntry.min) {
       return { valid: false, error: 'Value ' + value + ' is below minimum ' + schemaEntry.min + '.' };
@@ -353,7 +372,7 @@ function validateValue(schemaEntry, value) {
     if (!Array.isArray(value)) {
       return { valid: false, error: 'Expected array, got ' + typeof value + '.' };
     }
-    if (value.length === 0) {
+    if (value.length === 0 && !schemaEntry.allowEmpty) {
       return { valid: false, error: 'Array must not be empty.' };
     }
     if (schemaEntry.items === 'string') {
@@ -386,12 +405,28 @@ function validateValue(schemaEntry, value) {
  * Args: { section?: string }
  */
 function brainConfigRead(args) {
+  var section = args && args.section;
+
+  // Special section: _template — returns the plugin's default config template
+  if (section === '_template') {
+    var template = readJSON(templateConfigPath());
+    if (!template) {
+      return error('Plugin template config not found at: ' + templateConfigPath());
+    }
+    if (getReadError(template)) {
+      return error('Failed to read template config: ' + getReadError(template));
+    }
+    return success(template);
+  }
+
   var config = readJSON(configPath());
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
   }
+  if (getReadError(config)) {
+    return error('Failed to read brain.config.json: ' + getReadError(config));
+  }
 
-  var section = args && args.section;
   if (!section) {
     return success({
       config: config,
@@ -442,6 +477,9 @@ function brainConfigWrite(args) {
   }
 
   var key = args.key;
+  if (!isSafeKeyPath(key)) {
+    return error('Invalid key "' + key + '": key segments cannot be __proto__, constructor, or prototype.');
+  }
   var value = args.value;
 
   if (value === undefined) {
@@ -452,6 +490,9 @@ function brainConfigWrite(args) {
   var config = readJSON(configPath());
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
+  }
+  if (getReadError(config)) {
+    return error('Failed to read brain.config.json: ' + getReadError(config));
   }
 
   // Handle linters dynamic keys specially
@@ -533,6 +574,9 @@ function brainConfigValidate(args) {
     if (!config) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
+    if (getReadError(config)) {
+      return error('Failed to read brain.config.json: ' + getReadError(config));
+    }
     return validateFullConfig(config);
   }
 
@@ -541,6 +585,9 @@ function brainConfigValidate(args) {
     var config2 = readJSON(configPath());
     if (!config2) {
       return error('brain.config.json not found. Run /brain-init first.');
+    }
+    if (getReadError(config2)) {
+      return error('Failed to read brain.config.json: ' + getReadError(config2));
     }
     return validateSection(config2, args.section);
   }
@@ -672,13 +719,25 @@ function brainConfigDiff(args) {
     if (!original) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
+    if (getReadError(original)) {
+      return error('Failed to read brain.config.json: ' + getReadError(original));
+    }
     modified = deepClone(original);
     for (var i = 0; i < args.changes.length; i++) {
       var change = args.changes[i];
-      if (!change.key) continue;
+      if (!change.key || change.value === undefined) continue;
+      if (!isSafeKeyPath(change.key)) {
+        return error('Invalid key "' + change.key + '": key segments cannot be __proto__, constructor, or prototype.');
+      }
       setDeep(modified, change.key, change.value);
     }
-  } else if (args.original && args.modified) {
+  } else if (args.original !== undefined && args.modified !== undefined) {
+    if (
+      typeof args.original !== 'object' || args.original === null || Array.isArray(args.original) ||
+      typeof args.modified !== 'object' || args.modified === null || Array.isArray(args.modified)
+    ) {
+      return error('"original" and "modified" must be plain objects.');
+    }
     original = args.original;
     modified = args.modified;
   } else {
@@ -836,6 +895,7 @@ module.exports = {
   _configPath: configPath,
   _templateConfigPath: templateConfigPath,
   _readJSON: readJSON,
+  _getReadError: getReadError,
   _writeJSON: writeJSON,
 };
 

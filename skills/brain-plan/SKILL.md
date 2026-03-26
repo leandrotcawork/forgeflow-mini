@@ -384,8 +384,9 @@ estimated_tokens: [total]k
 ## Next Steps
 
 1. Run Readiness Gate (verify all specs can be created)
-2. If --dispatch: brain-task Path F dispatches subagents per micro-step
-3. If inline: brain-task Path E executes sequentially
+2. If --dispatch OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (parallel where independent)
+3. If inline (step_count < 5 AND no --dispatch): brain-task Path F executes micro-steps sequentially without parallel dispatch
+Note: Expanded plans (plan_type: expanded) ALWAYS route to Path F. Path E handles only legacy standard plans.
 4. Update status after each micro-step
 5. Run /brain-document on completion
 ```
@@ -429,6 +430,7 @@ for reliable event delivery.
 
 | # | Action | Path | Purpose | Depends On |
 |---|--------|------|---------|------------|
+| F0 | create | `tests/contracts/ProductMarginCalculated.spec.ts` | Contract spec — written at M1 spec phase | — |
 | F1 | create | contracts/events/v1/ProductMarginCalculated.yaml | Event schema | — |
 | F2 | create | src/modules/product/margin.service.ts | Margin calculation logic | — |
 | F3 | create | src/modules/product/margin.service.spec.ts | Unit tests for margin calc | F2 |
@@ -479,7 +481,7 @@ for reliable event delivery.
 #### Dependencies
 
 - Requires: None
-- Unlocks: M3, M5
+- Unlocks: M3, M5 (not shown in this abbreviated example)
 
 ### Micro-Step M2: Implement Margin Calculation Service
 
@@ -559,9 +561,10 @@ for reliable event delivery.
 #### Dependencies
 
 - Requires: M1, M2
-- Unlocks: M5, M7
+- Unlocks: M5, M7 (not shown in this abbreviated example)
 
-[...remaining micro-steps follow same format...]
+[...remaining micro-steps M4-M7 follow the same format as M1-M3...]
+Note: M5 and M7 referenced as unlock targets above are defined in the complete plan. Only M1-M3 shown for brevity.
 ```
 
 ---
@@ -597,8 +600,10 @@ or split into 2 sessions at micro-step M{breakpoint}.
 
 ## Integration with brain-task
 
-- **Path E (inline):** brain-task reads the plan and executes micro-steps sequentially. Used when `plan_type: expanded` and step count < 5 or total tokens < 40k.
-- **Path F (dispatch):** brain-task reads the plan, dispatches one subagent per micro-step, runs spec reviews after each. Used when `plan_type: expanded` and `dispatch_ready: true` and step count >= 5 or total tokens >= 40k. See brain-task Path F for dispatch protocol.
+- **Path F (dispatch):** brain-task reads the plan, dispatches one subagent per micro-step. Used when:
+  - `plan_type: expanded` AND `dispatch_ready: true` AND (`step_count >= 5` OR `estimated_tokens >= 40k`), OR
+  - `--dispatch` flag is passed (overrides dispatch_ready threshold check)
+- **Path F inline:** micro-steps execute sequentially when `dispatch_ready: true` but `step_count < 5` and `tokens < 40k`, and `--dispatch` was not passed.
 - **Legacy plans (`plan_type: standard` or missing):** brain-task Path E executes as before — no micro-step dispatch.
 
 ---

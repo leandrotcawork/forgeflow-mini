@@ -78,7 +78,7 @@ var activityFile = path.join(progressDir, 'activity.md');
 function setupTestConfig() {
   var baseConfig = {
     brain_id: 'test-brain',
-    version: '0.5.0',
+    version: '0.6.0',
     created_at: '2026-03-26T10:00:00Z',
     project_root: '.',
     brain_root: '.brain',
@@ -341,6 +341,7 @@ test('brain_config_read: errors when config missing', function () {
   var result = server.brainConfigRead({});
   assert(!result.ok);
   assert(result.error.indexOf('not found') !== -1);
+  setupTestConfig();
 });
 
 // ---------------------------------------------------------------------------
@@ -385,6 +386,10 @@ test('brain_config_write: handles dynamic linter keys', function () {
   var result = server.brainConfigWrite({ key: 'linters..rs', value: 'cargo clippy --fix' });
   assert(result.ok);
   assertEqual(result.data.new_value, 'cargo clippy --fix');
+
+  // Verify it was actually persisted to disk
+  var onDisk = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  assertEqual(onDisk.linters['.rs'], 'cargo clippy --fix');
 });
 
 test('brain_config_write: logs change to activity.md', function () {
@@ -441,7 +446,7 @@ test('brain_config_validate: validates entire config', function () {
   var result = server.brainConfigValidate({});
   assert(result.ok);
   assert(result.data.valid);
-  assert(result.data.checked > 0);
+  assert(result.data.checked >= 30, 'Expected at least 30 fields checked, got ' + result.data.checked);
 });
 
 test('brain_config_validate: reports error for unknown section', function () {
@@ -462,6 +467,16 @@ test('brain_config_validate: detects invalid values in full config', function ()
   assert(!result.data.valid);
   assert(result.data.errors.length > 0);
   assert(result.data.errors[0].key === 'learning.confidence_initial');
+});
+
+test('brain_config_validate: gives useful error for corrupt JSON', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigValidate({});
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say not found: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say "Failed to read": ' + result.error);
+  setupTestConfig(); // restore
 });
 
 // ---------------------------------------------------------------------------
@@ -503,10 +518,15 @@ test('brain_config_diff: no changes when values same', function () {
 test('brain_config_diff: works with original/modified objects', function () {
   setupTestConfig();
   var orig = { learning: { confidence_initial: 0.3 } };
-  var mod = { learning: { confidence_initial: 0.6 } };
+  var mod  = { learning: { confidence_initial: 0.6 } };
   var result = server.brainConfigDiff({ original: orig, modified: mod });
   assert(result.ok);
   assert(result.data.has_changes);
+  assertEqual(result.data.change_count, 1);
+  var d = result.data.diffs[0];
+  assertEqual(d.key, 'learning.confidence_initial');
+  assertEqual(d.before, 0.3);
+  assertEqual(d.after, 0.6);
 });
 
 test('brain_config_diff: detects linter changes', function () {
@@ -533,6 +553,15 @@ test('brain_config_diff: errors with no args', function () {
   assert(result.error.indexOf('Provide either') !== -1);
 });
 
+test('brain_config_diff: rejects __proto__ key in changes', function () {
+  setupTestConfig();
+  var result = server.brainConfigDiff({
+    changes: [{ key: '__proto__.polluted', value: true }]
+  });
+  assert(!result.ok);
+  assert(result.error.indexOf('Invalid key') !== -1 || result.error.indexOf('__proto__') !== -1);
+});
+
 // ---------------------------------------------------------------------------
 // Tests: SCHEMA completeness
 // ---------------------------------------------------------------------------
@@ -544,9 +573,9 @@ test('SCHEMA covers all sections', function () {
     schemaSections[section] = true;
   });
 
-  var expected = ['database', 'hooks', 'resilience', 'subagents', 'learning',
+  var expected = ['database', 'hooks', 'linters', 'resilience', 'subagents', 'learning',
     'context_loading', 'token_budgets', 'token_optimization', 'consolidation',
-    'lesson_escalation', 'weight_decay'];
+    'lesson_escalation', 'weight_decay', 'cortex_regions'];
 
   expected.forEach(function (s) {
     assert(schemaSections[s], 'Schema missing section: ' + s);
@@ -617,7 +646,159 @@ test('CLI: unknown tool returns error', function () {
     assert(false, 'Should have thrown');
   } catch (err) {
     var output = (err.stdout || '') + (err.stderr || '');
-    assert(output.indexOf('Unknown tool') !== -1 || err.status === 1);
+    assert(output.indexOf('Unknown tool') !== -1 && err.status === 1,
+      'Expected exit 1 AND "Unknown tool" in output. Got status=' + err.status + ' output=' + output);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 1a — Prototype pollution guard
+// ---------------------------------------------------------------------------
+
+test('brain_config_write: rejects __proto__ key in linters path', function () {
+  setupTestConfig();
+  var before = Object.prototype.polluted;
+  var result = server.brainConfigWrite({ key: 'linters.__proto__.polluted', value: true });
+  assert(!result.ok);
+  assert(result.error.indexOf('Invalid key') !== -1 || result.error.indexOf('__proto__') !== -1);
+  assertEqual(Object.prototype.polluted, before);
+});
+
+test('brain_config_write: rejects constructor key segment', function () {
+  setupTestConfig();
+  var result = server.brainConfigWrite({ key: 'learning.constructor.polluted', value: true });
+  assert(!result.ok);
+});
+
+// ---------------------------------------------------------------------------
+// 1b — NaN/Infinity validation
+// ---------------------------------------------------------------------------
+
+test('validateValue: number rejects NaN', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  var result = server.validateValue(schema, NaN);
+  assert(!result.valid, 'NaN should be invalid');
+  assert(result.error.indexOf('finite') !== -1 || result.error.indexOf('NaN') !== -1);
+});
+
+test('validateValue: number rejects Infinity', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  assert(!server.validateValue(schema, Infinity).valid);
+});
+
+test('validateValue: number rejects -Infinity', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  assert(!server.validateValue(schema, -Infinity).valid);
+});
+
+// ---------------------------------------------------------------------------
+// 1c — undefined value in diff changes
+// ---------------------------------------------------------------------------
+
+test('brain_config_diff: skips change entries with undefined value', function () {
+  setupTestConfig();
+  var result = server.brainConfigDiff({
+    changes: [{ key: 'learning.confidence_initial' }]  // no value
+  });
+  assert(result.ok);
+  var fieldDiff = (result.data.diffs || []).filter(function (d) {
+    return d.key === 'learning.confidence_initial';
+  });
+  assertEqual(fieldDiff.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// 1d — Unvalidated caller objects in brainConfigDiff
+// ---------------------------------------------------------------------------
+
+test('brain_config_diff: rejects null as original', function () {
+  var result = server.brainConfigDiff({ original: null, modified: {} });
+  assert(!result.ok);
+  assert(result.error.indexOf('plain object') !== -1 || result.error.indexOf('object') !== -1);
+});
+
+test('brain_config_diff: rejects array as original', function () {
+  var result = server.brainConfigDiff({ original: [], modified: {} });
+  assert(!result.ok);
+});
+
+test('brain_config_diff: rejects string as modified', function () {
+  var result = server.brainConfigDiff({ original: {}, modified: 'bad' });
+  assert(!result.ok);
+});
+
+// ---------------------------------------------------------------------------
+// 2a — Array allowEmpty flag
+// ---------------------------------------------------------------------------
+
+test('validateValue: array allows empty when allowEmpty is true', function () {
+  var schema = { type: 'array', items: 'string', allowEmpty: true };
+  var result = server.validateValue(schema, []);
+  assert(result.valid, 'Expected valid for empty array with allowEmpty:true, got: ' + result.error);
+});
+
+test('validateValue: array still rejects empty without allowEmpty', function () {
+  var schema = { type: 'array', items: 'string' };
+  var result = server.validateValue(schema, []);
+  assert(!result.valid, 'Expected invalid for empty array without allowEmpty');
+});
+
+// ---------------------------------------------------------------------------
+// 2b — readJSON error distinction
+// ---------------------------------------------------------------------------
+
+test('brain_config_read: gives useful error for corrupt JSON (not "not found")', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigRead({});
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say "not found" for corrupt file, got: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say "Failed to read": ' + result.error);
+  setupTestConfig(); // restore
+});
+
+test('brain_config_write: gives useful error for corrupt JSON', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigWrite({ key: 'learning.confidence_initial', value: 0.5 });
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say not found: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say Failed to read: ' + result.error);
+  setupTestConfig(); // restore
+});
+
+// ---------------------------------------------------------------------------
+// 2c — _template section
+// ---------------------------------------------------------------------------
+
+test('brain_config_read: _template returns default config structure', function () {
+  var result = server.brainConfigRead({ section: '_template' });
+  assert(result.ok, 'Expected ok, got: ' + result.error);
+  assert(result.data.version !== undefined, 'Expected version in template');
+  assert(result.data.hooks !== undefined, 'Expected hooks in template');
+  assert(result.data.resilience !== undefined, 'Expected resilience in template');
+});
+
+test('brain_config_read: _template returns error when template file missing', function () {
+  var templatePath = path.join(__dirname, '..', 'templates', 'brain', 'brain.config.json');
+  var tmpPath = templatePath + '.bak';
+  var existed = false;
+  try {
+    fs.renameSync(templatePath, tmpPath);
+    existed = true;
+  } catch (e) { /* file may not exist in test env */ }
+
+  try {
+    var result = server.brainConfigRead({ section: '_template' });
+    assert(!result.ok, 'Expected error when template file is missing, got: ' + JSON.stringify(result));
+    assert(
+      result.error.indexOf('not found') !== -1 || result.error.indexOf('Failed to read') !== -1,
+      'Expected error about missing/unreadable template, got: ' + result.error
+    );
+  } finally {
+    if (existed) {
+      fs.renameSync(tmpPath, templatePath);
+    }
   }
 });
 
