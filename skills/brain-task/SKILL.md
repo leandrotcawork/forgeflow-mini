@@ -372,7 +372,7 @@ Build a self-contained prompt — the subagent has NO access to your conversatio
 
 - Inline the FULL contents of `context-packet-{task_id}.md` (paste the text, not the path)
 - Include the task description and acceptance criteria
-- Include key conventions from `.brain/.brain/hippocampus/conventions.md` (5-10 lines max — Haiku tasks are small)
+- Include key conventions from `.brain/hippocampus/conventions.md` (5-10 lines max — Haiku tasks are small)
 - Include 1 real code example from the codebase (5-10 lines) showing the pattern to follow — take from the context packet or read the relevant file directly
 
 **Step A.2: Dispatch subagent**
@@ -418,7 +418,7 @@ Build a self-contained prompt for the subagent. The subagent has NO access to yo
 
 - Inline the FULL contents of `context-packet-{task_id}.md` (not a file path — paste the actual text)
 - Inline the FULL contents of `sonnet-context-{task_id}.md` (not a file path — paste the actual text)
-- Include condensed conventions from `.brain/.brain/hippocampus/conventions.md` (key patterns, 10-20 lines)
+- Include condensed conventions from `.brain/hippocampus/conventions.md` (key patterns, 10-20 lines)
 - Include 1-2 real code examples from the codebase (already in the context file)
 - Include the acceptance criteria from the context file
 
@@ -472,7 +472,9 @@ Agent(model: "sonnet", description: "Code review: {task_id}") -- runs brain-code
 Agent(model: "haiku", description: "Propose sinapse updates: {task_id}") -- runs brain-document
 ```
 
-These subagents are fire-and-forget optimizations. If they fail, their work runs inline in Steps 4-6 as normal. Record dispatches in `brain-state.json` subagents_dispatched array.
+The brain-document subagent is fire-and-forget — if it fails, sinapse updates run inline in Step 5.
+The brain-codex-review subagent is **blocking for Path C only** — wait for its result before proceeding to Step 4. If the subagent fails or times out (30s), run brain-codex-review inline.
+Record dispatches in `brain-state.json` subagents_dispatched array.
 
 ---
 
@@ -549,7 +551,9 @@ Update `brain-state.json` after each strategy attempt:
 
 ### Additional Verification: Codex Path Only (score >= 40)
 
-After tests pass, also invoke `/brain-codex-review` **inline** (unless already dispatched as subagent in Path C):
+After tests pass, invoke `/brain-codex-review`:
+- **Path C:** Already dispatched as blocking subagent after implementation. If that subagent succeeded, skip this step.
+- **All other paths:** Run inline.
 
 1. Run `/brain-codex-review` -> generates `.brain/working-memory/codex-review-{task_id}.md`
 2. If review passes -> proceed to Step 4

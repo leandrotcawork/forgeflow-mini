@@ -11,7 +11,7 @@ description: Health dashboard — display Brain stats and regenerate 3D visualiz
 
 ## Execution Mode
 
-brain-status is a pure read-only operation — it can safely run as a Haiku subagent:
+brain-status is read-only except for regenerating `.brain/brain-graph.html` (visualization output). It can safely run as a Haiku subagent:
 
 ```
 Agent(
@@ -48,9 +48,9 @@ From `.brain/brain.db`:
 - Count pending escalations in `.brain/lessons/inbox/escalation-*.md` (These files are created by brain-consolidate during the escalation review phase, not by brain-lesson.)
 
 From `.brain/progress/brain-project-state.json`:
-- Circuit breaker status (closed/open/half-open), consecutive failures, last reset
-- Subagent dispatch counts by model (haiku, sonnet) with success/fallback rates
-- Token savings from subagent delegation
+- Circuit breaker status (`circuit_breaker.state`: closed/open/half-open), failure count (`circuit_breaker.failure_count`), cooldown until (`circuit_breaker.cooldown_until`)
+- Subagent dispatch counts by model (`subagent_usage.by_model.haiku`, `subagent_usage.by_model.sonnet`) with success/fallback rates
+- Average task tokens (`avg_task_tokens`)
 
 ### Step 2: Assess Health Status
 
@@ -80,14 +80,14 @@ lessons/cross-d  │ 0        │ 3       │ 0.60       │ 2026-03-23   │ �
 Total: 17 sinapses · 13 lessons · 7 regions
 
 Circuit Breaker:
-  Status: ✅ closed (normal operation)
-  Consecutive failures: 0
-  Last reset: 2026-03-24
+  State: ✅ closed (normal operation)
+  Failure count: 0
+  Cooldown until: n/a
 
-Subagent Usage (last 24h):
+Subagent Usage:
   Haiku dispatches:  12 (11 success, 1 fallback-to-inline)
   Sonnet dispatches: 3  (3 success, 0 fallback-to-inline)
-  Tokens saved:      ~45k (via Haiku delegation)
+  Avg task tokens:   ~8.5k
 
 Pending actions:
   ⚠️  2 stale sinapses (>30 days)
