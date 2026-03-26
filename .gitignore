@@ -29,3 +29,6 @@ tests/
 # Local dev artifacts
 .brain/
 .claude/
+
+# Git worktrees
+.worktrees/
