@@ -4,15 +4,15 @@
     "name": "forgeflow"
   },
   "metadata": {
-    "description": "v0.5.0 — Brain-driven development plugin with subagent dispatch, 14 skills, 8 hooks, circuit breaker, and confidence-scored learning",
-    "version": "0.5.0"
+    "description": "v0.6.0 — Brain-driven development plugin with subagent dispatch, 14 skills, 8 hooks, circuit breaker, and confidence-scored learning",
+    "version": "0.6.0"
   },
   "plugins": [
     {
       "name": "brain-mini",
       "source": "./",
-      "description": "v0.5.0 — Brain-driven development with 14 skills, subagent dispatch, 8 hooks, circuit breaker, and confidence-scored learning. Run /brain-mini:brain-init.",
-      "version": "0.5.0",
+      "description": "v0.6.0 — Brain-driven development with 14 skills, subagent dispatch, 8 hooks, circuit breaker, and confidence-scored learning. Run /brain-mini:brain-init.",
+      "version": "0.6.0",
       "author": {
         "name": "ForgeFlow contributors"
       },
