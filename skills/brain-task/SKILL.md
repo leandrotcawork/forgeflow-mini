@@ -269,8 +269,8 @@ created_at: [ISO8601]
 ## Previous Similar Work
 
 (If domain has related lessons)
-- See: cortex/[domain]/lessons/lesson-0042.md -- "Same pattern, different context"
-- See: cortex/[domain]/lessons/lesson-00NN.md -- "Similar failure case"
+- See: .brain/cortex/[domain]/lessons/lesson-0042.md -- "Same pattern, different context"
+- See: .brain/cortex/[domain]/lessons/lesson-00NN.md -- "Similar failure case"
 
 ## Brain Health Status
 
@@ -312,9 +312,9 @@ created_at: [ISO8601]
 - [[sinapse-id]] [Pattern]: [how this relates to error]
 
 ### Similar Issues
-(From cortex/<domain>/lessons/ or lessons/cross-domain/ matching error keywords)
-- cortex/[domain]/lessons/lesson-0035.md -- "Same error, different module"
-- cortex/backend/lessons/lesson-0042.md -- "Root cause was X"
+(From .brain/cortex/<domain>/lessons/ or .brain/lessons/cross-domain/ matching error keywords)
+- .brain/cortex/[domain]/lessons/lesson-0035.md -- "Same error, different module"
+- .brain/cortex/backend/lessons/lesson-0042.md -- "Root cause was X"
 
 ---
 ```

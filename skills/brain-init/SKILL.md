@@ -41,7 +41,7 @@ Initialize a Brain for any project. Scans the project, detects type, generates h
 - Create `cortex_registry.md` (mapping of all regions)
 
 ### Phase 4: Generate Cortex
-- Create `cortex/[region]/index.md` for each detected region
+- Create `.brain/cortex/[region]/index.md` for each detected region
 - Each region gets a template sinapse with placeholder content
 
 ### Phase 5: Review with Developer
@@ -358,7 +358,7 @@ Possible capability levels:
 
 - `.brain/` directory created with full structure
 - `.brain/hippocampus/` with constitution files
-- `cortex/` with region templates
+- `.brain/cortex/` with region templates
 - Hooks installed per selected profile (or skipped if declined)
 - `brain.db` SQLite index built
 - `brain-state.json` and `brain-project-state.json` initialized
