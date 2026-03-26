@@ -30,7 +30,7 @@ From `.brain/brain.db`:
 Metric | Healthy | Stale | Very Stale
 ---|---|---|---
 Last updated | < 7 days | 7–30 days | > 30 days
-Region badge | ✅ | ⚠️ | 🔴
+Region badge | ✅ healthy | ⚠️ stale | 🔴 very stale
 
 ### Step 3: Display Health Dashboard
 

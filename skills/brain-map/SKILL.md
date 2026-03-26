@@ -30,7 +30,7 @@ Input from brain-decision:
 - Task description
 - Domain: `backend | frontend | database | infra | analytics | cross-domain`
 - Risk level: `low | medium | high | critical`
-- Task type: `feature | bugfix | refactor | debugging | architectural`
+- Task type: `feature | bugfix | refactor | debugging | architectural | unknown_pattern`
 
 ---
 
@@ -162,11 +162,11 @@ LIMIT 3
 
 ### Step 5: Generate Context Packet
 
-Create: `working-memory/context-packet.md`
+Create: `working-memory/context-packet-{task_id}.md`
 
 ```markdown
 ---
-task_id: [uuid]
+task_id: YYYY-MM-DD-<slug>
 domain: [backend | frontend | database | infra | cross-domain]
 complexity_score: [0-100 from brain-decision]
 sinapses_loaded: [N]
@@ -208,11 +208,13 @@ generated_at: [ISO8601]
 
 ## Next: brain-task Step 2
 
-This packet will be used by brain-task to generate:
-- codex-context.md (for Codex)
-- opus-debug-context-{task_id}.md (for Opus)
+This packet will be used by brain-task to generate the model-specific context file:
+- `sonnet-context-{task_id}.md` (for Sonnet — score 20-39)
+- `codex-context-{task_id}.md` (for Codex — score 40+)
+- `opus-debug-context-{task_id}.md` (for Opus — debugging)
+- For Haiku (score < 20): no additional context file — this packet is sufficient.
 
-Both add real code examples from the codebase.
+All model-specific files add real code examples from the codebase.
 ```
 
 ---
@@ -243,7 +245,7 @@ Tier 3 (on-demand):
 Tokens: ~4k (Tier 1) + ~12k (Tier 2) = ~16k used
 Ready for: brain-task Step 2 (generate codex-context.md)
 
-Output: working-memory/context-packet.md
+Output: working-memory/context-packet-{task_id}.md
 ```
 
 ---
@@ -288,7 +290,7 @@ brain-map is working when:
 - [ ] Tier 2 includes: 5 domain sinapses + 2 cross-cutting sinapses
 - [ ] Sinapses sorted by weight (highest first)
 - [ ] Backlinks included in output
-- [ ] context-packet.md generated with all 3 tiers documented
+- [ ] context-packet-{task_id}.md generated with all 3 tiers documented
 - [ ] Brain health status shown (region, avg weight, staleness)
 - [ ] Tier 3 marked as "available" if complexity < 75
 - [ ] Tier 3 auto-loaded if complexity >= 75 or risk=critical
@@ -299,11 +301,11 @@ brain-map is working when:
 ## Integration with brain-task
 
 1. brain-task Step 1 calls brain-map
-2. brain-map outputs context-packet.md
-3. brain-task Step 2 reads context-packet.md
-4. brain-task generates codex-context.md from it (adds code examples)
-5. Codex reads codex-context.md via VSCode extension
-6. At completion: context-packet.md archived for analysis
+2. brain-map outputs context-packet-{task_id}.md
+3. brain-task Step 2 reads context-packet-{task_id}.md
+4. brain-task generates model-specific context file from it (sonnet-context, codex-context, or opus-debug-context)
+5. Model implements using its context file (Codex via MCP, Sonnet/Opus via Claude)
+6. At completion: all context files archived by TaskCompleted hook
 
 ---
 

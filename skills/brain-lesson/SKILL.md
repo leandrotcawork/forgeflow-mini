@@ -75,6 +75,7 @@ created_at: [ISO8601]
 updated_at: [ISO8601]
 
 # Optional fields
+model_used: null                         # haiku | sonnet | codex | opus — which model was active when lesson was created
 supersedes: null                         # lesson-id if this replaces an older lesson
 superseded_by: null                      # lesson-id if a newer lesson replaced this one
 confidence: high | medium | low

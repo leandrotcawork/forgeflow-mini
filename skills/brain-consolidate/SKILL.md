@@ -26,7 +26,7 @@ brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCo
 ### Step 1: Inventory Completed Work
 
 Scan `working-memory/`:
-- List all `task-XXXXX.md` files with status = "completed"
+- List all `task-completion-*.md` files with status = "completed"
 - Extract: task ID, description, touched files (from git diff), outcome (success/fail), sinapses loaded, token usage
 - Group by cortex region touched (backend, frontend, database, infra, cross-domain)
 
@@ -242,7 +242,7 @@ For each promoted lesson:
 
 **Note:** Per-task archival is owned by the TaskCompleted hook (runs after each task). By the time brain-consolidate runs, context files should already be in `progress/completed-contexts/`.
 
-If any context files remain in `working-memory/` that should have been archived:
+If any context files remain in `working-memory/` that should have been archived (check for `sonnet-context-*.md`, `codex-context-*.md`, `opus-debug-context-*.md`, `context-packet-*.md`):
 - Move them to `progress/completed-contexts/[task-id]-[original-name].md`
 - Flag: "TaskCompleted hook may have failed for task [task-id] — manual archival required"
 
@@ -253,7 +253,7 @@ If any context files remain in `working-memory/` that should have been archived:
 After developer approves or explicitly skips:
 1. For each completed task:
    - Move task record to `progress/activity.md` (append as log entry)
-   - Delete `working-memory/task-XXXXX.md`
+   - Delete `working-memory/task-completion-*.md`
    - Delete `working-memory/sinapse-updates-XXXXX.md` (proposal consumed)
    - Delete `working-memory/context-packet-XXXXX.md` (archived at Step 6.5)
 2. Commit all working-memory deletions with message: "chore: consolidation cycle [N] — clear working memory"
@@ -273,6 +273,7 @@ Escalation proposals: [N] surfaced
   - [D] dismissed → discarded
 
 Context files archived: [N] task contexts → progress/completed-contexts/
+  - Sonnet contexts: [N]
   - Codex contexts: [N]
   - Opus contexts: [N]
   - Outcome analysis files: [N]

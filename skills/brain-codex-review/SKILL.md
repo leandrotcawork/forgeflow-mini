@@ -24,12 +24,12 @@ brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCo
 
 ## When Codex Reviews (Step 3.5)
 
-After Codex completes implementation (Step 2), run automatic review:
+After Codex completes implementation (Step 3), run automatic review:
 
 ```
 Step 3: Codex executes implementation
         ↓
-Step 3.5: brain-codex-review runs automatically
+Step 3.5: brain-codex-review runs automatically (Codex path only)
         ├─ Check: conventions followed
         ├─ Check: tests passing
         ├─ Check: no obvious bugs
@@ -247,6 +247,12 @@ Codex review is working when:
 - [ ] Review fails → halt with manual fix instructions
 - [ ] `/brain-codex-review` manual invocation works
 - [ ] Quality score calculated (0-10)
+
+---
+
+## Sonnet-Implemented Tasks
+
+For Sonnet-implemented tasks (score 20-39), brain-codex-review does NOT auto-trigger. Sonnet tasks rely on test results as the primary quality gate. If additional review is desired, invoke manually: `/brain-codex-review --file [path]`.
 
 ---
 

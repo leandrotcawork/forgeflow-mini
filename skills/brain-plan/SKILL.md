@@ -16,7 +16,7 @@ brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (
 ## Workflow
 
 ### Input
-- Context packet (from working-memory/context-packet.md)
+- Context packet (from working-memory/context-packet-{task_id}.md)
 - Task description
 - Optional: stakeholder constraints, deadline
 
@@ -24,7 +24,7 @@ brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (
 
 #### Step 1: Analyze Context Packet
 
-Read `working-memory/context-packet.md` and extract:
+Read `working-memory/context-packet-{task_id}.md` and extract:
 - Domain classification (backend, frontend, database, etc.)
 - Loaded sinapses (review all Tier 1 + Tier 2)
 - Conventions relevant to domain
