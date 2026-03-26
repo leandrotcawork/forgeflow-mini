@@ -8,11 +8,27 @@ All notable changes to ForgeFlow Mini are documented in this file.
 - **brain-setup** (new skill) — Interactive configuration wizard for `brain.config.json`. Menu-driven section navigation, markdown table display of current values, inline change validation, before/after diff preview, and change logging to `activity.md`.
 - **MCP config server** (`mcp/brain-config-server.js`) — Pure Node.js, zero npm dependencies. Implements 4 tools: `brain_config_read`, `brain_config_write`, `brain_config_validate`, `brain_config_diff`. Full validation schema for all 50+ configurable fields across 13 sections.
 - **Config validation schema** — Type constraints (string, number, integer, boolean, array, enum, nullable_enum), range checks (min/max), enum enforcement, readonly field protection. Covers: database, hooks, linters, resilience, subagents, learning, context_loading, token_budgets, token_optimization, consolidation, lesson_escalation, weight_decay.
-- **40 tests** for the MCP config server (`tests/brain-config-server.test.js`) — Covers all 4 tools, validation rules, deep get/set helpers, CLI integration, schema completeness, and error handling.
+- **57 tests** for the MCP config server (`tests/brain-config-server.test.js`) — Covers all 4 tools, validation rules, deep get/set helpers, CLI integration, schema completeness, and error handling.
 - **Skill count** — 14 → 15 skills (added brain-setup).
 - **brain-plan rewrite** — Cortex-Linked TDD Planner with micro-steps, sinapse linking, file structure design, dispatch metadata, and self-review gates. Replaces the previous simple planner.
 - **Path F dispatcher mode** (`brain-task`) — Executes expanded TDD plans one subagent per micro-step with spec reviews after each. Activated by `plan_type: expanded` + `dispatch_ready: true`.
 - **`--dispatch` flag** — Forces Path F parallel subagent dispatch for expanded plans regardless of step count threshold.
+
+## [0.5.0] - 2026-03-26
+
+### Changed
+- `build_brain_db.py`: align confidence column to REAL type + fix cortex_registry paths
+- `release.sh`: bump template versions on release + use chore() commit type
+
+## [0.4.1] - 2026-03-26
+
+### Fixed
+- hooks: use `continue:true` instead of `decision:'continue'` in `ok()`
+
+## [0.4.0] - 2026-03-26
+
+### Fixed
+- All critical and high gaps identified in the v0.4.0 gap analysis — paths, schema, field naming, counters, and codex-review step references
 
 ## [0.3.0] - 2026-03-26
 
@@ -47,22 +63,6 @@ All notable changes to ForgeFlow Mini are documented in this file.
 - **brain-decision** — Circuit breaker check before routing, state write after dispatch.
 - **brain-lesson** — Confidence scoring, evidence tracking, promotion pipeline, scope tracking.
 - **Skill count** — 11 → 14 skills (added brain-verify, brain-eval, brain-aside).
-
-## [0.5.0] - 2026-03-26
-
-### Changed
-- `build_brain_db.py`: align confidence column to REAL type + fix cortex_registry paths
-- `release.sh`: bump template versions on release + use chore() commit type
-
-## [0.4.1] - 2026-03-26
-
-### Fixed
-- hooks: use `continue:true` instead of `decision:'continue'` in `ok()`
-
-## [0.4.0] - 2026-03-26
-
-### Fixed
-- All critical and high gaps identified in the v0.4.0 gap analysis — paths, schema, field naming, counters, and codex-review step references
 
 ## [0.2.0] - 2026-03-25
 

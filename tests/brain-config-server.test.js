@@ -475,6 +475,7 @@ test('brain_config_validate: gives useful error for corrupt JSON', function () {
   var result = server.brainConfigValidate({});
   assert(!result.ok);
   assert(result.error.indexOf('not found') === -1, 'Should not say not found: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say "Failed to read": ' + result.error);
   setupTestConfig(); // restore
 });
 
@@ -752,6 +753,17 @@ test('brain_config_read: gives useful error for corrupt JSON (not "not found")',
   var result = server.brainConfigRead({});
   assert(!result.ok);
   assert(result.error.indexOf('not found') === -1, 'Should not say "not found" for corrupt file, got: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say "Failed to read": ' + result.error);
+  setupTestConfig(); // restore
+});
+
+test('brain_config_write: gives useful error for corrupt JSON', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigWrite({ key: 'learning.confidence_initial', value: 0.5 });
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say not found: ' + result.error);
+  assert(result.error.indexOf('Failed to read') !== -1, 'Should say Failed to read: ' + result.error);
   setupTestConfig(); // restore
 });
 
@@ -765,6 +777,29 @@ test('brain_config_read: _template returns default config structure', function (
   assert(result.data.version !== undefined, 'Expected version in template');
   assert(result.data.hooks !== undefined, 'Expected hooks in template');
   assert(result.data.resilience !== undefined, 'Expected resilience in template');
+});
+
+test('brain_config_read: _template returns error when template file missing', function () {
+  var templatePath = path.join(__dirname, '..', 'templates', 'brain', 'brain.config.json');
+  var tmpPath = templatePath + '.bak';
+  var existed = false;
+  try {
+    fs.renameSync(templatePath, tmpPath);
+    existed = true;
+  } catch (e) { /* file may not exist in test env */ }
+
+  try {
+    var result = server.brainConfigRead({ section: '_template' });
+    assert(!result.ok, 'Expected error when template file is missing, got: ' + JSON.stringify(result));
+    assert(
+      result.error.indexOf('not found') !== -1 || result.error.indexOf('Failed to read') !== -1,
+      'Expected error about missing/unreadable template, got: ' + result.error
+    );
+  } finally {
+    if (existed) {
+      fs.renameSync(tmpPath, templatePath);
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------

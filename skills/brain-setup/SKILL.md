@@ -181,7 +181,7 @@ When the developer specifies a change, validate it using the validation schema:
    ```
 
 3b. **Before writing:** Check if the target field is marked `readonly` in the validation schema.
-   If readonly (applies to: `hooks.profiles`, `brain_id`, `version`, `created_at`, `database.path`, `database.schema_version`):
+   If readonly (applies to: `hooks.profiles`, `brain_id`, `version`, `created_at`, `project_root`, `brain_root`, `database.path`, `database.schema_version`):
      → Reject: "❌ `[field]` is read-only and cannot be edited via brain-setup."
      → Return to section display (Step 3). Do not call brain_config_write.
 
@@ -271,8 +271,8 @@ The following schema defines all valid fields, their types, constraints, and des
 
 | Key | Type | Constraint | Description |
 |-----|------|-----------|-------------|
-| path | string | non-empty, ends with .db | Path to brain.db SQLite database |
-| schema_version | integer | 1 - 100 | Database schema version number |
+| path | string | read-only | Path to brain.db SQLite database |
+| schema_version | integer | read-only | Database schema version number |
 
 ### cortex_regions
 

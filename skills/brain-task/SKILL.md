@@ -883,6 +883,7 @@ Move context files from `.brain/working-memory/` to `.brain/progress/completed-c
 - `context-packet-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-context-packet.md`
 - `{model}-context-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-{model}-context.md`
 - `.brain/working-memory/codex-review-{task_id}.md` -> `.brain/progress/completed-contexts/codex-review-{task_id}.md`
+- `.brain/working-memory/implementation-plan-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-implementation-plan.md` (plan-mode tasks only)
 
 **6.3: Commit**
 
@@ -924,7 +925,6 @@ ON FAILURE:
     Output: "CIRCUIT BREAKER OPENED: 3 consecutive failures in 10 min. Pipeline blocked for 5 min."
 
   IF circuit_breaker was "half-open" (this was a probe):
-    circuit_breaker.failure_count += 1
     circuit_breaker.state = "open"
     circuit_breaker.cooldown_until = now + 5 minutes
     Output: "CIRCUIT BREAKER RE-OPENED: Probe task failed. Cooldown extended."
@@ -968,6 +968,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 | 1 | `.brain/working-memory/context-packet-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
 | 2 | `.brain/working-memory/[model]-context-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
 | 3.5 | `.brain/working-memory/codex-review-{task_id}.md` | archived to `.brain/progress/completed-contexts/` at Step 6.2 |
+| Plan mode | `.brain/working-memory/implementation-plan-{task_id}.md` | archived to `.brain/progress/completed-contexts/` at Step 6.2 (plan-mode tasks only) |
 | 4 | `.brain/working-memory/task-completion-{task_id}.md` | cleaned up by brain-consolidate |
 | 6 | `.brain/working-memory/sinapse-updates-{task_id}.md` | cleaned up by brain-consolidate |
 

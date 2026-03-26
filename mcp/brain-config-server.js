@@ -23,6 +23,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const READ_ERROR = Symbol('readError');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,8 +51,14 @@ function readJSON(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   } catch (err) {
     if (err.code === 'ENOENT') return null;
-    return { _readError: err.message };
+    var sentinel = {};
+    sentinel[READ_ERROR] = err.message;
+    return sentinel;
   }
+}
+
+function getReadError(obj) {
+  return obj && typeof obj === 'object' ? obj[READ_ERROR] : undefined;
 }
 
 function writeJSON(filePath, data) {
@@ -101,8 +108,8 @@ var SCHEMA = {
   brain_root:   { type: 'string', description: 'Brain directory path', readonly: true },
 
   // database
-  'database.path':           { type: 'string', description: 'Path to brain.db SQLite database' },
-  'database.schema_version': { type: 'integer', min: 1, max: 100, description: 'Database schema version number' },
+  'database.path':           { type: 'string', description: 'Path to brain.db SQLite database', readonly: true },
+  'database.schema_version': { type: 'integer', min: 1, max: 100, description: 'Database schema version number', readonly: true },
 
   // cortex_regions
   'cortex_regions': { type: 'array', items: 'string', description: 'List of active cortex region names' },
@@ -406,8 +413,8 @@ function brainConfigRead(args) {
     if (!template) {
       return error('Plugin template config not found at: ' + templateConfigPath());
     }
-    if (template._readError) {
-      return error('Failed to read template config: ' + template._readError);
+    if (getReadError(template)) {
+      return error('Failed to read template config: ' + getReadError(template));
     }
     return success(template);
   }
@@ -416,8 +423,8 @@ function brainConfigRead(args) {
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
   }
-  if (config._readError) {
-    return error('Failed to read brain.config.json: ' + config._readError);
+  if (getReadError(config)) {
+    return error('Failed to read brain.config.json: ' + getReadError(config));
   }
 
   if (!section) {
@@ -484,8 +491,8 @@ function brainConfigWrite(args) {
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
   }
-  if (config._readError) {
-    return error('Failed to read brain.config.json: ' + config._readError);
+  if (getReadError(config)) {
+    return error('Failed to read brain.config.json: ' + getReadError(config));
   }
 
   // Handle linters dynamic keys specially
@@ -567,8 +574,8 @@ function brainConfigValidate(args) {
     if (!config) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
-    if (config && config._readError) {
-      return error('Failed to read brain.config.json: ' + config._readError);
+    if (getReadError(config)) {
+      return error('Failed to read brain.config.json: ' + getReadError(config));
     }
     return validateFullConfig(config);
   }
@@ -579,8 +586,8 @@ function brainConfigValidate(args) {
     if (!config2) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
-    if (config2 && config2._readError) {
-      return error('Failed to read brain.config.json: ' + config2._readError);
+    if (getReadError(config2)) {
+      return error('Failed to read brain.config.json: ' + getReadError(config2));
     }
     return validateSection(config2, args.section);
   }
@@ -712,8 +719,8 @@ function brainConfigDiff(args) {
     if (!original) {
       return error('brain.config.json not found. Run /brain-init first.');
     }
-    if (original._readError) {
-      return error('Failed to read brain.config.json: ' + original._readError);
+    if (getReadError(original)) {
+      return error('Failed to read brain.config.json: ' + getReadError(original));
     }
     modified = deepClone(original);
     for (var i = 0; i < args.changes.length; i++) {
@@ -888,6 +895,7 @@ module.exports = {
   _configPath: configPath,
   _templateConfigPath: templateConfigPath,
   _readJSON: readJSON,
+  _getReadError: getReadError,
   _writeJSON: writeJSON,
 };
 
