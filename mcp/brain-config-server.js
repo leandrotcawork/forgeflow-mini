@@ -48,8 +48,9 @@ function activityLogPath() {
 function readJSON(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch {
-    return null;
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    return { _readError: err.message };
   }
 }
 
@@ -364,7 +365,7 @@ function validateValue(schemaEntry, value) {
     if (!Array.isArray(value)) {
       return { valid: false, error: 'Expected array, got ' + typeof value + '.' };
     }
-    if (value.length === 0) {
+    if (value.length === 0 && !schemaEntry.allowEmpty) {
       return { valid: false, error: 'Array must not be empty.' };
     }
     if (schemaEntry.items === 'string') {
@@ -397,12 +398,28 @@ function validateValue(schemaEntry, value) {
  * Args: { section?: string }
  */
 function brainConfigRead(args) {
+  var section = args && args.section;
+
+  // Special section: _template — returns the plugin's default config template
+  if (section === '_template') {
+    var template = readJSON(templateConfigPath());
+    if (!template) {
+      return error('Plugin template config not found at: ' + templateConfigPath());
+    }
+    if (template._readError) {
+      return error('Failed to read template config: ' + template._readError);
+    }
+    return success(template);
+  }
+
   var config = readJSON(configPath());
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
   }
+  if (config._readError) {
+    return error('Failed to read brain.config.json: ' + config._readError);
+  }
 
-  var section = args && args.section;
   if (!section) {
     return success({
       config: config,
@@ -466,6 +483,9 @@ function brainConfigWrite(args) {
   var config = readJSON(configPath());
   if (!config) {
     return error('brain.config.json not found. Run /brain-init first.');
+  }
+  if (config._readError) {
+    return error('Failed to read brain.config.json: ' + config._readError);
   }
 
   // Handle linters dynamic keys specially
@@ -685,6 +705,9 @@ function brainConfigDiff(args) {
     original = readJSON(configPath());
     if (!original) {
       return error('brain.config.json not found. Run /brain-init first.');
+    }
+    if (original._readError) {
+      return error('Failed to read brain.config.json: ' + original._readError);
     }
     modified = deepClone(original);
     for (var i = 0; i < args.changes.length; i++) {

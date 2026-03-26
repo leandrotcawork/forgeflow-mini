@@ -707,6 +707,47 @@ test('brain_config_diff: rejects string as modified', function () {
 });
 
 // ---------------------------------------------------------------------------
+// 2a — Array allowEmpty flag
+// ---------------------------------------------------------------------------
+
+test('validateValue: array allows empty when allowEmpty is true', function () {
+  var schema = { type: 'array', items: 'string', allowEmpty: true };
+  var result = server.validateValue(schema, []);
+  assert(result.valid, 'Expected valid for empty array with allowEmpty:true, got: ' + result.error);
+});
+
+test('validateValue: array still rejects empty without allowEmpty', function () {
+  var schema = { type: 'array', items: 'string' };
+  var result = server.validateValue(schema, []);
+  assert(!result.valid, 'Expected invalid for empty array without allowEmpty');
+});
+
+// ---------------------------------------------------------------------------
+// 2b — readJSON error distinction
+// ---------------------------------------------------------------------------
+
+test('brain_config_read: gives useful error for corrupt JSON (not "not found")', function () {
+  setupTestConfig();
+  fs.writeFileSync(configFile, '{ bad json !!!', 'utf-8');
+  var result = server.brainConfigRead({});
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') === -1, 'Should not say "not found" for corrupt file, got: ' + result.error);
+  setupTestConfig(); // restore
+});
+
+// ---------------------------------------------------------------------------
+// 2c — _template section
+// ---------------------------------------------------------------------------
+
+test('brain_config_read: _template returns default config structure', function () {
+  var result = server.brainConfigRead({ section: '_template' });
+  assert(result.ok, 'Expected ok, got: ' + result.error);
+  assert(result.data.version !== undefined, 'Expected version in template');
+  assert(result.data.hooks !== undefined, 'Expected hooks in template');
+  assert(result.data.resilience !== undefined, 'Expected resilience in template');
+});
+
+// ---------------------------------------------------------------------------
 // Cleanup and run
 // ---------------------------------------------------------------------------
 
