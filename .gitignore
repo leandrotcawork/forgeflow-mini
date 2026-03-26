@@ -25,3 +25,7 @@ brain-graph.html
 
 # Local tests (not committed)
 tests/
+
+# Local dev artifacts
+.brain/
+.claude/
