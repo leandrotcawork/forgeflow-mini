@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS lessons (
     source_agent     TEXT DEFAULT 'brain-lesson',  -- which skill created it
     supersedes       TEXT,                         -- lesson.id if this replaces an older lesson
     superseded_by    TEXT,                         -- lesson.id if a newer lesson replaced this one
-    confidence       TEXT DEFAULT 'medium',        -- high | medium | low
+    confidence       REAL DEFAULT 0.30,             -- 0.3 initial, grows to 0.9 max; 1.0 = promoted to convention
     root_cause_type  TEXT,                         -- misuse | gap | regression | assumption
     evidence         TEXT,                         -- brief evidence description
     weight           REAL NOT NULL DEFAULT 0.50,   -- for ordering in brain-map Tier 1 lesson loading

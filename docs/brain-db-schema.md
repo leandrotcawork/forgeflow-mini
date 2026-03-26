@@ -69,7 +69,7 @@ Created by brain-lesson when tasks fail. Stored in distributed directories per d
 | `source_agent` | TEXT | `brain-lesson \| brain-consolidate` |
 | `supersedes` | TEXT | lesson.id if this replaces an older lesson |
 | `superseded_by` | TEXT | lesson.id if replaced by a newer one |
-| `confidence` | TEXT | `high \| medium \| low` |
+| `confidence` | REAL | `0.3` initial, grows to `0.9` max; `1.0` = promoted to convention |
 | `root_cause_type` | TEXT | `misuse \| gap \| regression \| assumption` |
 | `evidence` | TEXT | Brief evidence description |
 | `weight` | REAL | For ordering in brain-map Tier 1 lesson loading |

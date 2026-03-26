@@ -204,8 +204,8 @@ brain-lesson's responsibility ends at detection and flagging. Actual proposal ge
 
 Insert new lesson:
 ```sql
-INSERT INTO lessons (id, file_path, title, domain, scope, severity, status, recurrence_count, created_from, source_agent, created_at, updated_at)
-VALUES ('lesson-XXXXX', '.brain/cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
+INSERT INTO lessons (id, file_path, title, domain, scope, severity, status, recurrence_count, confidence, created_from, source_agent, created_at, updated_at)
+VALUES ('lesson-XXXXX', '.brain/cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 0.3, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
 ```
 
 Update sinapse weights of related sinapses:
