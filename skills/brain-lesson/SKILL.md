@@ -152,7 +152,7 @@ superseded          superseded
 | `draft` | Just created by brain-lesson, pending review | brain-lesson (auto) |
 | `active` | Confirmed lesson, available to brain-map for context loading | Developer (manual) or brain-consolidate |
 | `promotion_candidate` | 3+ lessons share same domain+tag pattern, flagged for hippocampus promotion | brain-lesson Step 4 |
-| `promoted` | Convention added to hippocampus/conventions.md | brain-consolidate (after approval) |
+| `promoted` | Convention added to .brain/hippocampus/conventions.md | brain-consolidate (after approval) |
 | `archived` | No longer relevant, kept for history | Developer or brain-consolidate |
 | `superseded` | Replaced by a newer lesson — set `superseded_by` field | brain-lesson (when creating replacement) |
 

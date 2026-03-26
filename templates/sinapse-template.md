@@ -3,7 +3,7 @@ id: unique-sinapse-identifier
 title: Human-Readable Title
 region: cortex/backend  # or cortex/frontend, cortex/database, cortex/infra, hippocampus, sinapses, lessons
 tags: [tag1, tag2, tag3]  # comma-separated domain/pattern tags
-links: [cortex/backend/api, cortex/backend/services, hippocampus/conventions]
+links: [cortex/backend/api, cortex/backend/services, .brain/hippocampus/conventions]
 weight: 0.5  # 0.0-1.0, auto-updated by brain.db
 created_at: 2026-03-24T10:00:00Z
 updated_at: 2026-03-24T10:00:00Z
@@ -15,7 +15,7 @@ updated_at: 2026-03-24T10:00:00Z
 
 Markdown body. Link to other sinapses using [[wikilink]] syntax:
 - [[cortex/backend/api]] for API patterns
-- [[hippocampus/conventions]] for naming rules
+- [[.brain/hippocampus/conventions]] for naming rules
 - [[cortex/backend/lessons/lesson-0001]] for domain-specific lessons
 
 ## Section 2
@@ -32,7 +32,7 @@ func ExampleFunction() string {
 ## Related Concepts
 
 - See also [[other-sinapse]] for related knowledge
-- See [[hippocampus/conventions]] for naming conventions
+- See [[.brain/hippocampus/conventions]] for naming conventions
 
 ---
 

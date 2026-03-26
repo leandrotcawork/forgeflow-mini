@@ -27,8 +27,8 @@ Do **not** activate for routine tasks (naming, minor refactors, field additions,
 ### Step 1: Load Strategic Context
 
 From Brain:
-- Read `hippocampus/strategy.md` — product goals, tech priorities, current phase, business constraints
-- Read `hippocampus/decisions_log.md` — existing ADRs and frozen decisions
+- Read `.brain/hippocampus/strategy.md` — product goals, tech priorities, current phase, business constraints
+- Read `.brain/hippocampus/decisions_log.md` — existing ADRs and frozen decisions
 - Extract: what matters most? (reliability > correctness > maintainability > performance > DX?)
 
 ### Step 2: Internal Scoring

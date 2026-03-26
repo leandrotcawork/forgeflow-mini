@@ -229,8 +229,8 @@ Complexity: 65 (moderate-high)
 Risk: high
 
 Tier 1 (always):
-  - hippocampus/architecture.md (condensed)
-  - hippocampus/conventions.md (condensed)
+  - .brain/hippocampus/architecture.md (condensed)
+  - .brain/hippocampus/conventions.md (condensed)
   - 3 lessons matching domain
 
 Tier 2 (domain-specific):

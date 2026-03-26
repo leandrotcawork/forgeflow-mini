@@ -175,7 +175,7 @@ created_at: [ISO8601]
 - [ ] [Specific requirement 2]
 - [ ] Tests passing
 - [ ] No linting errors
-- [ ] Follows conventions from hippocampus/conventions.md
+- [ ] Follows conventions from .brain/hippocampus/conventions.md
 
 ## Context: Relevant Sinapses
 
@@ -196,7 +196,7 @@ created_at: [ISO8601]
 
 ## Common Mistakes (DO NOT DO)
 
-- [Mistake from hippocampus/conventions.md]
+- [Mistake from .brain/hippocampus/conventions.md]
   -> Instead, use [correct pattern]
 
 ---
@@ -229,7 +229,7 @@ created_at: [ISO8601]
 - [ ] [Specific requirement 2]
 - [ ] Tests passing
 - [ ] No linting errors
-- [ ] Follows conventions from hippocampus/conventions.md
+- [ ] Follows conventions from .brain/hippocampus/conventions.md
 
 ## Context: Relevant Sinapses
 
@@ -261,7 +261,7 @@ created_at: [ISO8601]
 
 ## Common Mistakes (DO NOT DO)
 
-- [Mistake pattern 1 from hippocampus/conventions.md]
+- [Mistake pattern 1 from .brain/hippocampus/conventions.md]
   -> Instead, use [correct pattern from sinapse]
 - [Mistake pattern 2 from a lesson-XXXX.md]
   -> See [[sinapse-id]] for correct approach
@@ -372,7 +372,7 @@ Build a self-contained prompt — the subagent has NO access to your conversatio
 
 - Inline the FULL contents of `context-packet-{task_id}.md` (paste the text, not the path)
 - Include the task description and acceptance criteria
-- Include key conventions from `.brain/hippocampus/conventions.md` (5-10 lines max — Haiku tasks are small)
+- Include key conventions from `.brain/.brain/hippocampus/conventions.md` (5-10 lines max — Haiku tasks are small)
 - Include 1 real code example from the codebase (5-10 lines) showing the pattern to follow — take from the context packet or read the relevant file directly
 
 **Step A.2: Dispatch subagent**
@@ -418,7 +418,7 @@ Build a self-contained prompt for the subagent. The subagent has NO access to yo
 
 - Inline the FULL contents of `context-packet-{task_id}.md` (not a file path — paste the actual text)
 - Inline the FULL contents of `sonnet-context-{task_id}.md` (not a file path — paste the actual text)
-- Include condensed conventions from `.brain/hippocampus/conventions.md` (key patterns, 10-20 lines)
+- Include condensed conventions from `.brain/.brain/hippocampus/conventions.md` (key patterns, 10-20 lines)
 - Include 1-2 real code examples from the codebase (already in the context file)
 - Include the acceptance criteria from the context file
 

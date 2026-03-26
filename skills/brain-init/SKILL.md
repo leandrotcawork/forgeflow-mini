@@ -125,7 +125,7 @@ The command for each hook runs `node "{plugin-path}/hooks/brain-hooks.js" {hookN
 - If installed via `~/.claude/plugins/`, resolve from there
 - If installed to a project-local path, resolve relative to the project
 
-Use the resolved absolute path in all hook command strings. Do **not** use `$CLAUDE_PLUGIN_DIR` — that is a placeholder in hooks.json; the installed hooks must contain the literal resolved path.
+Use `$CLAUDE_PLUGIN_DIR` as provided in hooks.json — Claude Code resolves this variable at hook execution time to the plugin's installed directory. Do **not** substitute a literal absolute path, as this breaks portability when the plugin cache location changes.
 
 #### Step 7.4: Build Hook Groups and Install
 
@@ -357,7 +357,7 @@ Possible capability levels:
 ## Output
 
 - `.brain/` directory created with full structure
-- `hippocampus/` with constitution files
+- `.brain/hippocampus/` with constitution files
 - `cortex/` with region templates
 - Hooks installed per selected profile (or skipped if declined)
 - `brain.db` SQLite index built
@@ -480,7 +480,7 @@ Possible capability levels:
 ## Next Steps
 
 1. Review generated files in `.brain/`
-2. Edit `hippocampus/strategy.md` with product goals
+2. Edit `.brain/hippocampus/strategy.md` with product goals
 3. Run `/brain-status` to check health
 4. Run `/brain-task` to start using the Brain
 

@@ -66,7 +66,7 @@
     "tier_1_always_loaded": ["hippocampus_summary", "current_task", "top_3_lessons"],
     "tier_2_default_count": 5,
     "tier_3_on_demand": true,
-    "persistent_mind_cache": "working-memory/agent-state.md"
+    "persistent_mind_cache": ".brain/working-memory/agent-state.md"
   },
   "token_budgets": {
     "context_mapper": { "in": 4000, "out": 2000 },
