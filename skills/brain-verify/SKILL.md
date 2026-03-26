@@ -1,0 +1,57 @@
+---
+name: brain-verify
+description: 6-phase implementation verification — build, types, lint, tests, security, diff review
+---
+
+# brain-verify — Implementation Verification
+
+## Pipeline Position
+Called by brain-task at Step 3.5, or manually via `/brain-verify`.
+
+## Execution Flow
+
+Run these 6 phases IN ORDER. Stop on first blocking failure.
+
+### Phase 1: Build Check
+- Detect build system: package.json scripts.build, Makefile, go build, cargo build
+- Run build command
+- PASS: exit code 0 | FAIL: report errors
+
+### Phase 2: Type Check
+- Detect: tsc --noEmit, mypy, go vet
+- PASS: no type errors | FAIL: report errors
+
+### Phase 3: Lint Check
+- Detect: eslint, biome, ruff, golangci-lint
+- PASS: no errors (warnings OK) | FAIL: report errors
+
+### Phase 4: Test Check
+- Detect: npm test, pytest, go test, cargo test
+- Run test suite
+- PASS: all tests pass | FAIL: report failures
+
+### Phase 5: Security Scan
+- Check for: hardcoded secrets (API keys, passwords in code)
+- Check for: SQL injection patterns
+- Check for: XSS patterns (innerHTML, unsanitized HTML injection without sanitize)
+- PASS: no issues | WARN: flag for review
+
+### Phase 6: Diff Review
+- Run git diff --stat
+- Verify: no unintended files changed
+- Verify: no large binary files added
+- Output: summary of changes
+
+## Output Format
+VERIFICATION REPORT:
+  Phase 1 (Build):    PASS | FAIL
+  Phase 2 (Types):    PASS | FAIL | SKIP (no type checker)
+  Phase 3 (Lint):     PASS | FAIL | SKIP (no linter)
+  Phase 4 (Tests):    PASS | FAIL | SKIP (no test runner)
+  Phase 5 (Security): PASS | WARN
+  Phase 6 (Diff):     PASS | WARN
+
+  Verdict: GO | NO-GO (reason)
+
+## Token Budget
+5k in / 3k out (runs tools, doesn't generate much text)

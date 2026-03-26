@@ -8,8 +8,8 @@ description: Consolidation cycle — Batch process completed tasks, propose sina
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
-                                                                                                       ↑ you are here
+brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
+                                                                                    ↑ you are here
 ```
 
 **Purpose:** Batch process completed tasks since last consolidation. Review proposed sinapse updates, surface escalation candidates (sole owner of proposal generation), generate health report, update weights. Always propose — never auto-update without developer approval.
@@ -18,7 +18,7 @@ brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCo
 
 **Trigger:**
 - Developer invokes: `/brain-consolidate`
-- Auto-suggested by TaskCompleted hook after 5 completed tasks
+- Auto-suggested by brain-task Step 6 after 5+ completed tasks since last consolidation
 - Recommended after major feature milestones
 
 ## Workflow
@@ -240,11 +240,11 @@ For each promoted lesson:
 
 ### Step 6.5: Verify Archival
 
-**Note:** Per-task archival is owned by the TaskCompleted hook (runs after each task). By the time brain-consolidate runs, context files should already be in `progress/completed-contexts/`.
+**Note:** Per-task archival is owned by brain-task Step 6 (runs inline after each task). By the time brain-consolidate runs, context files should already be in `progress/completed-contexts/`.
 
 If any context files remain in `working-memory/` that should have been archived (check for `sonnet-context-*.md`, `codex-context-*.md`, `opus-debug-context-*.md`, `context-packet-*.md`):
 - Move them to `progress/completed-contexts/[task-id]-[original-name].md`
-- Flag: "TaskCompleted hook may have failed for task [task-id] — manual archival required"
+- Flag: "brain-task Step 6 may not have completed for task [task-id] — archival recovered by consolidation"
 
 ---
 

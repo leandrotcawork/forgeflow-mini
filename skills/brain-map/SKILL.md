@@ -8,7 +8,7 @@ description: ContextMapper — Load 3-tier weighted sinapses for task context
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
+brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
                   ↑ you are here
 ```
 
@@ -305,7 +305,7 @@ brain-map is working when:
 3. brain-task Step 2 reads context-packet-{task_id}.md
 4. brain-task generates model-specific context file from it (sonnet-context, codex-context, or opus-debug-context)
 5. Model implements using its context file (Codex via MCP, Sonnet/Opus via Claude)
-6. At completion: all context files archived by TaskCompleted hook
+6. At completion: all context files archived by brain-task Step 6 (inline)
 
 ---
 

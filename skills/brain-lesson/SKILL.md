@@ -103,6 +103,38 @@ evidence: null                           # brief evidence description
 [Code example or scenario showing the issue]
 ```
 
+## Confidence Scoring (v0.3.0)
+
+Every lesson starts at confidence 0.3 (low). Confidence grows with evidence:
+
+| Event | Confidence Change |
+|-------|-------------------|
+| Initial creation | 0.3 |
+| Same pattern seen again | +0.1 |
+| Developer confirms relevance | +0.2 |
+| Developer marks as noise | -0.3 (may archive) |
+| Promoted to convention | Set to 1.0 |
+
+Evidence is tracked in brain.db `lessons.evidence` field as a JSON array:
+```json
+[
+  {"task_id": "2026-03-26-fix-auth", "event": "created", "timestamp": "..."},
+  {"task_id": "2026-03-27-fix-tenant", "event": "reconfirmed", "timestamp": "..."}
+]
+```
+
+## Promotion Pipeline
+
+Observation → Instinct (confidence 0.3)
+  → Active lesson (confidence 0.5+, status: 'active')
+    → Convention candidate (confidence 0.7+, 3+ occurrences, status: 'promotion_candidate')
+      → Convention (developer approves via /brain-consolidate, status: 'promoted')
+
+## Scope
+- Default scope: "project" (lesson applies to this project only)
+- If the same pattern is seen in 2+ projects: auto-promote scope to "global"
+- Global lessons are loaded by brain-map regardless of project
+
 ### Lesson Lifecycle
 
 ```
