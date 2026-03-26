@@ -68,16 +68,18 @@ If no developer input (autonomous mode), attempt RESUME if context files exist, 
 
 ## Step 0: Route through brain-decision (MANDATORY)
 
-If `--task-id`, `--score`, `--domain`, and `--model` flags were NOT passed (i.e., you were called directly by the user, not via brain-decision), proceed with these defaults: score=50, model=sonnet, domain=cross-domain. Log a warning to the user: **'brain-task called without brain-decision routing — using defaults. For optimal results, use /brain-decision first.'** Do NOT invoke brain-decision.
+**CASE A: Called via brain-decision (flags present)**
+brain-decision passes: `task_id`, `complexity_score`, `model`, `domain`, `plan_mode`. Use these values directly.
 
-brain-decision will return:
-- `task_id` (YYYY-MM-DD-slug)
-- `complexity_score` (0-100)
-- `model` (haiku | sonnet | codex | opus)
-- `domain` (backend | frontend | database | infra | analytics | cross-domain)
-- `plan_mode` (true | false)
+**CASE B: Called directly by user (no flags)**
+Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=false. Log a warning: **'brain-task called without brain-decision routing — using defaults. For optimal results, use /brain-decision first.'** Do NOT invoke brain-decision.
 
 **You need these values for every subsequent step. Do not guess them.**
+
+**Plan-mode guard:** If `plan_mode = true` but `.brain/working-memory/implementation-plan-{task_id}.md` does not exist:
+- Log warning: "Plan mode active but no plan file found. Generating plan inline."
+- Run `/brain-plan` NOW to generate the plan before proceeding.
+- Do NOT skip the plan step — plan-mode tasks require a plan.
 
 **STATE PERSISTENCE (GATE 5):** Update `.brain/working-memory/brain-state.json`:
 ```json
@@ -605,7 +607,7 @@ created_at: {ISO8601}
 Also update `.brain/progress/brain-project-state.json`:
 - Increment `total_tasks_completed`
 - Increment `model_usage.{model}`
-- Increment `tasks_since_last_consolidation`
+- Increment `tasks_since_last_consolidation` (project-level counter in brain-project-state.json)
 
 **Compaction advice:** SAFE to compact after this step. All implementation artifacts are committed or on disk.
 
@@ -653,7 +655,7 @@ Count entries in `activity.md` after last `consolidation-checkpoint` marker. If 
 ```json
 {
   "current_pipeline_step": 0,
-  "tasks_since_consolidate": N+1,
+  "tasks_since_consolidate": N+1,   // session-level counter (distinct from tasks_since_last_consolidation in brain-project-state.json)
   "active_context_files": [],
   "snapshot_reason": "pipeline complete, state reset"
 }

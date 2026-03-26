@@ -195,13 +195,14 @@ Trigger Plan Mode If:
 **If plan mode triggered:**
 ```
 1. Announce: "🔵 PLAN MODE: [task description]"
-2. Load sinapses from brain.db (Tier 1 + 2)
-3. Explore relevant files
-4. Design architecture + assess risks
-5. Present plan to developer
-6. ON APPROVAL: ExitPlanMode → Step 5
-7. ON REJECTION: Preserve plan, end session
+2. Invoke /brain-plan to generate .brain/working-memory/implementation-plan-{task_id}.md
+   brain-plan loads sinapses, explores files, designs architecture, assesses risks.
+3. Present plan to developer
+4. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan-mode flag)
+5. ON REJECTION: Preserve plan, end session
 ```
+
+This ensures brain-task always receives a plan file when `plan_mode = true`.
 
 **If no plan mode:**
 ```
