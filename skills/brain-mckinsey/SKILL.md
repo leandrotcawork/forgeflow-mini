@@ -40,7 +40,7 @@ Score against **4 axes** (each 0–10):
 3. **Effort** (weight 20%, inverted) — Story points? Phased approach? Blockers?
 4. **Strategic Alignment** (weight 20%) — Aligns with existing decisions? Increases/decreases debt?
 
-**Composite score = (B×0.4) + (R_inv×0.2) + (E_inv×0.2) + (A×0.2)**
+**Composite score = (business * 0.4) + (risk_inv * 0.2) + (effort_inv * 0.2) + (alignment * 0.2)**
 
 ### Step 3: External Research (Parallel Sub-Agents)
 

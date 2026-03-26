@@ -3,7 +3,7 @@
 Brain-driven development plugin for Claude Code — persistent knowledge that learns from every task. Eleven skills, one evolving brain.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.1.0-blue" alt="Version 0.1.0">
+  <img src="https://img.shields.io/badge/Version-0.2.0-blue" alt="Version 0.2.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-11-orange" alt="11 Skills">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
@@ -11,7 +11,7 @@ Brain-driven development plugin for Claude Code — persistent knowledge that le
 
 **Every task builds the brain.** ForgeFlow maintains a persistent knowledge system that remembers architecture patterns, learns from failures, and routes tasks to the right model. Knowledge compounds across sessions — the 50th task runs smarter than the first.
 
-**Intelligent routing, not manual selection.** Describe what you need. brain-decision classifies complexity, selects the optimal model (Codex/Opus/Haiku), and loads the right context automatically. You don't pick the model — the brain does.
+**Intelligent routing, not manual selection.** Describe what you need. brain-decision classifies complexity, selects the optimal model (Haiku/Sonnet/Codex/Opus), and loads the right context automatically. You don't pick the model — the brain does.
 
 **Failure becomes knowledge.** When something breaks, brain-lesson captures the pattern. After 3 similar failures, brain-consolidate proposes a convention for your project's constitution. Mistakes stop repeating.
 
@@ -33,7 +33,7 @@ claude plugin install brain-mini@forgeflow-plugins
 /brain-task "Add dark mode toggle"
 ```
 
-That's it. brain-init scans your project, generates hippocampus (architecture + conventions) and cortex (domain knowledge), builds the SQLite index, and you're ready.
+That's it. brain-init scans your project, generates hippocampus (architecture + conventions) and cortex (domain knowledge), configures Claude Code hooks (SessionStart + TaskCompleted), builds the SQLite index, and you're ready. Hooks are safely merged into existing `.claude/settings.json` without overwriting your other hooks.
 
 <details>
 <summary>Troubleshooting: skills don't show up</summary>
@@ -88,12 +88,13 @@ brain-decision scores every task on a 0-100 complexity scale and routes accordin
 
 | Complexity | Model | When | Token Budget |
 |---|---|---|---|
-| 0-20 | Lightweight (Haiku) | Trivial fixes — typos, colors, config | ~8-15k |
-| 20-75 | Codex | Standard features, refactors, CRUD | ~60-150k |
-| 40-75 + debugging | Opus | Stuck problems, unfamiliar errors | ~120-150k |
+| any | Opus | All debugging tasks (any score) | ~120-200k |
+| 0-19 | Haiku | Trivial fixes — typos, colors, config | ~8-15k |
+| 20-39 | Sonnet | Standard single-domain features | ~30-60k |
+| 40-74 | Codex | Complex features, multi-file refactors | ~100-150k |
 | 75+ | Codex + Plan Mode | Architecture, security, breaking changes | ~150-200k |
 
-Scoring factors: domain complexity (cross-domain +30), risk level (critical +35), task type (debugging +15, architectural +20). Plan mode auto-triggers at complexity >= 50 or critical risk.
+Debugging always routes to Opus (best at root cause analysis). Scoring factors: domain complexity (cross-domain +30), risk level (critical +35), task type (debugging +15, architectural +20). Plan mode auto-triggers at complexity >= 50 or critical risk.
 
 ### Three-Tier Context Loading
 
@@ -171,7 +172,7 @@ Lessons have a full lifecycle: `draft → active → promotion_candidate → pro
 |---|---|---|
 | `brain-decision` | Router | Mandatory entry point — classifies, scores, routes |
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
-| `brain-task` | Orchestrator | Executes implementation (Codex MCP / Opus / Haiku) |
+| `brain-task` | Orchestrator | Executes implementation (Haiku / Sonnet / Codex MCP / Opus) |
 | `brain-plan` | Planner | Decomposes complex tasks into subtasks |
 | `brain-codex-review` | Reviewer | Post-implementation quality gate |
 | `brain-document` | Documenter | Proposes sinapse updates (never auto-writes) |
@@ -214,11 +215,13 @@ Located in `.brain/` root after initialization:
   "project_name": "YourProject",
   "model_strategy": {
     "primary": "codex",
+    "standard": "sonnet",
     "debugging": "opus",
     "trivial": "haiku",
-    "codex_share": 0.80,
+    "codex_share": 0.40,
+    "sonnet_share": 0.35,
     "opus_share": 0.15,
-    "haiku_share": 0.05
+    "haiku_share": 0.10
   },
   "plan_mode": {
     "auto_trigger_complexity": 50,
@@ -238,7 +241,8 @@ Located in `.brain/` root after initialization:
 | Task Type | Tokens | Typical Time |
 |---|---|---|
 | Simple fix (Haiku) | ~12k | < 10 min |
-| Standard feature (Codex) | ~90k | 30-45 min |
+| Standard feature (Sonnet) | ~45k | 15-25 min |
+| Complex feature (Codex) | ~90k | 30-45 min |
 | Complex feature (Codex + plan) | ~150k | 60-90 min |
 | Debugging (Opus) | ~130k | 20-30 min |
 | Consolidation cycle | ~20k | 10-15 min |

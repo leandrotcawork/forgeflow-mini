@@ -29,10 +29,15 @@ Preconditions (guaranteed by hook):
 
 ### Step 1: Identify Touched Cortex Regions
 
-From `git diff HEAD~1`:
+From the task-completion record or working tree diff (brain-document runs BEFORE commit):
 
 ```bash
-git diff HEAD~1 --name-only | grep -E 'apps/|packages/' | extract domain
+# Option A: Read file list from task-completion artifact (preferred)
+# working-memory/task-completion-{task_id}.md contains "files changed" section
+
+# Option B: Diff working tree (uncommitted changes)
+git diff --name-only | grep -E 'apps/|packages/' | extract domain
+git diff --cached --name-only | grep -E 'apps/|packages/' | extract domain
 ```
 
 Example:
@@ -125,7 +130,7 @@ Proposed: New section explaining UNIQUE constraints + ON CONFLICT
 
 ### Step 4: Create Review Checklist
 
-Generate `working-memory/sinapse-review.md`:
+Generate `working-memory/sinapse-review-{task_id}.md`:
 
 ```markdown
 # Sinapse Update Review Checklist
@@ -197,9 +202,7 @@ Always show changes as unified diff format:
 
 Never proceed without developer sign-off.
 
-Proposal remains in `working-memory/sinapse-updates-{task_id}.md`.
-
-Once approved: Update `.brain/` sinapses atomically.
+Proposal remains in `working-memory/sinapse-updates-{task_id}.md`. Approval and application are handled by `/brain-consolidate` during the next consolidation cycle, or by the developer manually. brain-document is proposal-only — it never writes to cortex sinapses.
 
 ## Example: Full Proposal Cycle
 
