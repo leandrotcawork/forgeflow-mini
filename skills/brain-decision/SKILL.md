@@ -130,6 +130,8 @@ any | debugging + critical risk | Opus (+ plan) | Critical debugging or security
 75+ | non-debugging | Codex (+ plan) | Major system decision | 150-200k | "Should we...", "New architecture"
 ```
 
+> **Note:** Haiku, Sonnet, and Opus are Claude API models dispatched via the `Agent()` tool. **Codex** is the Codex CLI tool dispatched via MCP -- it is not a Claude API model. brain-task Path C invokes Codex via the `codex` or `codex-cli` MCP tool.
+
 **Decision Tree:**
 
 ```

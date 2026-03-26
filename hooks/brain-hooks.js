@@ -123,7 +123,7 @@ function hippocampusGuard(input) {
   // Normalise to forward slashes for cross-platform matching
   filePath = filePath.replace(/\\/g, '/');
 
-  if (filePath.indexOf('.brain/hippocampus/') !== -1 || filePath.indexOf('.brain\\hippocampus\\') !== -1) {
+  if (filePath.indexOf('.brain/hippocampus/') !== -1) {
     return block(
       'Hippocampus files are immutable — they can only be changed via /brain-consolidate with developer approval.'
     );

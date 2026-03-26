@@ -27,7 +27,7 @@ brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-do
 
 Scan `.brain/working-memory/`:
 - List all `task-completion-*.md` files with status = "success" or "failed"
-- Extract: task ID, description, touched files (from git diff), outcome (success/fail), sinapses loaded, token usage
+- Extract: task ID, description, touched files (from git diff), outcome (success | failed), sinapses loaded, token usage
 - Group by cortex region touched (backend, frontend, database, infra, cross-domain)
 
 Output: Working inventory in memory (not persisted yet).
@@ -119,7 +119,7 @@ For each candidate group:
 **4d: On approval** — Developer approves the proposal:
 1. Move convention text to .brain/hippocampus/conventions.md
 2. Set `status: promoted` on all source lessons
-3. Delete the proposal file
+3. Delete `.brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md` (the proposal created in Step 4c)
 
 ### Step 5: Generate brain-health.md
 
@@ -209,7 +209,7 @@ consolidation_cycle: [N]
 | .brain/cortex/infra/deploy.md | 0.31 | 2026-02-15 | 0 | Review for archival or update |
 | .brain/sinapses/analytics-routing.md | 0.28 | 2026-01-20 | 0 | Likely outdated; review or archive |
 
-**Recommendation:** If these sinapses are no longer relevant, move to .brain/lessons/archived/ or document when they'll be needed again.
+**Recommendation:** If these sinapses are no longer relevant, move to `.brain/cortex/<region>/archived/` or mark with `weight: 0.0` and `status: archived` in brain.db.
 
 ---
 
@@ -251,7 +251,7 @@ If any context files remain in `.brain/working-memory/` that should have been ar
 ### Step 7: Clear Working Memory
 
 After developer approves or explicitly skips:
-brain-task already wrote a one-line summary to `.brain/progress/activity.md` during Step 5. Do NOT append again during consolidation. Consolidation only: (1) archives the task-completion file to `.brain/progress/completed-contexts/`, (2) increments `tasks_since_last_consolidation` counter to 0, (3) increments `total_consolidation_cycles`.
+brain-task already wrote a one-line summary to `.brain/progress/activity.md` during Step 5. Do NOT append again during consolidation. Consolidation only: (1) archives the task-completion file to `.brain/progress/completed-contexts/`, (2) resets `tasks_since_last_consolidation` to 0, (3) increments `total_consolidation_cycles`.
 
 ## Output Summary
 
@@ -290,7 +290,7 @@ Action items:
 | Anti-Pattern | Why Wrong | Fix |
 |---|---|---|
 | Auto-updating sinapses without approval | Violates developer trust, can introduce errors | Always propose, never auto-update. Wait for approval. |
-| Clearing working-memory without archiving | Loses history of completed tasks | Archive to .brain/progress/activity.md before deleting |
+| Clearing working-memory without archiving | Loses history of completed tasks | Archive task-completion records to `.brain/progress/completed-contexts/` before clearing |
 | Ignoring escalation candidates | Misses opportunities to promote lessons to conventions | Always surface 3+ same-pattern lessons |
 | Updating weights without clear rationale | Makes ranking opaque | Only adjust weights on task completion (success ±) or decay on disuse |
 | Generating brain-health.md at wrong frequency | Staleness report becomes stale | Generate fresh on every consolidation cycle |
