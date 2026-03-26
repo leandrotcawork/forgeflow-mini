@@ -488,7 +488,7 @@ Debugging requires full codebase access and the complete context window. Always 
 
 ---
 
-### Path E: Plan Mode (score 75+) — Execute INLINE with standard plan
+### Path E: Plan Mode — Execute STANDARD PLAN (score >= 50, plan_type: standard or missing)
 
 High-complexity tasks require planning first, then inline execution. This path handles **standard plans** (legacy format or `plan_type: standard`).
 
@@ -511,7 +511,14 @@ IF plan_type == "standard" OR plan_type is missing:
 
 ### Path F: Dispatcher Mode — Execute EXPANDED PLAN via subagent-per-micro-step
 
-**When:** `plan_type: expanded` in the implementation plan AND (`dispatch_ready: true` OR `--dispatch` flag). This path is the execution engine for Cortex-Linked TDD plans produced by the upgraded brain-plan skill.
+**When:** `plan_type: expanded` in the implementation plan AND (
+        (`dispatch_ready: true` AND (`step_count >= 5` OR `estimated_tokens >= 40000`))
+        OR `--dispatch` flag is explicitly set
+      )
+Note: If `dispatch_ready: true` but `step_count < 5` and `tokens < 40k` and `--dispatch` not set,
+      execute micro-steps sequentially within Path F (no parallel subagents).
+
+This path is the execution engine for Cortex-Linked TDD plans produced by the upgraded brain-plan skill.
 
 **Why subagents:** Each TDD micro-step is self-contained (spec + implementation + acceptance gate). Dispatching one subagent per micro-step gives token isolation, parallel execution for independent steps, and clear pass/fail per unit of work. The orchestrator (this session) handles sequencing, spec review, and state persistence.
 
@@ -717,12 +724,12 @@ IF majority of micro-steps failed (> 50%):
 Update `brain-state.json`:
 ```json
 {
-  "current_pipeline_step": 3,
+  "current_pipeline_step": "3.5",
   "dispatch_mode": "expanded_plan",
   "plan_micro_steps": N,
   "plan_completed_steps": M,
   "plan_failed_steps": K,
-  "snapshot_reason": "Path F dispatch complete"
+  "snapshot_reason": "Path F dispatch complete — advancing to Step 3.5 (verification)"
 }
 ```
 
@@ -875,6 +882,7 @@ For tasks with score >= 40 (Codex / Opus):
 Move context files from `.brain/working-memory/` to `.brain/progress/completed-contexts/`:
 - `context-packet-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-context-packet.md`
 - `{model}-context-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-{model}-context.md`
+- `.brain/working-memory/codex-review-{task_id}.md` -> `.brain/progress/completed-contexts/codex-review-{task_id}.md`
 
 **6.3: Commit**
 
@@ -916,6 +924,7 @@ ON FAILURE:
     Output: "CIRCUIT BREAKER OPENED: 3 consecutive failures in 10 min. Pipeline blocked for 5 min."
 
   IF circuit_breaker was "half-open" (this was a probe):
+    circuit_breaker.failure_count += 1
     circuit_breaker.state = "open"
     circuit_breaker.cooldown_until = now + 5 minutes
     Output: "CIRCUIT BREAKER RE-OPENED: Probe task failed. Cooldown extended."
@@ -958,7 +967,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 |------|------|-------------|
 | 1 | `.brain/working-memory/context-packet-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
 | 2 | `.brain/working-memory/[model]-context-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
-| 3.5 | `.brain/working-memory/codex-review-{task_id}.md` | kept for reference (Codex path only) |
+| 3.5 | `.brain/working-memory/codex-review-{task_id}.md` | archived to `.brain/progress/completed-contexts/` at Step 6.2 |
 | 4 | `.brain/working-memory/task-completion-{task_id}.md` | cleaned up by brain-consolidate |
 | 6 | `.brain/working-memory/sinapse-updates-{task_id}.md` | cleaned up by brain-consolidate |
 
