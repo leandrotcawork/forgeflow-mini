@@ -1,6 +1,6 @@
 {
   "name": "forgeflow-mini",
-  "description": "Brain-driven development plugin — subagent dispatch, 14 skills, 8 hooks, circuit breaker, confidence-scored learning",
+  "description": "Brain-driven development plugin — subagent dispatch, TDD micro-step planning, 14 skills, 8 hooks, circuit breaker, confidence-scored learning",
   "version": "0.5.0",
   "author": {
     "name": "ForgeFlow contributors"
@@ -42,7 +42,7 @@
       },
       {
         "name": "brain-plan",
-        "description": "Planner — convert context packet to structured implementation plan",
+        "description": "Planner — Cortex-Linked TDD plans with micro-steps, file structure design, sinapse linking, and self-review gates",
         "trigger": "/brain-plan"
       },
       {
