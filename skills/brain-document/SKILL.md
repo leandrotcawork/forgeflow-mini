@@ -8,8 +8,8 @@ description: Documenter — Propose sinapse updates after task completion
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
-                                                                                    ↑ you are here
+brain-decision → brain-map → brain-task (Steps 1-3) → brain-codex-review (Codex only) → brain-document → brain-consolidate
+                                                                                          ↑ you are here
 ```
 
 **Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only — never write without developer approval.
@@ -18,18 +18,20 @@ brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCo
 
 ## Trigger
 
-Called by the **TaskCompleted hook** (settings.json) at Step 3 of the post-task sequence. Not user-facing — invoked automatically after each task completes.
+Called by brain-task at Step 6 (inline or as subagent), or manually via `/brain-document`. This skill is self-contained — it does NOT depend on any hook to be invoked.
 
-Preconditions (guaranteed by hook):
-- Task implementation is complete
-- Code has been committed
+For tasks with score < 40 (Haiku/Sonnet tier), brain-task may dispatch this as a Haiku subagent. For tasks with score >= 40 (Codex tier), it always runs inline to preserve full context for complex proposals.
+
+Preconditions (verified by brain-task before invoking):
+- Task implementation is complete (Step 3 done)
+- `working-memory/task-completion-{task_id}.md` exists (Step 4 done)
 - Tests passing
 
 ## Workflow
 
 ### Step 1: Identify Touched Cortex Regions
 
-From the task-completion record or working tree diff (brain-document runs BEFORE commit):
+From the task-completion record (`working-memory/task-completion-{task_id}.md`) or working tree diff:
 
 ```bash
 # Option A: Read file list from task-completion artifact (preferred)
@@ -240,6 +242,38 @@ Proposal remains in `working-memory/sinapse-updates-{task_id}.md`. Approval and 
 → All 3 sinapses updated atomically
 → Weights +0.02 each
 → brain.db reindexed
+
+---
+
+## Subagent Dispatch Mode
+
+For lightweight documentation tasks (score < 40), brain-task dispatches brain-document as a Haiku subagent:
+
+```
+Agent(model: "haiku", description: "Propose sinapse updates after task completion")
+```
+
+**What the subagent receives:**
+- Task-completion record contents (`working-memory/task-completion-{task_id}.md`)
+- Current sinapses for the touched domain(s), condensed to key sections
+- List of files changed and their domains
+
+**What the subagent returns:**
+- Sinapse update proposals in unified diff format
+- Each proposal includes: section, current text, proposed text, rationale
+- Anti-pattern discoveries flagged for `/brain-lesson` routing
+
+**When subagent is used (score < 40):**
+- Simpler tasks produce straightforward documentation updates
+- Haiku is sufficient for pattern extraction and diff generation
+- Reduces token cost for routine documentation
+
+**When inline is required (score >= 40):**
+- Complex implementations need full context to propose accurate updates
+- Cross-domain changes require reading multiple sinapses simultaneously
+- Codex-path tasks may produce architectural patterns that need careful documentation
+
+**Fallback:** If subagent dispatch fails, brain-task runs brain-document inline. The output format (unified diffs + review checklist) is identical in both modes.
 
 ---
 

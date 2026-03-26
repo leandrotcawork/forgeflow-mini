@@ -10,7 +10,7 @@ description: MANDATORY entry point before any implementation, fix, feature, refa
 You are a router. Your job is to classify the task, pick the model, and hand off to brain-task with concrete values. Do not skip this and "go straight to implementation." Do not rationalize "this is small, I'll skip routing." The score determines what happens — but routing always runs first.
 
 ```
-brain-decision → brain-task (Steps 1→3) → [TaskCompleted hook]
+brain-decision → brain-task (Steps 1→6, all inline, self-contained)
      ↑ you are here — do not jump ahead
 ```
 
@@ -21,6 +21,19 @@ brain-decision → brain-task (Steps 1→3) → [TaskCompleted hook]
 ---
 
 ## EXECUTE THESE STEPS NOW
+
+### Pre-Step: Circuit Breaker Check
+
+Before classifying, check `.brain/progress/brain-project-state.json`:
+- If `circuit_breaker.state` == "open" AND current time < `cooldown_until`:
+  → Output: "BRAIN: Circuit breaker OPEN. {N} consecutive failures detected. Cooling down until {time}. Try: (1) different approach, (2) /brain-lesson to capture the failure, (3) manual implementation."
+  → Do NOT proceed with routing.
+- If `circuit_breaker.state` == "half-open":
+  → Output: "BRAIN: Circuit breaker HALF-OPEN. Allowing one probe task."
+  → Proceed normally.
+- Otherwise: proceed.
+
+---
 
 ### Step 1: Classify the task
 
@@ -217,7 +230,8 @@ Opus:    /brain-task --debug --task "[description]" --task-id "[id]" --domain "[
 - Step 1: Load context from brain.db → `context-packet-{task_id}.md`
 - Step 2: Generate model-specific context file (`sonnet-context`, `codex-context`, or `opus-debug-context`)
 - Step 3: Implement using the context file
-- TaskCompleted hook: documentation → archival → commit
+- Step 3.5: Quality gate via brain-codex-review (Codex path only)
+- Steps 4-6: Task-completion record → activity log → brain-document → archival → commit (all inline)
 
 **Escalation Rule:** If Sonnet fails after 2 attempts, brain-task escalates to Codex automatically.
 
@@ -245,11 +259,32 @@ Dispatching to brain-task...
 
 Then invoke `brain-task`. brain-task owns Steps 1-3 (context assembly → execution context → implementation). You do NOT create context files or write code.
 
+### State Persistence
+
+After dispatching, write the classification to `brain-state.json`:
+
+```json
+{
+  "last_decision": {
+    "task_id": "[id]",
+    "domain": "[domain]",
+    "risk": "[risk]",
+    "type": "[type]",
+    "score": [N],
+    "model": "[model]",
+    "plan_mode": true | false,
+    "timestamp": "[ISO8601]"
+  }
+}
+```
+
+This enables brain-aside to display pipeline context and brain-task to resume after interruption.
+
 ---
 
 ## The #1 failure mode
 
-**Skipping brain-decision entirely and going straight to implementation.** The agent reads the task, thinks "I know how to do this", and starts coding. No classification happens, no context files are created, no model is selected, the TaskCompleted hook has nothing to archive, no sinapses are proposed. The entire learning loop breaks.
+**Skipping brain-decision entirely and going straight to implementation.** The agent reads the task, thinks "I know how to do this", and starts coding. No classification happens, no context files are created, no model is selected, no sinapses are proposed. The entire learning loop breaks.
 
 **If you are about to write code and you haven't output the routing summary above, STOP.** You skipped brain-decision.
 

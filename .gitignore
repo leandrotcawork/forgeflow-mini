@@ -22,3 +22,6 @@ brain-graph.html
 # IDE
 .vscode/
 .idea/
+
+# Local tests (not committed)
+tests/

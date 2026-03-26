@@ -2,6 +2,40 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.3.0] - 2026-03-26
+
+### Architecture
+- **Self-contained pipeline** — All skills run inline without hook dependencies. Hooks are optional enhancements, never workflow drivers.
+- **Subagent dispatch engine** — brain-task dispatches implementation to model-appropriate subagents (Haiku/Sonnet) with inline fallback. Saves 76% main context tokens for Sonnet tasks.
+- **Parallel execution** — brain-mckinsey runs 2-3 research subagents in parallel. Post-implementation runs review + document subagents simultaneously.
+- **State persistence** — brain-state.json (session) + brain-project-state.json (project) survive compaction and session boundaries.
+
+### Added
+- **8 hooks, 3 tiers** — Hook runner (`hooks/brain-hooks.js`) with profile system (minimal/standard/strict). Includes hippocampus guard, config protection, strategy rotation, quality gate, task safety net, activity observer.
+- **Circuit breaker** — 3 consecutive failures in 10 min opens breaker. 5-min cooldown. Half-open probe. Prevents cascading failures.
+- **Strategy rotation** — After 2 failures: default → alternative → minimal → escalate → human. Tracked in brain-state.json.
+- **Confidence-scored learning** — Lessons start at 0.3 confidence, grow with evidence. Promotion pipeline: instinct → active → convention candidate → convention.
+- **brain-verify** (new skill) — 6-phase verification: build, types, lint, tests, security, diff review. GO/NO-GO verdict.
+- **brain-eval** (new skill) — Eval-driven development: define capability and regression evals before implementation.
+- **brain-aside** (new skill) — Quick question without losing pipeline context. Auto-saves and reminds to resume.
+- **Strategic compaction** — Phase-aware advice: safe/unsafe to compact at each pipeline step.
+- **Context pressure management** — Tracks token usage, degrades gracefully at 75%+ pressure.
+- **brain-init --upgrade** — Migrate v0.2.0 projects to v0.3.0 without full re-init.
+- **brain-init --hooks-only** — Reconfigure hooks without touching .brain/ content.
+- **brain_state table** — Key-value store in brain.db for state persistence backup.
+
+### Fixed
+- **TaskCompleted hook stall** (critical) — Hook only fires for Agent tool subagents, never for Skill-based execution. All post-task steps now run inline. Hook serves as optional safety net.
+- **Pipeline position diagrams** — All 11 skills updated to show correct self-contained flow.
+
+### Changed
+- **brain-task** — Complete rewrite: subagent dispatch decision tree, state persistence at every gate, circuit breaker check, verification gate, strategy rotation, context pressure monitoring.
+- **brain-init Phase 7** — Tiered hook installation with profile selection and safe merge.
+- **brain.config.json** — v0.3.0 with resilience, subagents, hooks, learning, token_optimization sections.
+- **brain-decision** — Circuit breaker check before routing, state write after dispatch.
+- **brain-lesson** — Confidence scoring, evidence tracking, promotion pipeline, scope tracking.
+- **Skill count** — 11 → 14 skills (added brain-verify, brain-eval, brain-aside).
+
 ## [0.2.0] - 2026-03-25
 
 ### Added

@@ -110,3 +110,16 @@ CREATE TABLE IF NOT EXISTS consolidation_log (
     sinapses_reweighted INTEGER NOT NULL DEFAULT 0,
     created_at     TEXT NOT NULL
 );
+
+----------------------------------------------------------------------
+-- BRAIN_STATE — Key-value store for pipeline state persistence
+----------------------------------------------------------------------
+-- Secondary persistence layer for brain-state.json.
+-- Updated by brain-task at each gate checkpoint.
+-- Used for recovery if JSON files get corrupted.
+
+CREATE TABLE IF NOT EXISTS brain_state (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);

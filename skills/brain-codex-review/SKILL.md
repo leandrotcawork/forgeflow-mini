@@ -16,9 +16,12 @@ description: Codex code review agent — validates implementation, finds bugs, c
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
-                                           ↑ you are here
+brain-decision → brain-map → brain-task (Steps 1-3) → brain-codex-review (Step 3.5) → brain-task (Steps 4-6) → brain-document → brain-consolidate
+                                                        ↑ you are here
+                                                        (runs as subagent OR inline)
 ```
+
+**Architecture:** This skill is invoked by brain-task at Step 3.5 (Codex path only). It does NOT depend on any hook. It gates forward progress — if review fails, brain-task pauses until fixes are applied. For Codex-path tasks (score >= 40), brain-task dispatches this as a Sonnet subagent. If subagent dispatch fails, it falls back to inline execution.
 
 ---
 
@@ -43,7 +46,7 @@ Step 3.5: brain-codex-review runs automatically (Codex path only)
         ├─ Re-run tests
         └─ Return to review (until clean)
         ↓
-[TaskCompleted hook]: documentation → archival → commit (only after review passes)
+brain-task Step 4: task-completion record → Step 5: activity log → Step 6: brain-document + archival + commit
 ```
 
 ---
@@ -148,7 +151,7 @@ implementation_quality: [pass | pass_with_fixes | fail]
    - Checks for bugs, security, performance
    - Auto-fixes issues found
    - Returns pass/fail verdict
-4. If pass: signal completion → TaskCompleted hook fires
+4. If pass: proceed to brain-task Step 4 (post-task sequence)
 5. If fail: Codex re-implements until review passes
 ```
 
@@ -247,6 +250,31 @@ Codex review is working when:
 - [ ] Review fails → halt with manual fix instructions
 - [ ] `/brain-codex-review` manual invocation works
 - [ ] Quality score calculated (0-10)
+
+---
+
+## Subagent Dispatch Mode
+
+For Codex-path tasks (score >= 40), brain-task dispatches brain-codex-review as a subagent:
+
+```
+Agent(model: "sonnet", description: "Codex code review — quality gate")
+```
+
+**What the subagent receives:**
+- `git diff` output for all changed files
+- Project conventions from cortex sinapses
+- Relevant sinapse patterns for the touched domains
+- The full review checklist (code quality, testing, security, architecture, documentation)
+
+**What the subagent returns:**
+- Structured review with verdict: `pass`, `pass_with_fixes`, or `fail`
+- Findings organized by category (strengths, issues fixed, issues requiring manual fix)
+- Quality score breakdown (code quality, test coverage, security, architecture)
+
+**Fallback:** If subagent dispatch fails (timeout, model unavailable, context too large), brain-task runs the review inline with full context access. The review output format is identical in both modes.
+
+**Manual invocation still works:** `/brain-codex-review --file [path]` always runs inline regardless of dispatch mode.
 
 ---
 

@@ -1,23 +1,22 @@
 # ForgeFlow Mini
 
-Brain-driven development plugin for Claude Code — persistent knowledge that learns from every task. Eleven skills, one evolving brain.
+Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.2.0-blue" alt="Version 0.2.0">
+  <img src="https://img.shields.io/badge/Version-0.3.0-blue" alt="Version 0.3.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
-  <img src="https://img.shields.io/badge/Skills-11-orange" alt="11 Skills">
+  <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
+  <img src="https://img.shields.io/badge/Hooks-8-yellow" alt="8 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
-**Every task builds the brain.** ForgeFlow maintains a persistent knowledge system that remembers architecture patterns, learns from failures, and routes tasks to the right model. Knowledge compounds across sessions — the 50th task runs smarter than the first.
+**Every task builds the brain.** ForgeFlow maintains a persistent knowledge system that remembers architecture patterns, learns from failures, and routes tasks to the right model. Knowledge compounds across sessions -- the 50th task runs smarter than the first.
 
-**Intelligent routing, not manual selection.** Describe what you need. brain-decision classifies complexity, selects the optimal model (Haiku/Sonnet/Codex/Opus), and loads the right context automatically. You don't pick the model — the brain does.
+**Intelligent routing with subagent dispatch.** Describe what you need. brain-decision classifies complexity (0-100), selects the optimal model (Haiku/Sonnet/Codex/Opus), and dispatches to subagents for speed and token efficiency. Sonnet tasks run as isolated subagents (76% main context savings). Complex tasks run inline with full context.
 
-**Failure becomes knowledge.** When something breaks, brain-lesson captures the pattern. After 3 similar failures, brain-consolidate proposes a convention for your project's constitution. Mistakes stop repeating.
+**Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Eight optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
 
-**Code review built in.** After every Codex implementation, brain-codex-review validates conventions, tests, security, and performance. Quality gates run automatically — not when you remember to ask.
-
-**Works with just Claude. Scales with Codex MCP.** Zero external providers needed to start. When Codex MCP is configured, the brain delegates implementation through it. Claude handles everything else.
+**Failure becomes knowledge with confidence scoring.** When something breaks, brain-lesson captures it at confidence 0.3. Evidence accumulates. At 0.7+ with 3 occurrences, brain-consolidate proposes it as a convention. Mistakes stop repeating.
 
 ---
 
@@ -33,7 +32,7 @@ claude plugin install brain-mini@forgeflow-plugins
 /brain-task "Add dark mode toggle"
 ```
 
-That's it. brain-init scans your project, generates hippocampus (architecture + conventions) and cortex (domain knowledge), configures Claude Code hooks (SessionStart + TaskCompleted), builds the SQLite index, and you're ready. Hooks are safely merged into existing `.claude/settings.json` without overwriting your other hooks.
+brain-init scans your project, generates hippocampus (architecture + conventions) and cortex (domain knowledge), optionally installs hooks (tiered: minimal/standard/strict), builds the SQLite index, and initializes state files.
 
 <details>
 <summary>Troubleshooting: skills don't show up</summary>
@@ -49,21 +48,21 @@ That's it. brain-init scans your project, generates hippocampus (architecture + 
 
 ## Which Skill?
 
-Not sure which command to use? Pick by goal:
-
 | I want to... | Use | What happens |
 |---|---|---|
-| Build a feature | `/brain-task "description"` | Classifies, loads context, implements, reviews |
+| Build a feature | `/brain-task "description"` | Routes, loads context, dispatches subagent or implements inline, reviews |
 | Debug something stuck | `/brain-task --debug "description"` | Routes to Opus for root cause analysis |
 | Plan before building | `/brain-task --plan "description"` | Architecture plan with developer approval gate |
-| Quick trivial fix | `/brain-task "fix typo in header"` | Auto-routes to lightweight mode (Haiku) |
-| Check brain health | `/brain-status` | Staleness, coverage gaps, weight distribution |
-| Review completed work | `/brain-consolidate` | Batch-review sinapses, surface escalations |
-| Record a failure | `/brain-lesson "what failed"` | Captures lesson, checks for recurring patterns |
-| Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Multi-source research + scoring framework |
-| Initialize new project | `/brain-init` | Scans project, generates brain structure |
-
-Or just describe what you need — `/brain-task` routes automatically based on complexity scoring.
+| Quick trivial fix | `/brain-task "fix typo in header"` | Auto-routes to Haiku (lightweight, inline) |
+| Verify implementation | `/brain-verify` | 6-phase check: build, types, lint, tests, security, diff |
+| Define success criteria | `/brain-eval` | Write capability + regression evals before coding |
+| Check brain health | `/brain-status` | Staleness, coverage gaps, circuit breaker, subagent stats |
+| Review completed work | `/brain-consolidate` | Batch-review sinapses, surface escalations, update weights |
+| Record a failure | `/brain-lesson "what failed"` | Captures lesson with confidence scoring |
+| Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
+| Quick side question | `/brain-aside` | Answer question without losing pipeline context |
+| Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
+| Upgrade from v0.2 | `/brain-init --upgrade` | Adds v0.3.0 features without full re-init |
 
 ---
 
@@ -71,67 +70,85 @@ Or just describe what you need — `/brain-task` routes automatically based on c
 
 ### The Pipeline
 
-Every task flows through a five-stage pipeline with clear ownership at each stage:
+Every task flows through a self-contained pipeline. No hooks required -- hooks enhance when present.
 
 ```
-brain-decision → brain-map → brain-task → [brain-codex-review] → [TaskCompleted hook] → brain-document → brain-consolidate
-   classify       context      implement     quality gate           automate              propose           batch review
-   route          assemble     execute       conventions/security   archive/commit        sinapse updates   escalation
-   model select   Tier 1/2/3                 auto-fix issues        suggest consolidate   (never auto)      health report
+brain-decision -> brain-task (Steps 1-6, all inline or subagent) -> brain-document -> brain-consolidate
+   classify       Step 1: Load context (brain-map)
+   route          Step 2: Generate execution context
+   model select   Step 3: Implement (inline OR subagent dispatch)
+                  Step 3.5: Verify (brain-verify + brain-codex-review)
+                  Step 4: Task-completion record
+                  Step 5: Activity log
+                  Step 6: Archive + brain-document + commit
 ```
 
-**Between brain-task and brain-document**, the TaskCompleted hook fires automatically — it creates the completion record, archives context files, appends to the activity log, and commits. You don't run this manually.
+### Subagent Dispatch
+
+brain-task dispatches work to model-appropriate subagents when it saves tokens:
+
+| Score | Model | Execution | Why |
+|---|---|---|---|
+| 0-19 | Haiku | Inline | Too small for subagent overhead |
+| 20-39 | Sonnet | **Subagent** | 76% main context savings, isolated execution |
+| 40-74 | Codex | Inline + parallel review/doc subagents | Complex tasks need full context |
+| 75+ | Codex + Plan | Inline + parallel research subagents | Architecture needs maximum context |
+| Debugging | Opus | Inline | Debugging requires full codebase access |
+
+Subagents get full context inlined in their prompt (not file references). Every subagent path has an inline fallback.
 
 ### Intelligent Routing
 
-brain-decision scores every task on a 0-100 complexity scale and routes accordingly:
+brain-decision scores every task on a 0-100 complexity scale:
 
-| Complexity | Model | When | Token Budget |
-|---|---|---|---|
-| any | Opus | All debugging tasks (any score) | ~120-200k |
-| 0-19 | Haiku | Trivial fixes — typos, colors, config | ~8-15k |
-| 20-39 | Sonnet | Standard single-domain features | ~30-60k |
-| 40-74 | Codex | Complex features, multi-file refactors | ~100-150k |
-| 75+ | Codex + Plan Mode | Architecture, security, breaking changes | ~150-200k |
-
-Debugging always routes to Opus (best at root cause analysis). Scoring factors: domain complexity (cross-domain +30), risk level (critical +35), task type (debugging +15, architectural +20). Plan mode auto-triggers at complexity >= 50 or critical risk.
+- **Domain**: cross-domain +30, backend +10
+- **Risk**: critical +35, high +20, medium +5
+- **Type**: architectural +20, debugging +15, unknown_pattern +10
+- **Base**: 15
 
 ### Three-Tier Context Loading
-
-brain-map assembles relevant knowledge before every implementation:
 
 | Tier | Tokens | Content | When |
 |---|---|---|---|
 | Tier 1 | ~4k | Hippocampus (condensed) + top 3 lessons + task | Always |
-| Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting (top 2) + backlinks | Standard + Codex + Opus |
+| Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting + backlinks | Standard + Codex + Opus |
 | Tier 3 | ~5k | Deep linked sinapses | Only if complexity >= 75 |
 | Lightweight | ~4k | Tier 1 only | Haiku tasks |
 
-### Code Review
+### Resilience
 
-After every Codex implementation, brain-codex-review runs automatically:
+| Feature | How It Works |
+|---|---|
+| **Circuit Breaker** | 3 failures in 10 min -> OPEN (5-min cooldown) -> HALF-OPEN (probe) -> CLOSED |
+| **Strategy Rotation** | After 2 failures: default -> alternative -> minimal -> escalate -> human |
+| **State Persistence** | brain-state.json (session) + brain-project-state.json (project), survives compaction |
+| **Context Pressure** | Tracks usage: <50% low, 65% moderate, 75% high (skip optional steps), 80% critical |
 
-- Conventions followed (from hippocampus/conventions.md)
-- Tests passing
-- Security (tenant isolation, input validation, auth checks)
-- Performance (no N+1, proper indexing)
-- Output: quality score + detailed findings
+### Hooks (Optional, 3 Tiers)
 
-Auto-fixes lint issues. Blocks on security or logic errors.
+Hooks never drive workflow -- they add guardrails, observation, and lifecycle management.
+
+| Tier | Profile | Hooks |
+|---|---|---|
+| 1 | `minimal` | Session briefing, hippocampus guard, config protection, session end |
+| 2 | `standard` | + Strategy rotation, quality gate, task safety net |
+| 3 | `strict` | + Activity observer |
+
+Set via `BRAIN_HOOK_PROFILE` env var or `brain.config.json`. Disable individual hooks via `BRAIN_DISABLED_HOOKS`.
 
 ### Learning Loop
 
 ```
-Task fails → brain-lesson captures it → lesson stored in cortex/<domain>/lessons/
-                                               ↓
-                                    3+ similar failures detected
-                                               ↓
-                              brain-consolidate generates escalation proposal
-                                               ↓
-                                    Developer approves → hippocampus/conventions.md
+Task fails -> brain-lesson captures it (confidence 0.3)
+                    |
+              Same pattern seen again -> confidence grows (+0.1 per occurrence)
+                    |
+              Confidence 0.7+ with 3+ occurrences
+                    |
+              brain-consolidate generates escalation proposal
+                    |
+              Developer approves -> hippocampus/conventions.md (confidence 1.0)
 ```
-
-Lessons have a full lifecycle: `draft → active → promotion_candidate → promoted → archived → superseded`. brain-lesson detects patterns. brain-consolidate proposes conventions. The developer always approves.
 
 ---
 
@@ -141,66 +158,52 @@ Lessons have a full lifecycle: `draft → active → promotion_candidate → pro
 
 ```
 .brain/
-├── hippocampus/           Constitution — architecture, conventions, strategy
-│   ├── architecture.md      Platform architecture snapshot
-│   ├── conventions.md       Absolute rules (promoted from lessons)
-│   ├── strategy.md          Product goals
-│   └── decisions_log.md     ADR log
-├── cortex/                Curated domain knowledge — sinapses + domain-local lessons
-│   ├── backend/
-│   │   ├── index.md           Domain sinapse
-│   │   └── lessons/           Domain-specific failure patterns
-│   ├── frontend/
-│   ├── database/
-│   └── infra/
-├── sinapses/              Cross-cutting knowledge flows
-├── lessons/
-│   ├── cross-domain/        Lessons spanning multiple domains
-│   ├── inbox/               Unclassified + escalation proposals
-│   └── archived/            No longer active, kept for history
-├── working-memory/        Ephemeral task artifacts (auto-cleared)
-├── progress/
-│   ├── activity.md          Running task log (append-only)
-│   ├── brain-health.md      Generated health report
-│   └── completed-contexts/  Archived context files (permanent)
-└── brain.db               SQLite index (sinapses + lessons + links)
++-- hippocampus/           Constitution -- architecture, conventions, strategy
++-- cortex/                Domain knowledge -- sinapses + domain-local lessons
+|   +-- backend/
+|   +-- frontend/
+|   +-- database/
+|   +-- infra/
++-- sinapses/              Cross-cutting knowledge flows
++-- lessons/               cross-domain/ + inbox/ + archived/
++-- working-memory/        Ephemeral task artifacts + brain-state.json
++-- progress/              activity.md + brain-health.md + brain-project-state.json
++-- brain.db               SQLite index (sinapses + lessons + links + state)
 ```
 
-### Skill Map
+### Skill Map (14 Skills)
 
 | Skill | Type | Purpose |
 |---|---|---|
-| `brain-decision` | Router | Mandatory entry point — classifies, scores, routes |
+| `brain-decision` | Router | Classifies, scores, routes, circuit breaker check |
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
-| `brain-task` | Orchestrator | Executes implementation (Haiku / Sonnet / Codex MCP / Opus) |
+| `brain-task` | Orchestrator | Dispatches subagents or implements inline, manages pipeline |
 | `brain-plan` | Planner | Decomposes complex tasks into subtasks |
-| `brain-codex-review` | Reviewer | Post-implementation quality gate |
-| `brain-document` | Documenter | Proposes sinapse updates (never auto-writes) |
-| `brain-lesson` | Learner | Captures failures, flags promotion candidates |
+| `brain-codex-review` | Reviewer | Quality gate (runs as Sonnet subagent for Codex tasks) |
+| `brain-document` | Documenter | Proposes sinapse updates (Haiku subagent for simple tasks) |
+| `brain-lesson` | Learner | Captures failures with confidence scoring |
 | `brain-consolidate` | Curator | Batch review, escalation proposals, weight updates |
-| `brain-mckinsey` | Strategist | External research + scoring for high-stakes decisions |
-| `brain-status` | Dashboard | Health metrics, staleness, coverage gaps |
-| `brain-init` | Initializer | Scans project, generates brain, builds index |
+| `brain-mckinsey` | Strategist | Parallel research subagents + scoring framework |
+| `brain-status` | Dashboard | Health metrics (runs as Haiku subagent) |
+| `brain-init` | Initializer | Scans project, generates brain, installs hooks |
+| `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
+| `brain-eval` | Evaluator | Define success criteria before implementation |
+| `brain-aside` | Context Saver | Quick question without losing pipeline state |
 
-### MCP Integration
+### Hook Architecture (8 Hooks)
 
-brain-task delegates implementation through Codex MCP when available:
+All hooks run through `hooks/brain-hooks.js` -- a pure Node.js runner with profile gating.
 
-| MCP Server | Command | Role |
-|---|---|---|
-| `codex-cli` | `npx @cexll/codex-mcp-server` | Primary implementation |
-| `codex` | `codex mcp-server` | Alternative |
-
-Both registered at user scope via `claude mcp add`. If neither is available, Claude implements directly using the assembled context as a brief.
-
-### Hooks
-
-Two hooks in `settings.json` automate the workflow:
-
-| Hook | When | What It Does |
-|---|---|---|
-| **SessionStart** | Every session | Reads brain health, todo.md, stale regions. Outputs briefing. |
-| **TaskCompleted** | After each task | Creates completion record, invokes brain-document, archives context, appends to activity.md, commits, suggests brain-consolidate after 5 tasks. |
+| Hook | Event | Tier | Purpose |
+|---|---|---|---|
+| stateRestore | SessionStart | 1 | Restore brain state into session |
+| hippocampusGuard | PreToolUse:Write | 1 | Block writes to hippocampus/ |
+| configProtection | PreToolUse:Write | 1 | Block weakening linter/formatter configs |
+| sessionEnd | Stop | 1 | Persist brain-state.json |
+| strategyRotation | PostToolUse:Bash | 2 | Inject rotation advice after failures |
+| qualityGate | PostToolUse:Write | 2 | Check for associated linter command |
+| taskSafetyNet | TaskCompleted | 2 | Verify post-task steps completed |
+| activityObserver | PostToolUse:Write | 3 | Track modified files |
 
 ---
 
@@ -208,59 +211,42 @@ Two hooks in `settings.json` automate the workflow:
 
 ### brain.config.json
 
-Located in `.brain/` root after initialization:
+Located in `.brain/` root after initialization. Key sections:
 
-```json
-{
-  "project_name": "YourProject",
-  "model_strategy": {
-    "primary": "codex",
-    "standard": "sonnet",
-    "debugging": "opus",
-    "trivial": "haiku",
-    "codex_share": 0.40,
-    "sonnet_share": 0.35,
-    "opus_share": 0.15,
-    "haiku_share": 0.10
-  },
-  "plan_mode": {
-    "auto_trigger_complexity": 50,
-    "auto_trigger_architectural": true,
-    "auto_trigger_critical": true
-  },
-  "codex_review": {
-    "enabled": true,
-    "auto_post_implement": true,
-    "checks": ["syntax", "conventions", "tests", "security", "performance"]
-  }
-}
-```
+| Section | Purpose |
+|---|---|
+| `hooks.profile` | Hook tier: minimal / standard / strict |
+| `resilience.circuit_breaker` | Failure threshold, cooldown, window |
+| `resilience.strategy_rotation` | Failure threshold, strategies list |
+| `subagents` | Enable/disable, dispatch threshold, model overrides |
+| `learning` | Confidence initial/promotion thresholds, scope |
+| `token_budgets` | Per-skill token allocations |
+| `token_optimization` | Compact suggestion threshold, context pressure levels |
+| `context_loading` | Tier token limits, always-loaded items |
+| `weight_decay` | Rate, min weight, max stale days |
 
 ### Token Budgets
 
-| Task Type | Tokens | Typical Time |
-|---|---|---|
-| Simple fix (Haiku) | ~12k | < 10 min |
-| Standard feature (Sonnet) | ~45k | 15-25 min |
-| Complex feature (Codex) | ~90k | 30-45 min |
-| Complex feature (Codex + plan) | ~150k | 60-90 min |
-| Debugging (Opus) | ~130k | 20-30 min |
-| Consolidation cycle | ~20k | 10-15 min |
-| **Typical session (3 tasks)** | **~340k** | **~1.5 hours** |
+| Task Type | Main Context | Subagent Context | Total |
+|---|---|---|---|
+| Simple fix (Haiku) | ~25k | 0 | ~25k |
+| Standard feature (Sonnet subagent) | ~21k | ~49k | ~70k |
+| Complex feature (Codex inline) | ~120k | ~15k review | ~135k |
+| Debugging (Opus inline) | ~130k | 0 | ~130k |
+| Consolidation cycle | ~20k | 0 | ~20k |
 
 ---
 
 ## Trust and Safety
 
-**Namespace isolation** — Brain artifacts live in `.brain/`. Plugin skills live in `~/.claude/plugins/forgeflow-mini/`. Neither touches your source code organization.
-
-**No auto-writes to constitution** — Hippocampus (conventions, architecture) is never updated automatically. brain-document proposes, brain-consolidate generates escalation proposals, but the developer always approves before anything enters the constitution.
-
-**Ephemeral by default** — Task artifacts in `working-memory/` are auto-archived after completion. No stale context accumulates.
-
-**No telemetry** — No usage data collected. Fully local. brain.db is a SQLite file in your project.
-
-**Clean uninstall** — Delete `~/.claude/plugins/forgeflow-mini/` and remove the skills directory from `settings.json`. Delete `.brain/` from your project if you want to remove the knowledge base.
+- **Namespace isolation** -- Brain artifacts live in `.brain/`. Plugin skills live in `~/.claude/plugins/forgeflow-mini/`.
+- **No auto-writes to constitution** -- Hippocampus is immutable without developer approval via brain-consolidate.
+- **Hippocampus guard hook** -- Blocks writes to `.brain/hippocampus/` at the tool level.
+- **Config protection hook** -- Blocks weakening linter/formatter configs.
+- **Circuit breaker** -- Prevents cascading failures after 3 consecutive errors.
+- **Ephemeral by default** -- Task artifacts auto-archived. No stale context accumulates.
+- **No telemetry** -- Fully local. brain.db is a SQLite file in your project.
+- **Graceful degradation** -- Works without Python (file-based context), without hooks (inline pipeline), without Node.js (no hooks, still functional).
 
 ---
 
@@ -270,26 +256,33 @@ Located in `.brain/` root after initialization:
 |---|---|
 | [brain-db-schema.sql](docs/brain-db-schema.sql) | Canonical SQLite schema (source of truth) |
 | [brain-db-schema.md](docs/brain-db-schema.md) | Human explanation of tables, columns, relationships |
+| [CHANGELOG.md](CHANGELOG.md) | Version history with all changes |
 | Each `skills/*/SKILL.md` | Detailed skill documentation with workflow, examples, anti-patterns |
 
 ---
 
 ## FAQ
 
+**Do I need to configure hooks?**
+No. The pipeline is fully self-contained. Hooks are optional enhancements installed during brain-init. You can skip them entirely.
+
 **Do I need Codex MCP?**
-No. Claude handles everything without it. Codex MCP is optional — when configured, brain-task delegates implementation through it for parallel execution.
+No. Claude handles everything without it. Codex MCP is optional -- when configured, brain-task delegates implementation through it.
 
 **Will this break my existing Claude Code setup?**
-No. Skills activate only via `/brain-*` commands. Brain artifacts are isolated in `.brain/`. Hooks are additive (SessionStart briefing, TaskCompleted automation).
+No. Skills activate only via `/brain-*` commands. Hooks are safely merged into existing settings.json via matcher-based idempotent installation.
 
-**How does it compare to $ms (MetalShopping orchestrator)?**
-Different tools for different jobs. Use `/brain-task` for learning new patterns, debugging, exploration, and architectural decisions. Use `$ms` for rigorous contract-driven T1-T7 feature work. They can run in parallel.
+**How does subagent dispatch work?**
+brain-task dispatches Sonnet tasks (score 20-39) as isolated subagents with full context inlined. The subagent runs in a separate context window, returns a report. If it fails, brain-task falls back to inline execution.
 
 **What if brain.db gets corrupted?**
-Run `/brain-init` to rebuild. The markdown files in `.brain/` are the source of truth — brain.db is just an index.
+Run `python scripts/build_brain_db.py --brain-path .brain` to rebuild. The markdown files are the source of truth.
+
+**How do I upgrade from v0.2.0?**
+Run `/brain-init --upgrade`. It adds missing config keys, state files, and database tables without touching existing brain content.
 
 **How much does it cost in tokens?**
-A typical 3-task session uses ~340k tokens (~$0.80). brain-decision routing adds only ~5k per task. The main cost is implementation itself, which you'd spend anyway.
+A typical 3-task Sonnet session uses ~210k tokens (vs ~260k without subagents). The 76% main context savings means more tasks per session before compaction.
 
 ---
 
@@ -303,4 +296,4 @@ A typical 3-task session uses ~340k tokens (~$0.80). brain-decision routing adds
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT -- see [LICENSE](LICENSE)

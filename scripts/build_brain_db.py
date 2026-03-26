@@ -236,7 +236,59 @@ def create_tables(conn):
         )
     ''')
 
+    # Create brain_state table — v0.3.0
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS brain_state (
+            key        TEXT PRIMARY KEY,
+            value      TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    ''')
+
     conn.commit()
+
+def migrate_tables(conn):
+    """Apply backward-compatible migrations to an existing brain.db.
+
+    Each migration is wrapped in try/except so running twice is safe
+    (idempotent). Migrations cover schema additions introduced in v0.3.0.
+    """
+    cursor = conn.cursor()
+    migrations_applied = 0
+
+    # Migration 1: Create brain_state table if it doesn't exist
+    try:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS brain_state (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        ''')
+        # Check if we actually created it (vs. it already existing)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_state'")
+        if cursor.fetchone():
+            migrations_applied += 1
+            print('   [migrate] brain_state table: OK')
+    except Exception as e:
+        print(f'   [migrate] brain_state table: skipped ({e})')
+
+    # Migration 2: Add 'evidence' column to lessons table if missing
+    try:
+        cursor.execute("PRAGMA table_info(lessons)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'evidence' not in columns:
+            cursor.execute("ALTER TABLE lessons ADD COLUMN evidence TEXT")
+            migrations_applied += 1
+            print('   [migrate] lessons.evidence column: added')
+        else:
+            print('   [migrate] lessons.evidence column: already exists')
+    except Exception as e:
+        print(f'   [migrate] lessons.evidence column: skipped ({e})')
+
+    conn.commit()
+    return migrations_applied
+
 
 def main():
     # Parse arguments
@@ -264,6 +316,10 @@ def main():
     except Exception as e:
         print(f'[Error] Error creating database: {e}')
         sys.exit(1)
+
+    # Apply backward-compatible migrations (safe on fresh or existing DBs)
+    print('   Running migrations...')
+    migrate_tables(conn)
 
     # Process files
     sinapses_count = 0
@@ -356,7 +412,7 @@ def main():
     conn.commit()
     conn.close()
 
-    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log')
+    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log, brain_state')
     print(f'[Files] Scanned {len(files)} .md files')
     print(f'   -> {sinapses_count} sinapses indexed')
     print(f'   -> {lessons_count} lessons indexed')

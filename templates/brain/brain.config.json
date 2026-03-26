@@ -1,7 +1,6 @@
 {
   "brain_id": "brain-default",
-  "hooks_note": "Hook triggers below are ASPIRATIONAL — they describe intended behavior but require Claude Code settings.json hook implementation. Active real hooks: SessionStart and TaskCompleted (see README.md).",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "created_at": "2026-03-24T10:00:00Z",
   "project_root": ".",
   "brain_root": ".brain",
@@ -11,101 +10,47 @@
   },
   "cortex_regions": ["backend", "frontend", "database", "infra"],
   "hooks": {
-    "pre_tool_use": [
-      {
-        "id": "BRAIN_READ_BEFORE_WRITE",
-        "trigger": "any_code_write",
-        "action": "verify_context_packet_loaded",
-        "enabled": true
-      },
-      {
-        "id": "HIPPOCAMPUS_IMMUTABLE",
-        "trigger": "write_to_hippocampus",
-        "action": "block_and_request_approval",
-        "enabled": true
-      },
-      {
-        "id": "CONTEXT_PACKET_REQUIRED",
-        "trigger": "implementer_starts",
-        "action": "verify_context_mapper_ran",
-        "enabled": true
-      },
-      {
-        "id": "READINESS_GATE",
-        "trigger": "task_dispatch",
-        "action": "run_4_checks",
-        "checks": ["dependency", "context", "conflict", "resource"],
-        "enabled": true
-      },
-      {
-        "id": "LESSON_LOADED",
-        "trigger": "implementer_starts",
-        "action": "verify_relevant_lessons_in_context",
-        "enabled": true
-      },
-      {
-        "id": "STRATEGY_CHECK",
-        "trigger": "mckinsey_layer_runs",
-        "action": "verify_strategy_md_exists",
-        "enabled": true
-      },
-      {
-        "id": "SINAPSE_FORMAT_VALID",
-        "trigger": "new_md_in_brain",
-        "action": "validate_yaml_frontmatter",
-        "enabled": true
-      },
-      {
-        "id": "LESSON_ESCALATION_CHECK",
-        "trigger": "new_lesson_added",
-        "action": "check_if_gte_3_same_type_propose_convention",
-        "enabled": true
-      }
-    ],
-    "post_tool_use": [
-      {
-        "id": "WEIGHT_UPDATE",
-        "trigger": "task_completes",
-        "action": "update_brain_db_weights",
-        "enabled": true
-      },
-      {
-        "id": "WORKING_MEMORY_CLEAR",
-        "trigger": "task_completes",
-        "action": "clear_working_memory",
-        "enabled": true
-      },
-      {
-        "id": "CONSOLIDATION_THRESHOLD",
-        "trigger": "5th_task_completes",
-        "action": "alert_run_brain_consolidate",
-        "enabled": true
-      },
-      {
-        "id": "BACKLINK_UPDATE",
-        "trigger": "wikilink_added",
-        "action": "update_brain_db_backlinks",
-        "enabled": true
-      },
-      {
-        "id": "AGENT_STATE_UPDATE",
-        "trigger": "second_iteration",
-        "action": "load_git_diff_into_agent_state_md",
-        "enabled": true
-      },
-      {
-        "id": "SINAPSE_STALENESS_MARK",
-        "trigger": "cortex_write",
-        "action": "mark_affected_sinapses_for_review",
-        "enabled": true
-      },
-      {
-        "id": "PROGRESS_LOG",
-        "trigger": "any_task_state_change",
-        "action": "append_to_progress_activity_md",
-        "enabled": true
-      }
-    ]
+    "profile": "standard",
+    "profiles": {
+      "minimal": "Tier 1 only — session briefing, hippocampus guard, config protection, session end",
+      "standard": "Tier 1+2 — adds strategy rotation, quality gate, task safety net",
+      "strict": "All tiers — adds activity observer"
+    },
+    "individual_overrides": {}
+  },
+  "resilience": {
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 3,
+      "cooldown_seconds": 300,
+      "window_seconds": 600
+    },
+    "strategy_rotation": {
+      "enabled": true,
+      "failure_threshold": 2,
+      "max_retry_per_strategy": 2,
+      "strategies": ["default", "alternative", "minimal", "escalate", "human"]
+    }
+  },
+  "subagents": {
+    "enabled": true,
+    "dispatch_threshold": 20,
+    "parallel_review": true,
+    "fallback_to_inline": true,
+    "model_overrides": {
+      "implementation": null,
+      "review": "sonnet",
+      "document": "haiku",
+      "research": "haiku",
+      "status": "haiku"
+    }
+  },
+  "learning": {
+    "confidence_initial": 0.3,
+    "promotion_threshold": 0.7,
+    "min_occurrences_for_promotion": 3,
+    "scope_default": "project",
+    "auto_promote_to_global": false
   },
   "context_loading": {
     "tier_1_max_tokens": 4000,
@@ -118,11 +63,22 @@
   },
   "token_budgets": {
     "context_mapper": { "in": 4000, "out": 2000 },
-    "mckinsey_layer": { "in": 20000, "out": 8000, "high_stakes_only": true },
+    "mckinsey_layer": { "in": 5000, "out": 3000, "subagent_budget": 3000, "high_stakes_only": true },
     "planner": { "in": 15000, "out": 5000 },
-    "implementer": { "in": 40000, "out": 20000 },
-    "documenter": { "in": 10000, "out": 5000 },
-    "learner": { "in": 5000, "out": 2000 }
+    "implementer": { "in": 40000, "out": 20000, "subagent_budget": 50000 },
+    "reviewer": { "in": 15000, "out": 5000 },
+    "documenter": { "in": 8000, "out": 4000 },
+    "learner": { "in": 5000, "out": 2000 },
+    "verifier": { "in": 10000, "out": 3000 }
+  },
+  "token_optimization": {
+    "compact_suggestion_threshold": 50,
+    "context_pressure_levels": {
+      "low": 0.50,
+      "moderate": 0.65,
+      "high": 0.75,
+      "critical": 0.80
+    }
   },
   "consolidation": {
     "trigger": "explicit_command_or_5_tasks",

@@ -42,29 +42,50 @@ Score against **4 axes** (each 0–10):
 
 **Composite score = (business * 0.4) + (risk_inv * 0.2) + (effort_inv * 0.2) + (alignment * 0.2)**
 
-### Step 3: External Research (Parallel Sub-Agents)
+### Step 3: External Research — Parallel Subagent Dispatch
 
-Launch **2–3 parallel subagents**:
+Dispatch 2-3 research subagents in a **SINGLE message** (parallel execution):
 
-**Agent A — Best Practices**
+**Agent 1 (best practices):**
 ```
-Query: "[technology/pattern] best practices 2025 2026"
-Gather: Industry consensus, maturity, skills, cost
-```
-
-**Agent B — Benchmarks**
-```
-Query: "[Stripe/Google/Shopify] [same architectural decision]"
-Gather: How they decided, successes/failures, migration strategy
-```
-
-**Agent C (Optional) — Docs**
-```
-Query context7 for latest library docs
-Gather: API stability, breaking changes, upgrade path
+Agent(
+  model: "haiku",
+  run_in_background: true,
+  prompt: "Research best practices for {technology}. Use WebSearch.
+           Return 3-5 findings with source URLs.
+           Format: numbered list, each with: finding, source URL, relevance note."
+)
 ```
 
-Mark `[estimated]` if search returns nothing. Include contradictions.
+**Agent 2 (benchmarks):**
+```
+Agent(
+  model: "haiku",
+  run_in_background: true,
+  prompt: "Research how {companies} handled {decision}. Use WebSearch.
+           Return 2-3 case studies.
+           Format: company name, what they decided, outcome, source URL."
+)
+```
+
+**Agent 3 (documentation, optional):**
+```
+Agent(
+  model: "haiku",
+  run_in_background: true,
+  prompt: "Look up latest docs for {framework}. Use context7 or WebSearch.
+           Return version info, stability assessment, migration complexity.
+           Format: version, stability rating, breaking changes, upgrade path."
+)
+```
+
+**After all subagents complete:**
+1. Read each subagent's findings
+2. Synthesize into `working-memory/mckinsey-output.md`
+3. If any subagent returned nothing: mark that section as `[No external data found]`
+4. If any subagent failed entirely: mark as `[Subagent failed — no external data]` and proceed with internal scoring only
+
+Mark `[estimated]` if search returns nothing. Include contradictions between subagent findings.
 
 ### Step 4: Synthesis — 3 Alternatives
 
