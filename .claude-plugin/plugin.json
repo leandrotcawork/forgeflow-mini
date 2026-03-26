@@ -1,70 +1,85 @@
 {
   "name": "forgeflow-mini",
-  "description": "Brain-driven development plugin — persistent, evolving knowledge system with 11 multi-agent skills",
-  "version": "0.1.0",
+  "description": "Brain-driven development plugin — subagent dispatch, 14 skills, 8 hooks, circuit breaker, confidence-scored learning",
+  "version": "0.3.2",
   "author": {
     "name": "ForgeFlow contributors"
   },
   "homepage": "https://github.com/leandrotcawork/forgeflow-mini",
   "repository": "https://github.com/leandrotcawork/forgeflow-mini",
   "license": "MIT",
-  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent"],
+  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent", "subagents", "hooks"],
   "claude_code": {
     "skills": [
       {
         "name": "brain-init",
-        "description": "Initialize Brain for any project (scan → generate → review → persist)",
+        "description": "Initialize Brain for any project (scan > generate > review > persist > hooks > index > state > env-check)",
         "trigger": "/brain-init [project-path]"
       },
       {
+        "name": "brain-decision",
+        "description": "MANDATORY entry point — classifies complexity, loads context, selects model, dispatches to brain-task",
+        "trigger": "/brain-decision \"task description\""
+      },
+      {
         "name": "brain-task",
-        "description": "Full task flow: ContextMapper → Planner → Implementer → Documenter",
+        "description": "Full task orchestration — circuit breaker, state persistence, inline or subagent dispatch, verification, archival",
         "trigger": "/brain-task \"task description\""
       },
       {
         "name": "brain-map",
-        "description": "ContextMapper: task → weighted sinapse list → context packet (pipeline-internal, called by brain-task Step 1)",
+        "description": "ContextMapper — load 3-tier weighted sinapses for task context",
         "trigger": "/brain-map"
       },
       {
         "name": "brain-plan",
-        "description": "Planner: context packet + task → structured plan",
+        "description": "Planner — convert context packet to structured implementation plan",
         "trigger": "/brain-plan"
       },
       {
+        "name": "brain-verify",
+        "description": "6-phase verification — build, types, lint, tests, security, diff review",
+        "trigger": "/brain-verify"
+      },
+      {
+        "name": "brain-eval",
+        "description": "Define success criteria before implementation — capability and regression evals",
+        "trigger": "/brain-eval \"feature to evaluate\""
+      },
+      {
+        "name": "brain-aside",
+        "description": "Answer a quick question without losing current brain-task pipeline context",
+        "trigger": "/brain-aside \"question\""
+      },
+      {
         "name": "brain-mckinsey",
-        "description": "Strategic intelligence: internal analysis + external research → recommendation",
+        "description": "Strategic intelligence — internal scoring + external research for high-stakes decisions",
         "trigger": "/brain-mckinsey \"decision to analyze\""
       },
       {
         "name": "brain-document",
-        "description": "Documenter: propose sinapse updates after task completion (pipeline-internal, called by TaskCompleted hook)",
+        "description": "Documenter — propose sinapse updates after task completion",
         "trigger": "/brain-document"
       },
       {
         "name": "brain-lesson",
-        "description": "Learner: capture failure → lesson-XXXX.md",
+        "description": "Learner — capture failures as lessons with confidence scoring (0.3 initial)",
         "trigger": "/brain-lesson \"failure description\""
       },
       {
         "name": "brain-consolidate",
-        "description": "Consolidation cycle: review → propose → approve → apply",
+        "description": "Consolidation cycle — batch process tasks, propose sinapse updates, escalate lessons to conventions",
         "trigger": "/brain-consolidate"
       },
       {
         "name": "brain-status",
-        "description": "Health dashboard + brain-graph.html generation",
+        "description": "Health dashboard — display Brain stats and regenerate 3D visualization",
         "trigger": "/brain-status"
       },
       {
         "name": "brain-codex-review",
         "description": "Codex code review agent — validates implementation, finds bugs, checks conventions",
         "trigger": "/brain-codex-review"
-      },
-      {
-        "name": "brain-decision",
-        "description": "Intelligent task router — classifies complexity, selects model (Codex-first), triggers plan mode, dispatches to brain-task",
-        "trigger": "/brain-decision \"task description\""
       }
     ]
   }
