@@ -3,7 +3,7 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.3.2-blue" alt="Version 0.3.2">
+  <img src="https://img.shields.io/badge/Version-0.3.3-blue" alt="Version 0.3.3">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
   <img src="https://img.shields.io/badge/Hooks-8-yellow" alt="8 Hooks">
@@ -62,7 +62,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Quick side question | `/brain-aside` | Answer question without losing pipeline context |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
-| Upgrade from v0.2 | `/brain-init --upgrade` | Adds v0.3.2 features without full re-init |
+| Upgrade from v0.2 | `/brain-init --upgrade` | Adds v0.3.3 features without full re-init |
 
 ---
 

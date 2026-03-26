@@ -1,14 +1,23 @@
 {
   "name": "forgeflow-mini",
   "description": "Brain-driven development plugin — subagent dispatch, 14 skills, 8 hooks, circuit breaker, confidence-scored learning",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": {
     "name": "ForgeFlow contributors"
   },
   "homepage": "https://github.com/leandrotcawork/forgeflow-mini",
   "repository": "https://github.com/leandrotcawork/forgeflow-mini",
   "license": "MIT",
-  "keywords": ["brain", "knowledge", "development", "context", "persistence", "multi-agent", "subagents", "hooks"],
+  "keywords": [
+    "brain",
+    "knowledge",
+    "development",
+    "context",
+    "persistence",
+    "multi-agent",
+    "subagents",
+    "hooks"
+  ],
   "claude_code": {
     "skills": [
       {
