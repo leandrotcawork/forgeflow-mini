@@ -84,10 +84,22 @@ readme_text = re.sub(r"Version-\d+\.\d+\.\d+-blue", f"Version-{version}-blue", r
 readme_text = re.sub(r'alt="Version \d+\.\d+\.\d+"', f'alt="Version {version}"', readme_text)
 readme_text = re.sub(r"Adds v\d+\.\d+\.\d+ features", f"Adds v{version} features", readme_text)
 readme_path.write_text(readme_text, encoding="utf-8")
+
+# Update template versions
+brain_config = root / "templates" / "brain" / "brain.config.json"
+brain_state = root / "templates" / "brain" / "progress" / "brain-project-state.json"
+
+for tpl_path in [brain_config, brain_state]:
+    tpl = json.loads(tpl_path.read_text(encoding="utf-8"))
+    tpl["version"] = version
+    tpl_path.write_text(json.dumps(tpl, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 PY
 
-git add "$PLUGIN_JSON" "$MARKETPLACE_JSON" "$PACKAGES_JSON" "$README_MD"
-git commit -m "fix(release): ${TAG}"
+BRAIN_CONFIG="templates/brain/brain.config.json"
+BRAIN_STATE="templates/brain/progress/brain-project-state.json"
+
+git add "$PLUGIN_JSON" "$MARKETPLACE_JSON" "$PACKAGES_JSON" "$README_MD" "$BRAIN_CONFIG" "$BRAIN_STATE"
+git commit -m "chore(release): ${TAG}"
 git tag "$TAG"
 git push
 git push origin "$TAG"
