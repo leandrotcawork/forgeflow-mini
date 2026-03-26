@@ -89,6 +89,11 @@
         "name": "brain-codex-review",
         "description": "Codex code review agent — validates implementation, finds bugs, checks conventions",
         "trigger": "/brain-codex-review"
+      },
+      {
+        "name": "brain-setup",
+        "description": "Interactive configuration wizard for brain.config.json — browse, edit, validate, and diff all Brain settings",
+        "trigger": "/brain-setup [section]"
       }
     ]
   }
