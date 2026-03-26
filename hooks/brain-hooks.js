@@ -78,7 +78,7 @@ function brainConfigPath() {
  * Build a "continue" result.
  */
 function ok(extra) {
-  return Object.assign({ decision: 'continue' }, extra || {});
+  return Object.assign({ continue: true }, extra || {});
 }
 
 /**
