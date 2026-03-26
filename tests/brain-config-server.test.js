@@ -622,6 +622,82 @@ test('CLI: unknown tool returns error', function () {
 });
 
 // ---------------------------------------------------------------------------
+// 1a — Prototype pollution guard
+// ---------------------------------------------------------------------------
+
+test('brain_config_write: rejects __proto__ key in linters path', function () {
+  setupTestConfig();
+  var before = Object.prototype.polluted;
+  var result = server.brainConfigWrite({ key: 'linters.__proto__.polluted', value: true });
+  assert(!result.ok);
+  assert(result.error.indexOf('Invalid key') !== -1 || result.error.indexOf('__proto__') !== -1);
+  assertEqual(Object.prototype.polluted, before);
+});
+
+test('brain_config_write: rejects constructor key segment', function () {
+  setupTestConfig();
+  var result = server.brainConfigWrite({ key: 'learning.constructor.polluted', value: true });
+  assert(!result.ok);
+});
+
+// ---------------------------------------------------------------------------
+// 1b — NaN/Infinity validation
+// ---------------------------------------------------------------------------
+
+test('validateValue: number rejects NaN', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  var result = server.validateValue(schema, NaN);
+  assert(!result.valid, 'NaN should be invalid');
+  assert(result.error.indexOf('finite') !== -1 || result.error.indexOf('NaN') !== -1);
+});
+
+test('validateValue: number rejects Infinity', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  assert(!server.validateValue(schema, Infinity).valid);
+});
+
+test('validateValue: number rejects -Infinity', function () {
+  var schema = { type: 'number', min: 0.0, max: 1.0 };
+  assert(!server.validateValue(schema, -Infinity).valid);
+});
+
+// ---------------------------------------------------------------------------
+// 1c — undefined value in diff changes
+// ---------------------------------------------------------------------------
+
+test('brain_config_diff: skips change entries with undefined value', function () {
+  setupTestConfig();
+  var result = server.brainConfigDiff({
+    changes: [{ key: 'learning.confidence_initial' }]  // no value
+  });
+  assert(result.ok);
+  var fieldDiff = (result.data.diffs || []).filter(function (d) {
+    return d.key === 'learning.confidence_initial';
+  });
+  assertEqual(fieldDiff.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// 1d — Unvalidated caller objects in brainConfigDiff
+// ---------------------------------------------------------------------------
+
+test('brain_config_diff: rejects null as original', function () {
+  var result = server.brainConfigDiff({ original: null, modified: {} });
+  assert(!result.ok);
+  assert(result.error.indexOf('plain object') !== -1 || result.error.indexOf('object') !== -1);
+});
+
+test('brain_config_diff: rejects array as original', function () {
+  var result = server.brainConfigDiff({ original: [], modified: {} });
+  assert(!result.ok);
+});
+
+test('brain_config_diff: rejects string as modified', function () {
+  var result = server.brainConfigDiff({ original: {}, modified: 'bad' });
+  assert(!result.ok);
+});
+
+// ---------------------------------------------------------------------------
 // Cleanup and run
 // ---------------------------------------------------------------------------
 

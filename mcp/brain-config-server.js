@@ -226,6 +226,16 @@ function splitKeyPath(keyPath) {
   return keyPath.split('.');
 }
 
+var DANGEROUS_KEY_SEGMENTS = ['__proto__', 'constructor', 'prototype'];
+
+function isSafeKeyPath(keyPath) {
+  var parts = splitKeyPath(keyPath);
+  for (var i = 0; i < parts.length; i++) {
+    if (DANGEROUS_KEY_SEGMENTS.indexOf(parts[i]) !== -1) return false;
+  }
+  return true;
+}
+
 /**
  * Get a value from a nested object by dot-separated path.
  * getDeep({a: {b: 1}}, 'a.b') => 1
@@ -247,6 +257,7 @@ function getDeep(obj, keyPath) {
  * setDeep({a: {b: 1}}, 'a.b', 2) => {a: {b: 2}}
  */
 function setDeep(obj, keyPath, value) {
+  if (!isSafeKeyPath(keyPath)) { return; }
   var parts = splitKeyPath(keyPath);
   var current = obj;
   for (var i = 0; i < parts.length - 1; i++) {
@@ -308,8 +319,8 @@ function validateValue(schemaEntry, value) {
 
   // Type: number (float)
   if (type === 'number') {
-    if (typeof value !== 'number') {
-      return { valid: false, error: 'Expected number, got ' + typeof value + '.' };
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return { valid: false, error: 'Expected finite number, got ' + value + '.' };
     }
     if (schemaEntry.min !== undefined && value < schemaEntry.min) {
       return { valid: false, error: 'Value ' + value + ' is below minimum ' + schemaEntry.min + '.' };
@@ -442,6 +453,9 @@ function brainConfigWrite(args) {
   }
 
   var key = args.key;
+  if (!isSafeKeyPath(key)) {
+    return error('Invalid key "' + key + '": key segments cannot be __proto__, constructor, or prototype.');
+  }
   var value = args.value;
 
   if (value === undefined) {
@@ -675,10 +689,16 @@ function brainConfigDiff(args) {
     modified = deepClone(original);
     for (var i = 0; i < args.changes.length; i++) {
       var change = args.changes[i];
-      if (!change.key) continue;
+      if (!change.key || change.value === undefined) continue;
       setDeep(modified, change.key, change.value);
     }
-  } else if (args.original && args.modified) {
+  } else if (args.original !== undefined || args.modified !== undefined) {
+    if (
+      typeof args.original !== 'object' || args.original === null || Array.isArray(args.original) ||
+      typeof args.modified !== 'object' || args.modified === null || Array.isArray(args.modified)
+    ) {
+      return error('"original" and "modified" must be plain objects.');
+    }
     original = args.original;
     modified = args.modified;
   } else {
