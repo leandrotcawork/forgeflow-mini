@@ -40,13 +40,13 @@ Assign:
 
 Lessons are stored in **distributed domain-specific directories**:
 
-- **Domain-specific lessons** → `cortex/<domain>/lessons/lesson-XXXXX.md`
-  - Backend: `cortex/backend/lessons/`
-  - Frontend: `cortex/frontend/lessons/`
-  - Database: `cortex/database/lessons/`
-  - Infra: `cortex/infra/lessons/`
+- **Domain-specific lessons** → `.brain/cortex/<domain>/lessons/lesson-XXXXX.md`
+  - Backend: `.brain/cortex/backend/lessons/`
+  - Frontend: `.brain/cortex/frontend/lessons/`
+  - Database: `.brain/cortex/database/lessons/`
+  - Infra: `.brain/cortex/infra/lessons/`
 
-- **Cross-domain lessons** → `lessons/cross-domain/lesson-XXXXX.md`
+- **Cross-domain lessons** → `.brain/lessons/cross-domain/lesson-XXXXX.md`
   - Lessons that span multiple domains (auth, events, process rules)
 
 - **Inbox (temporary)** → `.brain/lessons/inbox/lesson-XXXXX.md`
@@ -197,7 +197,7 @@ Status: Flagged for review at next /brain-consolidate cycle
 
 brain-lesson's responsibility ends at detection and flagging. Actual proposal generation, deduplication, convention checking, and approval-facing output are owned exclusively by **brain-consolidate**. brain-lesson must NEVER:
 - Create `escalation-PROPOSAL-*.md` files
-- Write to `hippocampus/conventions.md`
+- Write to `.brain/hippocampus/conventions.md`
 - Present approval prompts to the developer for escalation
 
 ### Step 5: Update brain.db
@@ -205,7 +205,7 @@ brain-lesson's responsibility ends at detection and flagging. Actual proposal ge
 Insert new lesson:
 ```sql
 INSERT INTO lessons (id, file_path, title, domain, scope, severity, status, recurrence_count, created_from, source_agent, created_at, updated_at)
-VALUES ('lesson-XXXXX', 'cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
+VALUES ('lesson-XXXXX', '.brain/cortex/backend/lessons/lesson-XXXXX.md', 'Tenant isolation failure in adapter layer', 'backend', 'domain-local', 'critical', 'draft', 1, 'YYYY-MM-DD-<slug>', 'brain-lesson', datetime('now'), datetime('now'))
 ```
 
 Update sinapse weights of related sinapses:
@@ -237,14 +237,14 @@ scope: cross-domain
 domain: backend
 affected_domains: [backend, database]
 status: active
-parent_synapse: sinapses/tenant-isolation-flow
+parent_synapse: .brain/cortex/backend/sinapses/tenant-isolation-flow
 tags: [tenant-isolation, adapter, bug]
 severity: critical
 created_from: 2026-03-24-fix-tenant-leak
 source_agent: brain-lesson
 recurrence_count: 1
 promotion_candidate: false
-related_links: [sinapses/tenant-isolation-flow, cortex/database/index]
+related_links: [.brain/cortex/backend/sinapses/tenant-isolation-flow, .brain/cortex/database/index]
 created_at: 2026-03-24T15:30:00Z
 updated_at: 2026-03-24T15:30:00Z
 root_cause_type: misuse
