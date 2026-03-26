@@ -198,13 +198,21 @@ Trigger Plan Mode If:
 ```
 1. Announce: "🔵 PLAN MODE: [task description]"
 2. Invoke /brain-plan to generate .brain/working-memory/implementation-plan-{task_id}.md
-   brain-plan loads sinapses, explores files, designs architecture, assesses risks.
+   brain-plan produces a Cortex-Linked TDD plan (plan_type: expanded) with:
+   - Sinapse index linking conventions to sinapse IDs
+   - File structure design (all files before any code)
+   - TDD micro-steps (spec-first, acceptance gates, sinapse-linked)
+   - Self-review checklist (no placeholders allowed)
+   - Dispatch metadata (recommended model per micro-step)
 3. Present plan to developer
-4. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan-mode flag)
+4. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan flag)
+   brain-task will detect plan_type: expanded and route to Path F (dispatcher mode),
+   which executes one subagent per micro-step with spec reviews.
+   If --dispatch flag is also passed, parallel dispatch is preferred for independent steps.
 5. ON REJECTION: Preserve plan, end session
 ```
 
-This ensures brain-task always receives a plan file when `plan_mode = true`.
+This ensures brain-task always receives a plan file when `plan_mode = true`. Expanded plans (plan_type: expanded) route to brain-task Path F; legacy plans (plan_type: standard or missing) route to Path E.
 
 **If no plan mode:**
 ```
@@ -227,6 +235,7 @@ Sonnet:  /brain-task --sonnet --task "[description]" --task-id "[id]" --domain "
 Codex:   /brain-task --task "[description]" --task-id "[id]" --domain "[domain]" --score [N]
 Opus:    /brain-task --debug --task "[description]" --task-id "[id]" --domain "[domain]" --score [N]
 +Plan:   Add --plan flag to any of the above
++Dispatch: Add --dispatch flag to prefer parallel subagent execution (Path F) for expanded plans
 ```
 
 **What brain-task will do after dispatch** (not your job — just for reference):

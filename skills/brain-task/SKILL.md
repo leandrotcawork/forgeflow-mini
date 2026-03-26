@@ -488,13 +488,243 @@ Debugging requires full codebase access and the complete context window. Always 
 
 ---
 
-### Path E: Plan Mode (score 75+) — Execute INLINE with plan
+### Path E: Plan Mode (score 75+) — Execute INLINE with standard plan
 
-High-complexity tasks require planning first, then inline execution.
+High-complexity tasks require planning first, then inline execution. This path handles **standard plans** (legacy format or `plan_type: standard`).
+
+**Plan type check:** Read `.brain/working-memory/implementation-plan-{task_id}.md` frontmatter.
+
+```
+IF plan_type == "expanded" (or frontmatter contains micro_steps):
+  → Route to Path F (Dispatcher Mode) instead. Do NOT execute Path E.
+  → Log: "Expanded plan detected — routing to Path F (dispatcher mode)"
+
+IF plan_type == "standard" OR plan_type is missing:
+  → Continue with Path E (inline sequential execution)
+```
 
 1. Read the implementation plan (`.brain/working-memory/implementation-plan-{task_id}.md`)
 2. Execute each plan phase sequentially, following the context file
 3. Checkpoint progress between phases
+
+---
+
+### Path F: Dispatcher Mode — Execute EXPANDED PLAN via subagent-per-micro-step
+
+**When:** `plan_type: expanded` in the implementation plan AND (`dispatch_ready: true` OR `--dispatch` flag). This path is the execution engine for Cortex-Linked TDD plans produced by the upgraded brain-plan skill.
+
+**Why subagents:** Each TDD micro-step is self-contained (spec + implementation + acceptance gate). Dispatching one subagent per micro-step gives token isolation, parallel execution for independent steps, and clear pass/fail per unit of work. The orchestrator (this session) handles sequencing, spec review, and state persistence.
+
+**Fallback:** If any subagent fails or `--no-subagent` flag was passed, execute that micro-step inline. The pipeline never blocks on a subagent.
+
+---
+
+**Step F.1: Read and validate the expanded plan**
+
+Read `.brain/working-memory/implementation-plan-{task_id}.md` and extract:
+
+- `micro_steps`: total count
+- `estimated_tokens`: total budget
+- File Structure table: all files to be created/modified
+- Sinapse Index: all linked sinapses and lessons
+- Implementation Order: topological sort with parallelizable groups
+- Subagent model per step: recommended model for each micro-step
+
+**Validation checks:**
+
+```
+IF micro_steps == 0 OR File Structure table is empty:
+  → ABORT: "Expanded plan is invalid — no micro-steps or file structure found."
+  → Fall back to Path E (treat as standard plan)
+
+IF any micro-step references a file NOT in the File Structure table:
+  → WARN: "Plan integrity issue — micro-step M{N} references unlisted file {path}"
+  → Continue but flag for spec review
+```
+
+Record in `brain-state.json`:
+```json
+{
+  "current_pipeline_step": 3,
+  "dispatch_mode": "expanded_plan",
+  "plan_micro_steps": N,
+  "plan_completed_steps": 0,
+  "snapshot_reason": "Path F dispatcher initialized"
+}
+```
+
+---
+
+**Step F.2: Execute micro-steps in dependency order**
+
+Process micro-steps following the Implementation Order from the plan. For each parallelizable group, dispatch subagents concurrently. For sequential dependencies, wait for completion before proceeding.
+
+**For each micro-step M{N}:**
+
+**F.2.1: Assemble subagent prompt**
+
+Build a self-contained prompt for the subagent. The subagent has NO access to your conversation context. Include:
+
+- The micro-step's Spec section (exact test cases to write)
+- The micro-step's Implementation section (exact file, pattern, key decisions)
+- The micro-step's Acceptance Gate (exact commands to run)
+- All sinapses referenced by `[[sinapse-id]]` in this micro-step — inline the relevant sinapse content from the context packet (not just the ID)
+- All lessons referenced by `[[lesson-id]]` — inline the lesson content
+- The File Structure table (so the subagent knows where files go)
+- If this micro-step depends on others (Requires field), include the file paths and signatures created by those completed steps
+
+**Prompt structure:**
+
+```
+You are implementing micro-step M{N} of an expanded TDD plan.
+
+## Your Task: {micro-step title}
+
+## Spec (write this FIRST)
+{Spec section from plan — exact file path, exact test cases}
+
+## Implementation (write AFTER spec passes)
+{Implementation section from plan — exact file path, pattern, decisions}
+
+## Conventions (MUST follow)
+{Inlined sinapse content for each [[sinapse-id]] referenced}
+
+## Mistakes to Avoid
+{Inlined lesson content for each [[lesson-id]] referenced}
+
+## File Structure Context
+{Relevant rows from File Structure table}
+
+## Files from Previous Steps (already on disk)
+{List of files created by prerequisite micro-steps, with key exports/signatures}
+
+## Acceptance Gate
+{Exact checklist — spec exists, implementation passes, commands to run}
+
+IMPORTANT: Write the spec file FIRST. Run it. It should fail. Then write the
+implementation. Run the spec again. It should pass. Do NOT skip the spec.
+```
+
+**F.2.2: Dispatch subagent**
+
+Use the model recommended in the plan's "Subagent model per step" table:
+
+```
+Agent(model: "{recommended_model}", description: "TDD micro-step M{N}: {title}")
+```
+
+Record in `brain-state.json`:
+```json
+{
+  "subagents_dispatched": [
+    {"micro_step": "M{N}", "model": "{model}", "status": "running", "dispatched_at": "{ISO8601}"}
+  ]
+}
+```
+
+**F.2.3: Read subagent result and run spec review**
+
+After the subagent completes:
+
+1. **Verify spec file exists** at the path specified in the micro-step
+2. **Verify implementation file exists** at the path specified
+3. **Run the acceptance gate commands** listed in the micro-step (test command, lint command)
+4. **Spec review:** Read the spec file. Verify it contains all test cases listed in the plan. If any test case is missing, flag it.
+
+**Result handling:**
+
+```
+DONE + all acceptance gates pass + spec review clean:
+  → Mark M{N} as complete
+  → Update brain-state.json: plan_completed_steps += 1
+  → Update brain-project-state.json subagent counters (dispatched + succeeded)
+  → Proceed to next micro-step
+
+DONE + acceptance gates pass + spec review has warnings:
+  → Mark M{N} as complete with warnings
+  → Log warnings in brain-state.json
+  → Proceed (warnings are non-blocking)
+
+DONE + acceptance gates FAIL (tests fail or lint errors):
+  → Attempt inline fix: read the error, fix the file, re-run acceptance gates
+  → If fix succeeds: mark complete, proceed
+  → If fix fails: mark M{N} as failed, log error, continue to next independent step
+  → Update brain-project-state.json subagent counters (dispatched + failed)
+
+BLOCKED / Garbage / Unavailable:
+  → Execute M{N} inline (Step F.2.4)
+  → Update brain-project-state.json subagent counters (dispatched + failed_with_fallback)
+```
+
+**F.2.4: Inline fallback for single micro-step**
+
+If subagent dispatch fails or `--no-subagent` was passed:
+
+1. Log: `subagent failed for M{N}, executing inline (reason: {reason})`
+2. Read the micro-step's Spec section — write the spec file
+3. Run the spec — confirm it fails (TDD red phase)
+4. Read the micro-step's Implementation section — write the implementation
+5. Run the spec — confirm it passes (TDD green phase)
+6. Run acceptance gate commands
+7. Proceed to next micro-step
+
+---
+
+**Step F.3: Parallel dispatch for independent micro-steps**
+
+When the Implementation Order identifies parallelizable groups (micro-steps with no mutual dependencies), dispatch their subagents concurrently:
+
+```
+Group 1: [M1] — dispatch immediately
+  Wait for M1 to complete
+
+Group 2: [M2, M3] — both depend only on M1
+  Agent(model: "sonnet", description: "TDD micro-step M2: {title}")
+  Agent(model: "haiku", description: "TDD micro-step M3: {title}")
+  Wait for both to complete
+
+Group 3: [M4] — depends on M2 and M3
+  Agent(model: "sonnet", description: "TDD micro-step M4: {title}")
+  Wait for M4 to complete
+```
+
+Record all parallel dispatches in `brain-state.json` subagents_dispatched array.
+
+---
+
+**Step F.4: Plan completion checkpoint**
+
+After all micro-steps are processed:
+
+```
+IF all micro-steps marked complete:
+  → Update plan status to "completed" in implementation-plan-{task_id}.md
+  → Log: "Expanded plan fully executed: {completed}/{total} micro-steps succeeded"
+  → Proceed to Step 3.5 (Verification Gate)
+
+IF some micro-steps failed:
+  → Update plan status to "partial" in implementation-plan-{task_id}.md
+  → Log: "Expanded plan partially executed: {completed}/{total} succeeded, {failed}/{total} failed"
+  → List failed micro-steps with error summaries
+  → Proceed to Step 3.5 (Verification Gate will catch remaining issues)
+
+IF majority of micro-steps failed (> 50%):
+  → Update plan status to "failed" in implementation-plan-{task_id}.md
+  → Log: "EXPANDED PLAN FAILED: {failed}/{total} micro-steps failed. Consider revising the plan."
+  → Trigger strategy rotation (see Step 3.5 strategy 3: escalate model tier)
+```
+
+Update `brain-state.json`:
+```json
+{
+  "current_pipeline_step": 3,
+  "dispatch_mode": "expanded_plan",
+  "plan_micro_steps": N,
+  "plan_completed_steps": M,
+  "plan_failed_steps": K,
+  "snapshot_reason": "Path F dispatch complete"
+}
+```
 
 ---
 
@@ -720,6 +950,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 | `--lightweight` | Haiku mode: Tier 1 only |
 | `--resume` | Resume interrupted task from last checkpoint |
 | `--no-subagent` | Force all execution inline, skip subagent dispatch |
+| `--dispatch` | Force Path F dispatcher mode for expanded plans |
 
 ### Files Created
 
@@ -748,6 +979,8 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 | Step 3, Path C post-impl | sonnet | Code review (brain-codex-review) | Run inline at Step 3.5 |
 | Step 3, Path C post-impl | haiku | Propose sinapse updates (brain-document) | Run inline at Step 6 |
 | Step 6.1, score < 40 | haiku | Propose sinapse updates (brain-document) | Run inline |
+| Step 3, Path F (Dispatcher) | per-step | TDD micro-step (spec + impl) | Execute micro-step inline |
+| Step 3, Path F parallel | per-step | Independent micro-steps in parallel | Execute sequentially inline |
 
 ---
 
