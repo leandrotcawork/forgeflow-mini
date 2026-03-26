@@ -1,41 +1,41 @@
 ---
 name: brain-document
-description: Documenter — Propose sinapse updates after task completion
+description: Documenter â€” Propose sinapse updates after task completion
 ---
 
-# brain-document Skill — Documenter
+# brain-document Skill â€” Documenter
 
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task (Steps 1-3) → brain-codex-review (Codex only) → brain-document → brain-consolidate
-                                                                                          ↑ you are here
+brain-decision â†’ brain-map â†’ brain-task (Steps 1-3) â†’ brain-codex-review (Codex only) â†’ brain-document â†’ brain-consolidate
+                                                                                          â†‘ you are here
 ```
 
-**Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only — never write without developer approval.
+**Purpose:** After a task completes, propose updates to cortex sinapses (never hippocampus) based on what was learned. Propose only â€” never write without developer approval.
 
 **Token Budget:** 10k in / 5k out
 
 ## Trigger
 
-Called by brain-task at Step 6 (inline or as subagent), or manually via `/brain-document`. This skill is self-contained — it does NOT depend on any hook to be invoked.
+Called by brain-task at Step 6 (inline or as subagent), or manually via `/brain-document`. This skill is self-contained â€” it does NOT depend on any hook to be invoked.
 
 For tasks with score < 40 (Haiku/Sonnet tier), brain-task may dispatch this as a Haiku subagent. For tasks with score >= 40 (Codex tier), it always runs inline to preserve full context for complex proposals.
 
 Preconditions (verified by brain-task before invoking):
 - Task implementation is complete (Step 3 done)
-- `working-memory/task-completion-{task_id}.md` exists (Step 4 done)
+- `.brain/working-memory/task-completion-{task_id}.md` exists (Step 4 done)
 - Tests passing
 
 ## Workflow
 
 ### Step 1: Identify Touched Cortex Regions
 
-From the task-completion record (`working-memory/task-completion-{task_id}.md`) or working tree diff:
+From the task-completion record (`.brain/working-memory/task-completion-{task_id}.md`) or working tree diff:
 
 ```bash
 # Option A: Read file list from task-completion artifact (preferred)
-# working-memory/task-completion-{task_id}.md contains "files changed" section
+# .brain/working-memory/task-completion-{task_id}.md contains "files changed" section
 
 # Option B: Diff working tree (uncommitted changes)
 git diff --name-only | grep -E 'apps/|packages/' | extract domain
@@ -45,38 +45,38 @@ git diff --cached --name-only | grep -E 'apps/|packages/' | extract domain
 Example:
 ```
 apps/server_core/internal/modules/orders/adapters/postgres.go
-  → Domain: backend
+  â†’ Domain: backend
 
 apps/web/src/pages/Products.tsx
-  → Domain: frontend
+  â†’ Domain: frontend
 
 migrations/add_product_margin.sql
-  → Domain: database
+  â†’ Domain: database
 ```
 
 ### Step 2: Assess Knowledge Changes
 
 For each touched domain, answer:
 - What pattern/technique was used?
-- Is this documented in cortex/?
+- Is this documented in .brain/cortex/?
 - Did this reveal a new anti-pattern?
 - Should this change best practices?
 
 **Important:** If a new **anti-pattern** is discovered (e.g., "We made this mistake and it broke things"):
 - Do NOT document the anti-pattern in cortex sinapses
 - Route to `/brain-lesson` instead
-- Lessons live in `cortex/<domain>/lessons/` or `lessons/cross-domain/` (distributed architecture)
+- Lessons live in `.brain/cortex/<domain>/lessons/` or `.brain/lessons/cross-domain/` (distributed architecture)
 - Anti-patterns are failures that became knowledge, not architectural patterns
-- brain-lesson will handle escalation if 3+ same anti-pattern lessons exist → propose convention
+- brain-lesson will handle escalation if 3+ same anti-pattern lessons exist â†’ propose convention
 
 ### Step 3: Propose Sinapse Updates
 
-Never edit directly. Create `working-memory/sinapse-updates-{task_id}.md`:
+Never edit directly. Create `.brain/working-memory/sinapse-updates-{task_id}.md`:
 
 ```markdown
 # Proposed Sinapse Updates
 
-## cortex/backend/index.md
+## .brain/cortex/backend/index.md
 
 ### Context
 Task: "Fix product duplicate key error"
@@ -116,11 +116,11 @@ for transactional outbox event handlers (see [[sinapse/outbox-event-flow]]).
 ### Impact
 - Sinapse will be marked "stale" until developer approves
 - Weight: remains unchanged (pattern already existed, just documented)
-- Links: add cortex/database/index.md reference
+- Links: add .brain/cortex/database/index.md reference
 
 ---
 
-## cortex/database/index.md
+## .brain/cortex/database/index.md
 
 ### Proposed Addition
 Section: Schema Design for Idempotency
@@ -132,7 +132,7 @@ Proposed: New section explaining UNIQUE constraints + ON CONFLICT
 
 ### Step 4: Create Review Checklist
 
-Generate `working-memory/sinapse-review-{task_id}.md`:
+Generate `.brain/working-memory/sinapse-review-{task_id}.md`:
 
 ```markdown
 # Sinapse Update Review Checklist
@@ -152,17 +152,17 @@ Generate `working-memory/sinapse-review-{task_id}.md`:
 For each proposed update:
 
 **Option A:** Approve
-  → Update sinapse immediately
-  → Increment weight by +0.02
-  → Record in brain.db
+  â†’ Update sinapse immediately
+  â†’ Increment weight by +0.02
+  â†’ Record in brain.db
 
 **Option B:** Reject
-  → Discard proposal
-  → Record reason (if helpful feedback)
+  â†’ Discard proposal
+  â†’ Record reason (if helpful feedback)
 
 **Option C:** Modify
-  → Edit proposal
-  → Resubmit
+  â†’ Edit proposal
+  â†’ Resubmit
 ```
 
 ### Step 5: Format as Diffs (Not Full Rewrites)
@@ -195,8 +195,8 @@ Always show changes as unified diff format:
 +
 +**Related:**
 +- [[lesson-0004]] Worker safety
-+- [[cortex/database/index]] Schema design
-+- [[sinapses/outbox-event-flow]] Event atomicity
++- [[.brain/cortex/database/index]] Schema design
++- [[.brain/sinapses/outbox-event-flow]] Event atomicity
 +
 ```
 
@@ -204,7 +204,7 @@ Always show changes as unified diff format:
 
 Never proceed without developer sign-off.
 
-Proposal remains in `working-memory/sinapse-updates-{task_id}.md`. Approval and application are handled by `/brain-consolidate` during the next consolidation cycle, or by the developer manually. brain-document is proposal-only — it never writes to cortex sinapses.
+Proposal remains in `.brain/working-memory/sinapse-updates-{task_id}.md`. Approval and application are handled by `/brain-consolidate` during the next consolidation cycle, or by the developer manually. brain-document is proposal-only â€” it never writes to cortex sinapses.
 
 ## Example: Full Proposal Cycle
 
@@ -217,18 +217,18 @@ Proposal remains in `working-memory/sinapse-updates-{task_id}.md`. Approval and 
 
 **Proposed updates:**
 
-1. **cortex/backend/index.md**
+1. **.brain/cortex/backend/index.md**
    - Add section: Event Publishing Examples
    - Include ProductMarginCalculated as concrete example
 
-2. **cortex/frontend/index.md**
+2. **.brain/cortex/frontend/index.md**
    - Add: "Always load + error + empty states"
    - Reference Products surface margin display
 
-3. **sinapses/analytics-routing.md**
+3. **.brain/sinapses/analytics-routing.md**
    - Add multi-phase task example: margin calculation end-to-end
 
-4. **No changes to hippocampus/** (strategic layer, not touched)
+4. **No changes to .brain/hippocampus/** (strategic layer, not touched)
 
 **Review checklist:**
 - [x] All patterns now in use
@@ -239,9 +239,9 @@ Proposal remains in `working-memory/sinapse-updates-{task_id}.md`. Approval and 
 
 **Developer approves all 3 updates**
 
-→ All 3 sinapses updated atomically
-→ Weights +0.02 each
-→ brain.db reindexed
+â†’ All 3 sinapses updated atomically
+â†’ Weights +0.02 each
+â†’ brain.db reindexed
 
 ---
 
@@ -254,7 +254,7 @@ Agent(model: "haiku", description: "Propose sinapse updates after task completio
 ```
 
 **What the subagent receives:**
-- Task-completion record contents (`working-memory/task-completion-{task_id}.md`)
+- Task-completion record contents (`.brain/working-memory/task-completion-{task_id}.md`)
 - Current sinapses for the touched domain(s), condensed to key sections
 - List of files changed and their domains
 
@@ -282,12 +282,12 @@ Agent(model: "haiku", description: "Propose sinapse updates after task completio
 | Anti-Pattern | Why Wrong | Fix |
 |-------------|----------|-----|
 | Rewriting entire sinapse | Changes too drastic, hard to review | Use diff format (add section, not rewrite) |
-| Modifying hippocampus | Strategy/decisions only approved at planning | Document only in cortex/ or sinapses/ |
+| Modifying hippocampus | Strategy/decisions only approved at planning | Document only in .brain/cortex/ or .brain/sinapses/ |
 | Adding subjective opinions | "This is the best way" | Stick to observed patterns in code |
 | Linking to non-existent sinapses | Creates broken references | Verify all [[links]] exist first |
 | Changing weights without reason | Undermines weight-based ranking | Only adjust if pattern usage changes |
 | Documenting anti-patterns in cortex sinapses | Anti-patterns are failures, not patterns | Use `/brain-lesson` for anti-pattern capture |
-| Editing cortex/<domain>/lessons/ directly | Lessons have their own lifecycle | Use `/brain-lesson` skill workflow |
+| Editing .brain/cortex/<domain>/lessons/ directly | Lessons have their own lifecycle | Use `/brain-lesson` skill workflow |
 | Mixing patterns with failure stories | Confuses architectural advice with debugging notes | Keep sinapses (patterns) and lessons (failures) separate |
 
 ---

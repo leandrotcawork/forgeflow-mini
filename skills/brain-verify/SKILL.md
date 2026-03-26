@@ -12,6 +12,10 @@ Called by brain-task at Step 3.5, or manually via `/brain-verify`.
 
 Run these 6 phases IN ORDER. Stop on first blocking failure.
 
+**Blocking phases (stop pipeline on failure):** Phase 1 (build fails — code cannot compile), Phase 5 (hardcoded secrets found — security risk).
+**Non-blocking phases (warn and continue):** Phase 2 (type errors), Phase 3 (lint warnings), Phase 4 (test coverage below threshold), Phase 6 (unexpected file changes).
+Command detection: try commands in order (e.g., for tests: npm test → pytest → go test → cargo test), use the first that exists and succeeds.
+
 ### Phase 1: Build Check
 - Detect build system: package.json scripts.build, Makefile, go build, cargo build
 - Run build command

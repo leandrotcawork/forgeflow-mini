@@ -162,7 +162,7 @@ LIMIT 3
 
 ### Step 5: Generate Context Packet
 
-Create: `working-memory/context-packet-{task_id}.md`
+Create: `.brain/working-memory/context-packet-{task_id}.md`
 
 ```markdown
 ---
@@ -245,7 +245,7 @@ Tier 3 (on-demand):
 Tokens: ~4k (Tier 1) + ~12k (Tier 2) = ~16k used
 Ready for: brain-task Step 2 (generate codex-context.md)
 
-Output: working-memory/context-packet-{task_id}.md
+Output: .brain/working-memory/context-packet-{task_id}.md
 ```
 
 ---

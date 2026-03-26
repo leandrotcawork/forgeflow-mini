@@ -78,7 +78,7 @@ updated_at: [ISO8601]
 model_used: null                         # haiku | sonnet | codex | opus — which model was active when lesson was created
 supersedes: null                         # lesson-id if this replaces an older lesson
 superseded_by: null                      # lesson-id if a newer lesson replaced this one
-confidence: high | medium | low
+confidence: 0.3-0.9
 root_cause_type: misuse | gap | regression | assumption
 evidence: null                           # brief evidence description
 ---
@@ -105,7 +105,7 @@ evidence: null                           # brief evidence description
 
 ## Confidence Scoring (v0.3.0)
 
-Every lesson starts at confidence 0.3 (low). Confidence grows with evidence:
+Active lesson confidence range: 0.3 (initial instinct) -> 0.9 (high confidence, convention candidate). At 1.0: promoted to convention.
 
 | Event | Confidence Change |
 |-------|-------------------|
@@ -113,7 +113,9 @@ Every lesson starts at confidence 0.3 (low). Confidence grows with evidence:
 | Same pattern seen again | +0.1 |
 | Developer confirms relevance | +0.2 |
 | Developer marks as noise | -0.3 (may archive) |
-| Promoted to convention | Set to 1.0 |
+| Promoted to convention | Promoted to convention: lesson confidence set to 1.0 (frozen - conventions are considered validated and no longer decay). |
+
+Developer confirms by either: (a) replying 'confirm lesson [lesson-id]' in the current session, or (b) editing the lesson file to add `confirmed: true` to its frontmatter. brain-lesson applies +0.2 to confidence in brain.db on next invocation when it detects `confirmed: true`.
 
 Evidence is tracked in brain.db `lessons.evidence` field as a JSON array:
 ```json
@@ -314,7 +316,7 @@ Any test resource must be cleaned up in defer(). No exceptions.
 |----------|--------|
 | Same lesson exists | Increment recurrence_count, don't create duplicate |
 | Promotion candidate detected | Set `status: promotion_candidate` on matching lessons. brain-consolidate handles proposal generation. |
-| Related sinapses outdated | Mark for update in working-memory/sinapse-updates-{task_id}.md |
+| Related sinapses outdated | Mark for update in .brain/working-memory/sinapse-updates-{task_id}.md |
 | No clear solution found | Mark severity=critical, flag for team discussion |
 
 ---

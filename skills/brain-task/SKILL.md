@@ -18,7 +18,7 @@ GATE 4: Steps 4-6 (post-task) MUST run inline after Step 3 — NEVER wait for a 
 GATE 5: State persistence — brain-state.json MUST be updated at every checkpoint listed below
 ```
 
-**Architecture principle:** This skill is fully self-contained. Every step runs inline, in order, in the same session. Subagent dispatch is an optimization — the pipeline never depends on it. If a subagent fails or is unavailable, execution falls back to inline. No external hooks are required. If hooks exist, they serve as optional observers — never as workflow drivers.
+**Architecture principle:** This skill is fully self-contained. Pipeline orchestration (routing, state, verification, archival) always runs inline in the current session. Implementation may be delegated to a subagent (Haiku or Sonnet) for speed and token efficiency — but every subagent dispatch has an immediate inline fallback. The pipeline never depends on a subagent succeeding. No external hooks are required. If hooks exist, they serve as optional observers — never as workflow drivers.
 
 **If you catch yourself about to write code without having created the context files above, STOP. You are skipping the pipeline. Go back to Step 1.**
 
@@ -68,7 +68,7 @@ If no developer input (autonomous mode), attempt RESUME if context files exist, 
 
 ## Step 0: Route through brain-decision (MANDATORY)
 
-If brain-decision has NOT already run for this task, invoke `/brain-decision` NOW. Do not proceed.
+If `--task-id`, `--score`, `--domain`, and `--model` flags were NOT passed (i.e., you were called directly by the user, not via brain-decision), proceed with these defaults: score=50, model=sonnet, domain=cross-domain. Log a warning to the user: **'brain-task called without brain-decision routing — using defaults. For optimal results, use /brain-decision first.'** Do NOT invoke brain-decision.
 
 brain-decision will return:
 - `task_id` (YYYY-MM-DD-slug)
@@ -148,11 +148,11 @@ Do these actions NOW. Do not skip to implementation.
 
 ## Step 2: Generate Execution Context — DO THIS BEFORE ANY CODE
 
-Using the context-packet from Step 1, create the model-specific context file. If plan mode is active, also read `working-memory/implementation-plan-{task_id}.md` and incorporate it.
+Using the context-packet from Step 1, create the model-specific context file. If plan mode is active, also read `.brain/working-memory/implementation-plan-{task_id}.md` and incorporate it.
 
 **For Sonnet** (standard single-domain tasks, score 20-39):
 
-Create: `working-memory/sonnet-context-{task_id}.md`
+Create: `.brain/working-memory/sonnet-context-{task_id}.md`
 
 ```markdown
 ---
@@ -206,7 +206,7 @@ created_at: [ISO8601]
 
 **For Codex** (complex tasks, score 40+):
 
-Create: `working-memory/codex-context-{task_id}.md`
+Create: `.brain/working-memory/codex-context-{task_id}.md`
 
 ```markdown
 ---
@@ -284,7 +284,7 @@ created_at: [ISO8601]
 
 **For Opus** (debugging only):
 
-Create: `working-memory/opus-debug-context-{task_id}.md`
+Create: `.brain/working-memory/opus-debug-context-{task_id}.md`
 
 ```markdown
 ---
@@ -334,7 +334,7 @@ created_at: [ISO8601]
 
 ## Step 2.5: McKinsey Gate (architectural tasks only)
 
-If task type is `architectural` AND plan mode is active, invoke `/brain-mckinsey` before implementation. The mckinsey output card (`working-memory/mckinsey-output.md`) provides strategic scoring, external benchmarks, and 3 alternatives. Use the recommended option to inform implementation priorities. Skip this for non-architectural tasks.
+If task type is `architectural` AND plan mode is active, invoke `/brain-mckinsey` before implementation. The mckinsey output card (`.brain/working-memory/mckinsey-output.md`) provides strategic scoring, external benchmarks, and 3 alternatives. Use the recommended option to inform implementation priorities. Skip this for non-architectural tasks.
 
 ---
 
@@ -358,15 +358,57 @@ The implementation strategy depends on the model tier assigned by brain-decision
 
 ---
 
-### Path A: Haiku (score < 20) — Execute INLINE
+### Path A: Haiku (score < 20) — Dispatch HAIKU SUBAGENT (with inline fallback)
 
-1. Read the context-packet file
-2. Implement following the patterns in the context packet
-3. No formal quality gate — proceed directly to Step 3.5 (verification)
+**Why subagent:** The session model (Sonnet) stays free for orchestration. The actual implementation runs on `claude-haiku-4-5` — faster and cheaper for small tasks. If the subagent is unavailable, fall back to inline (same session).
+
+**Pre-dispatch guard:** If `--no-subagent` flag was passed, skip directly to Step A.4 (inline execution).
+
+**Step A.1: Assemble subagent prompt**
+
+Build a self-contained prompt — the subagent has NO access to your conversation:
+
+- Inline the FULL contents of `context-packet-{task_id}.md` (paste the text, not the path)
+- Include the task description and acceptance criteria
+- Include key conventions from `.brain/hippocampus/conventions.md` (5-10 lines max — Haiku tasks are small)
+- Include 1 real code example from the codebase (5-10 lines) showing the pattern to follow — take from the context packet or read the relevant file directly
+
+**Step A.2: Dispatch subagent**
+
+```
+Agent(model: "haiku", description: "Implement: {task_description}")
+```
+
+Record in `brain-state.json`:
+```json
+{
+  "subagents_dispatched": [{"task_id": "{task_id}", "model": "haiku", "status": "running"}]
+}
+```
+
+**Step A.3: Read subagent result**
+
+Update `brain-project-state.json` subagent_usage counters for each outcome below:
+
+- **DONE:** Verify files exist on disk, increment `subagent_usage.dispatched` + `subagent_usage.succeeded` + `subagent_usage.by_model.haiku.dispatched` + `subagent_usage.by_model.haiku.succeeded`, proceed to Step 3.5
+- **DONE_WITH_CONCERNS:** Review concerns. If safe, proceed. If not, fix inline. Increment `subagent_usage.dispatched` + `subagent_usage.succeeded` + `subagent_usage.by_model.haiku.dispatched` + `subagent_usage.by_model.haiku.succeeded`.
+- **BLOCKED / Garbage / Unavailable:** Increment `subagent_usage.dispatched` + `subagent_usage.failed_with_fallback` + `subagent_usage.by_model.haiku.dispatched` + `subagent_usage.by_model.haiku.failed`. Fall back to inline (Step A.4).
+
+**No retry policy:** Haiku path intentionally uses zero retries. Immediate inline fallback is faster for score < 20. Retrying would negate the speed benefit.
+
+**Step A.4: Inline fallback**
+
+If subagent fails or `--no-subagent` was passed:
+1. Log: `haiku subagent failed, executing inline (reason: {reason})` (skip log if `--no-subagent`)
+2. Read the context-packet file
+3. Implement following the patterns in the context packet
+4. No formal quality gate — proceed directly to Step 3.5
 
 ---
 
 ### Path B: Sonnet (score 20-39) — Dispatch SUBAGENT (with inline fallback)
+
+**Pre-dispatch guard:** If `--no-subagent` flag was passed, skip directly to Step B.4 (inline execution).
 
 **Step B.1: Assemble subagent prompt**
 
@@ -393,11 +435,11 @@ Record in `brain-state.json`:
 
 **Step B.3: Read subagent result**
 
-- **DONE:** Verify files exist on disk, proceed to Step 3.5 (verification)
-- **DONE_WITH_CONCERNS:** Review concerns. If safe, proceed to Step 3.5. If not safe, fix inline.
-- **BLOCKED:** Provide more context (additional sinapses, more code examples), retry ONCE. If still blocked, fall back to inline execution (Step B.4).
-- **Garbage / no useful output:** Fall back to inline execution (Step B.4).
-- **Subagent unavailable or errors:** Fall back to inline execution (Step B.4).
+- **DONE:** Verify files exist on disk, increment `subagent_usage.dispatched` + `subagent_usage.succeeded` + `subagent_usage.by_model.sonnet.dispatched` + `subagent_usage.by_model.sonnet.succeeded`, proceed to Step 3.5 (verification)
+- **DONE_WITH_CONCERNS:** Review concerns. If safe, proceed to Step 3.5. If not safe, fix inline. Increment `subagent_usage.dispatched` + `subagent_usage.succeeded` + `subagent_usage.by_model.sonnet.dispatched` + `subagent_usage.by_model.sonnet.succeeded`.
+- **BLOCKED:** Provide more context (additional sinapses, more code examples), retry ONCE. If still blocked, increment `subagent_usage.dispatched` + `subagent_usage.failed_with_fallback` + `subagent_usage.by_model.sonnet.dispatched` + `subagent_usage.by_model.sonnet.failed` and fall back to inline execution (Step B.4).
+- **Garbage / no useful output:** Increment `subagent_usage.dispatched` + `subagent_usage.failed_with_fallback` + `subagent_usage.by_model.sonnet.dispatched` + `subagent_usage.by_model.sonnet.failed` and fall back to inline execution (Step B.4).
+- **Subagent unavailable or errors:** Increment `subagent_usage.dispatched` + `subagent_usage.failed_with_fallback` + `subagent_usage.by_model.sonnet.dispatched` + `subagent_usage.by_model.sonnet.failed` and fall back to inline execution (Step B.4).
 
 Update `brain-project-state.json` subagent_usage counters accordingly.
 
@@ -417,7 +459,7 @@ If subagent fails for any reason:
 
 Complex tasks need the full context window. Execute inline.
 
-1. Call `codex` or `codex-cli` MCP tool with `context_file: working-memory/codex-context-{task_id}.md`
+1. Call `codex` or `codex-cli` MCP tool with `context_file: .brain/working-memory/codex-context-{task_id}.md`
 2. Review Codex output — accept, reject, or partial accept
 3. If MCP unavailable: fall back to Claude implementing directly using the context file as brief
 
@@ -446,7 +488,7 @@ Debugging requires full codebase access and the complete context window. Always 
 
 High-complexity tasks require planning first, then inline execution.
 
-1. Read the implementation plan (`working-memory/implementation-plan-{task_id}.md`)
+1. Read the implementation plan (`.brain/working-memory/implementation-plan-{task_id}.md`)
 2. Execute each plan phase sequentially, following the context file
 3. Checkpoint progress between phases
 
@@ -507,7 +549,7 @@ Update `brain-state.json` after each strategy attempt:
 
 After tests pass, also invoke `/brain-codex-review` **inline** (unless already dispatched as subagent in Path C):
 
-1. Run `/brain-codex-review` -> generates `working-memory/codex-review-{task_id}.md`
+1. Run `/brain-codex-review` -> generates `.brain/working-memory/codex-review-{task_id}.md`
 2. If review passes -> proceed to Step 4
 3. If review finds auto-fixable issues -> fix and re-run tests
 4. If review fails with manual-fix issues -> halt, report to developer, wait for direction
@@ -585,7 +627,7 @@ For tasks with score < 40 (Haiku / Sonnet), dispatch a haiku subagent for docume
 Agent(model: "haiku", description: "Propose sinapse updates: {task_id}")
 ```
 
-- Read subagent result and write to `working-memory/sinapse-updates-{task_id}.md`
+- Read subagent result and write to `.brain/working-memory/sinapse-updates-{task_id}.md`
 - **Fallback:** If subagent fails or is unavailable, invoke `/brain-document` inline
 
 For tasks with score >= 40 (Codex / Opus):
@@ -594,9 +636,9 @@ For tasks with score >= 40 (Codex / Opus):
 
 **6.2: Archive context files**
 
-Move context files from `working-memory/` to `progress/completed-contexts/`:
-- `context-packet-{task_id}.md` -> `progress/completed-contexts/{task_id}-context-packet.md`
-- `{model}-context-{task_id}.md` -> `progress/completed-contexts/{task_id}-{model}-context.md`
+Move context files from `.brain/working-memory/` to `.brain/progress/completed-contexts/`:
+- `context-packet-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-context-packet.md`
+- `{model}-context-{task_id}.md` -> `.brain/progress/completed-contexts/{task_id}-{model}-context.md`
 
 **6.3: Commit**
 
@@ -655,7 +697,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 |---------------|--------|
 | < 50% | Normal execution, full detail |
 | 50-75% | Reduce code examples in context files from 3 to 1 |
-| > 75% | Skip optional steps: brain-document runs as subagent only (no inline fallback), archival writes minimal notes, skip Brain Health Status in context files |
+| > 75% | Prefer subagent dispatch for documentation and post-implementation steps. Inline fallback remains available — use it if subagent is unavailable or fails. Never disable inline fallback regardless of context pressure. |
 | > 90% | Emergency mode: complete current step, write state to brain-state.json, output "CONTEXT PRESSURE CRITICAL -- compact now and resume from Step {N}" |
 
 ---
@@ -677,11 +719,11 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 
 | Step | File | Archived to |
 |------|------|-------------|
-| 1 | `working-memory/context-packet-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
-| 2 | `working-memory/[model]-context-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
-| 3.5 | `working-memory/codex-review-{task_id}.md` | kept for reference (Codex path only) |
-| 4 | `working-memory/task-completion-{task_id}.md` | cleaned up by brain-consolidate |
-| 6 | `working-memory/sinapse-updates-{task_id}.md` | cleaned up by brain-consolidate |
+| 1 | `.brain/working-memory/context-packet-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
+| 2 | `.brain/working-memory/[model]-context-{task_id}.md` | `progress/completed-contexts/` (Step 6) |
+| 3.5 | `.brain/working-memory/codex-review-{task_id}.md` | kept for reference (Codex path only) |
+| 4 | `.brain/working-memory/task-completion-{task_id}.md` | cleaned up by brain-consolidate |
+| 6 | `.brain/working-memory/sinapse-updates-{task_id}.md` | cleaned up by brain-consolidate |
 
 ### State Files Modified
 
@@ -695,6 +737,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 
 | Trigger | Model | Task | Fallback |
 |---------|-------|------|----------|
+| Step 3, Path A (Haiku) | haiku | Implement task | Execute inline (same session) |
 | Step 3, Path B (Sonnet) | sonnet | Implement task | Execute inline |
 | Step 3, Path C post-impl | sonnet | Code review (brain-codex-review) | Run inline at Step 3.5 |
 | Step 3, Path C post-impl | haiku | Propose sinapse updates (brain-document) | Run inline at Step 6 |

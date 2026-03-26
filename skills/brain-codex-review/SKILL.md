@@ -9,7 +9,7 @@ description: Codex code review agent — validates implementation, finds bugs, c
 
 **Token Budget:** 20k in / 8k out
 
-**Trigger:** Automatic after Step 2 (Codex implement) OR manual via `/brain-codex-review`
+**Trigger:** Automatic trigger: Step 3.5, Codex path only (score >= 40). Not automatically triggered for Haiku (Path A) or Sonnet (Path B) paths. Can also be invoked manually at any time via /brain-codex-review.
 
 ---
 
@@ -89,7 +89,7 @@ brain-task Step 4: task-completion record → Step 5: activity log → Step 6: b
 
 ## Codex Review Output
 
-Generate: `working-memory/codex-review-{task_id}.md`
+Generate: `.brain/working-memory/codex-review-{task_id}.md`
 
 ```markdown
 ---

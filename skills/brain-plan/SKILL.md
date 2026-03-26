@@ -16,7 +16,7 @@ brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (
 ## Workflow
 
 ### Input
-- Context packet (from working-memory/context-packet-{task_id}.md)
+- Context packet (from .brain/working-memory/context-packet-{task_id}.md)
 - Task description
 - Optional: stakeholder constraints, deadline
 
@@ -24,7 +24,7 @@ brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (
 
 #### Step 1: Analyze Context Packet
 
-Read `working-memory/context-packet-{task_id}.md` and extract:
+Read `.brain/working-memory/context-packet-{task_id}.md` and extract:
 - Domain classification (backend, frontend, database, etc.)
 - Loaded sinapses (review all Tier 1 + Tier 2)
 - Conventions relevant to domain
@@ -75,7 +75,7 @@ Example subtask:
   - contracts/events/v1/ProductMarginCalculated.yaml (create)
 
 **Conventions:**
-  - [[cortex/backend/lessons/lesson-0003]] Outbox must be atomic
+  - [[.brain/cortex/backend/lessons/lesson-0003]] Outbox must be atomic
   - [[metalshopping-event-contracts]] Event schema rules
 
 **Acceptance Criteria:**
@@ -100,7 +100,7 @@ Example:
 Conflict detected in Subtask 2:
   "Wire margin calculation in product service"
 
-  VIOLATES: cortex/backend/lessons/lesson-0003 (Outbox must be atomic)
+  VIOLATES: .brain/cortex/backend/lessons/lesson-0003 (Outbox must be atomic)
 
   Action: Must emit ProductMarginCalculated event in SAME transaction
           as product update, not after Commit().
@@ -127,7 +127,7 @@ Sum all subtask estimates. If total > 80k, warn:
 
 ### Output
 
-Create `working-memory/implementation-plan-{task_id}.md`:
+Create `.brain/working-memory/implementation-plan-{task_id}.md`:
 
 ```markdown
 ---

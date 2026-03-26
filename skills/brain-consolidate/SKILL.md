@@ -25,8 +25,8 @@ brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-do
 
 ### Step 1: Inventory Completed Work
 
-Scan `working-memory/`:
-- List all `task-completion-*.md` files with status = "completed"
+Scan `.brain/working-memory/`:
+- List all `task-completion-*.md` files with status = "success" or "failed"
 - Extract: task ID, description, touched files (from git diff), outcome (success/fail), sinapses loaded, token usage
 - Group by cortex region touched (backend, frontend, database, infra, cross-domain)
 
@@ -35,7 +35,7 @@ Output: Working inventory in memory (not persisted yet).
 ### Step 2: Collect Sinapse Update Proposals
 
 For each completed task:
-- Check if `working-memory/sinapse-updates-TASK-ID.md` exists
+- Check if `.brain/working-memory/sinapse-updates-{task_id}.md` exists
 - If yes: read the proposed unified diffs, extract which sinapses would be updated
 - Group all proposals by cortex region and sinapse ID
 - Count: total proposals, by region, by action type (add/modify/delete)
@@ -48,7 +48,7 @@ For developer approval, present all proposed updates as a **numbered list with u
 
 ```
 CORTEX REGION: backend
-  [1] cortex/backend/api.md
+  [1] .brain/cortex/backend/api.md
       Status: modify
       Diff:
         - Pattern: handlers should validate input immediately
@@ -56,7 +56,7 @@ CORTEX REGION: backend
 
       Approve [y/n/m for modify]:
 
-  [2] cortex/backend/index.md
+  [2] .brain/cortex/backend/index.md
       Status: add
       New section:
         + ### Observability
@@ -65,7 +65,7 @@ CORTEX REGION: backend
       Approve [y/n/m]:
 
 CROSS-DOMAIN
-  [3] sinapses/outbox-event-flow.md
+  [3] .brain/sinapses/outbox-event-flow.md
       Status: modify
       [diff shown]
       Approve [y/n/m]:
@@ -98,7 +98,7 @@ For each candidate group:
 
 **4a: Deduplicate** — Check if another proposal already exists for this pattern in `.brain/lessons/inbox/escalation-PROPOSAL-*.md`. If yes, skip.
 
-**4b: Check existing conventions** — Read hippocampus/conventions.md. If this pattern is already documented:
+**4b: Check existing conventions** — Read .brain/hippocampus/conventions.md. If this pattern is already documented:
 - Set `status: promoted` on all matching lessons in brain.db
 - Output: "✓ [N] [domain] lessons match existing convention [name]. Marked promoted."
 
@@ -113,17 +113,17 @@ For each candidate group:
   Domain: [domain]
   Source lessons: [N] (lesson-XXXX, lesson-YYYY, lesson-ZZZZ)
   Review: .brain/lessons/inbox/escalation-PROPOSAL-[timestamp].md
-  Actions: approve → hippocampus/conventions.md | reject → discard | modify → edit and resubmit
+  Actions: approve → .brain/hippocampus/conventions.md | reject → discard | modify → edit and resubmit
   ```
 
 **4d: On approval** — Developer approves the proposal:
-1. Move convention text to hippocampus/conventions.md
+1. Move convention text to .brain/hippocampus/conventions.md
 2. Set `status: promoted` on all source lessons
 3. Delete the proposal file
 
 ### Step 5: Generate brain-health.md
 
-Write `progress/brain-health.md` (generated report, never manually edited):
+Write `.brain/progress/brain-health.md` (generated report, never manually edited):
 
 ```markdown
 ---
@@ -148,11 +148,11 @@ consolidation_cycle: [N]
 
 | Region | Total Sinapses | Updated This Cycle | Stale (>30d) | Last Updated |
 |---|---|---|---|---|
-| cortex/backend | 5 | 2 | 0 | [latest date] |
-| cortex/frontend | 4 | 1 | 1 | [latest date] |
-| cortex/database | 3 | 0 | 2 | [latest date] |
-| cortex/infra | 2 | 0 | 2 | [latest date] |
-| sinapses/ (cross-domain) | 6 | 1 | 2 | [latest date] |
+| .brain/cortex/backend | 5 | 2 | 0 | [latest date] |
+| .brain/cortex/frontend | 4 | 1 | 1 | [latest date] |
+| .brain/cortex/database | 3 | 0 | 2 | [latest date] |
+| .brain/cortex/infra | 2 | 0 | 2 | [latest date] |
+| .brain/sinapses/ (cross-domain) | 6 | 1 | 2 | [latest date] |
 | **TOTAL** | **20** | **4** | **7** | — |
 
 ---
@@ -174,7 +174,7 @@ consolidation_cycle: [N]
 |---|---|---|---|
 | escalation-PROPOSAL-001.md | lesson-0001, 0002, 0004 | "Tenant isolation failure modes" | ⏳ Awaiting developer review |
 
-**Action:** Review .brain/lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to hippocampus/conventions.md.
+**Action:** Review .brain/lessons/inbox/escalation-PROPOSAL-*.md files. If approved, move convention text to .brain/hippocampus/conventions.md.
 
 ---
 
@@ -182,7 +182,7 @@ consolidation_cycle: [N]
 
 | Gap | Severity | Recommendation |
 |---|---|---|
-| cortex/infra last updated >90 days ago | high | Consider infra audit task |
+| .brain/cortex/infra last updated >90 days ago | high | Consider infra audit task |
 | No sinapses for observability patterns | medium | Add observability-cross-cutting.md after next logging feature |
 | Frontend data-flow not updated since Phase 2 | medium | Review after SDK update |
 
@@ -192,13 +192,13 @@ consolidation_cycle: [N]
 
 | Rank | Sinapse | Current Weight | Last Accessed | Usage Count |
 |---|---|---|---|---|
-| 1 | cortex/backend/index.md | 0.92 | 2026-03-24 | 47 |
-| 2 | cortex/backend/auth.md | 0.89 | 2026-03-24 | 43 |
-| 3 | cortex/backend/outbox.md | 0.88 | 2026-03-23 | 41 |
-| 4 | sinapses/tenant-isolation-flow.md | 0.84 | 2026-03-22 | 38 |
-| 5 | cortex/frontend/index.md | 0.79 | 2026-03-24 | 35 |
+| 1 | .brain/cortex/backend/index.md | 0.92 | 2026-03-24 | 47 |
+| 2 | .brain/cortex/backend/auth.md | 0.89 | 2026-03-24 | 43 |
+| 3 | .brain/cortex/backend/outbox.md | 0.88 | 2026-03-23 | 41 |
+| 4 | .brain/sinapses/tenant-isolation-flow.md | 0.84 | 2026-03-22 | 38 |
+| 5 | .brain/cortex/frontend/index.md | 0.79 | 2026-03-24 | 35 |
 | ... | ... | ... | ... | ... |
-| 10 | cortex/database/schema.md | 0.61 | 2026-03-10 | 18 |
+| 10 | .brain/cortex/database/schema.md | 0.61 | 2026-03-10 | 18 |
 
 ---
 
@@ -206,10 +206,10 @@ consolidation_cycle: [N]
 
 | Sinapse | Current Weight | Last Accessed | Backlink Count | Recommendation |
 |---|---|---|---|---|
-| cortex/infra/deploy.md | 0.31 | 2026-02-15 | 0 | Review for archival or update |
-| sinapses/analytics-routing.md | 0.28 | 2026-01-20 | 0 | Likely outdated; review or archive |
+| .brain/cortex/infra/deploy.md | 0.31 | 2026-02-15 | 0 | Review for archival or update |
+| .brain/sinapses/analytics-routing.md | 0.28 | 2026-01-20 | 0 | Likely outdated; review or archive |
 
-**Recommendation:** If these sinapses are no longer relevant, move to lessons/archived/ or document when they'll be needed again.
+**Recommendation:** If these sinapses are no longer relevant, move to .brain/lessons/archived/ or document when they'll be needed again.
 
 ---
 
@@ -240,10 +240,10 @@ For each promoted lesson:
 
 ### Step 6.5: Verify Archival
 
-**Note:** Per-task archival is owned by brain-task Step 6 (runs inline after each task). By the time brain-consolidate runs, context files should already be in `progress/completed-contexts/`.
+**Note:** Per-task archival is owned by brain-task Step 6 (runs inline after each task). By the time brain-consolidate runs, context files should already be in `.brain/progress/completed-contexts/`.
 
-If any context files remain in `working-memory/` that should have been archived (check for `sonnet-context-*.md`, `codex-context-*.md`, `opus-debug-context-*.md`, `context-packet-*.md`):
-- Move them to `progress/completed-contexts/[task-id]-[original-name].md`
+If any context files remain in `.brain/working-memory/` that should have been archived (check for `sonnet-context-*.md`, `codex-context-*.md`, `opus-debug-context-*.md`, `context-packet-*.md`):
+- Move them to `.brain/progress/completed-contexts/[task-id]-[original-name].md`
 - Flag: "brain-task Step 6 may not have completed for task [task-id] — archival recovered by consolidation"
 
 ---
@@ -251,13 +251,7 @@ If any context files remain in `working-memory/` that should have been archived 
 ### Step 7: Clear Working Memory
 
 After developer approves or explicitly skips:
-1. For each completed task:
-   - Move task record to `progress/activity.md` (append as log entry)
-   - Delete `working-memory/task-completion-*.md`
-   - Delete `working-memory/sinapse-updates-XXXXX.md` (proposal consumed)
-   - Delete `working-memory/context-packet-XXXXX.md` (archived at Step 6.5)
-2. Commit all working-memory deletions with message: "chore: consolidation cycle [N] — clear working memory"
-3. Output: "✓ Working memory cleared. [N] records archived to progress/activity.md. Context files in progress/completed-contexts/."
+brain-task already wrote a one-line summary to `.brain/progress/activity.md` during Step 5. Do NOT append again during consolidation. Consolidation only: (1) archives the task-completion file to `.brain/progress/completed-contexts/`, (2) increments `tasks_since_last_consolidation` counter to 0, (3) increments `total_consolidation_cycles`.
 
 ## Output Summary
 
@@ -268,11 +262,11 @@ After consolidation completes, output to developer:
 
 Sinapse updates: [Y] approved / [R] rejected / [M] modified
 Escalation proposals: [N] surfaced
-  - [A] approved → moving to hippocampus/conventions.md
+  - [A] approved → moving to .brain/hippocampus/conventions.md
   - [P] pending review → in .brain/lessons/inbox/escalation-*.md
   - [D] dismissed → discarded
 
-Context files archived: [N] task contexts → progress/completed-contexts/
+Context files archived: [N] task contexts → .brain/progress/completed-contexts/
   - Sonnet contexts: [N]
   - Codex contexts: [N]
   - Opus contexts: [N]
@@ -280,7 +274,7 @@ Context files archived: [N] task contexts → progress/completed-contexts/
 
 Working memory: [N] records cleared
 Brain.db: [N] sinapses reweighted
-Health report: progress/brain-health.md (generated)
+Health report: .brain/progress/brain-health.md (generated)
 
 Next consolidation suggested after [5 more completed tasks] (approx [date])
 
@@ -288,7 +282,7 @@ Action items:
   [ ] Review [N] pending escalation proposals (if any)
   [ ] Address [N] coverage gaps (if any)
   [ ] Archive or update [N] orphaned sinapses (if any)
-  [ ] Analyze OUTCOME.md files in progress/completed-contexts/ for patterns
+  [ ] Analyze OUTCOME.md files in .brain/progress/completed-contexts/ for patterns
 ```
 
 ## Anti-Patterns
@@ -296,7 +290,7 @@ Action items:
 | Anti-Pattern | Why Wrong | Fix |
 |---|---|---|
 | Auto-updating sinapses without approval | Violates developer trust, can introduce errors | Always propose, never auto-update. Wait for approval. |
-| Clearing working-memory without archiving | Loses history of completed tasks | Archive to progress/activity.md before deleting |
+| Clearing working-memory without archiving | Loses history of completed tasks | Archive to .brain/progress/activity.md before deleting |
 | Ignoring escalation candidates | Misses opportunities to promote lessons to conventions | Always surface 3+ same-pattern lessons |
 | Updating weights without clear rationale | Makes ranking opaque | Only adjust weights on task completion (success ±) or decay on disuse |
 | Generating brain-health.md at wrong frequency | Staleness report becomes stale | Generate fresh on every consolidation cycle |
@@ -315,10 +309,11 @@ Action items:
 
 Consolidation cycle is **post-task**, never blocking:
 1. Task completes → brain-document proposes updates → developer approves/rejects
-2. Multiple tasks accumulate proposals in working-memory/
+2. Multiple tasks accumulate proposals in .brain/working-memory/
 3. After 5 tasks OR developer request → trigger `/brain-consolidate`
 4. Consolidation reviews all proposals, surfaces escalations, updates weights
 5. Developer approves consolidation results
-6. working-memory/ cleared, brain-health.md generated, activity.md updated
+6. .brain/working-memory/ cleared, .brain/progress/brain-health.md generated, .brain/progress/activity.md updated
 
 **Token budget:** ~15–25k per consolidation (depends on proposal count and escalation complexity)
+

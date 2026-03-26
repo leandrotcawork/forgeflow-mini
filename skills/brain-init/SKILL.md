@@ -48,6 +48,7 @@ Initialize a Brain for any project. Scans the project, detects type, generates h
 - Display all generated files
 - Ask: "Proceed with persisting?" (yes/no)
 - If NO: cancel without persisting
+  **On cancel:** Delete all `.brain/` files and directories generated during Phases 1-4. Do NOT write `.brain/brain.config.json`. Leave the project directory in its original clean state. Inform the developer: 'brain-init cancelled. No files were persisted.'
 - If YES: proceed to Phase 6
 
 ### Phase 6: Persist to .brain/
@@ -142,7 +143,7 @@ For each event type in `hooks.json`, filter hooks by the selected profile's tier
 }
 ```
 
-Each hook becomes a separate hook group entry. The `matcher` field for idempotent detection uses the hook `id` from hooks.json (e.g., `brain-hippocampus-guard`, `brain-state-restore`).
+Each hook becomes a separate hook group entry. Idempotency is detected by searching the existing hooks array for the hook's command string. If an entry already exists whose `command` contains `brain-hooks.js {hookName}` (e.g., `brain-hooks.js hippocampusGuard`), skip that hook — it is already installed. Do NOT use the matcher field for idempotency detection.
 
 **Concrete example — standard profile produces these hook groups:**
 

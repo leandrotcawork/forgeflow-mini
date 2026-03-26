@@ -50,10 +50,9 @@ Dispatch 2-3 research subagents in a **SINGLE message** (parallel execution):
 ```
 Agent(
   model: "haiku",
+  description: "Research best practices: {topic}",
   run_in_background: true,
-  prompt: "Research best practices for {technology}. Use WebSearch.
-           Return 3-5 findings with source URLs.
-           Format: numbered list, each with: finding, source URL, relevance note."
+  prompt: "Task context: architectural decision analysis for {topic} in this project. Research current best practices for {topic} using WebSearch. Return 3-5 findings with source URLs and publication/source date when available. Format as a numbered list where each item includes: finding, source URL, relevance note to this project."
 )
 ```
 
@@ -61,10 +60,9 @@ Agent(
 ```
 Agent(
   model: "haiku",
+  description: "Research benchmarks and case studies: {topic}",
   run_in_background: true,
-  prompt: "Research how {companies} handled {decision}. Use WebSearch.
-           Return 2-3 case studies.
-           Format: company name, what they decided, outcome, source URL."
+  prompt: "Task context: architectural decision analysis for {topic}. Research how relevant companies handled this same or comparable decision. Use WebSearch. Return 2-3 case studies. Format each case with: company name, what they decided, outcome, source URL, and why this evidence is comparable."
 )
 ```
 
@@ -72,18 +70,20 @@ Agent(
 ```
 Agent(
   model: "haiku",
+  description: "Research official docs and stability: {topic}",
   run_in_background: true,
-  prompt: "Look up latest docs for {framework}. Use context7 or WebSearch.
-           Return version info, stability assessment, migration complexity.
-           Format: version, stability rating, breaking changes, upgrade path."
+  prompt: "Task context: architectural decision analysis for {topic}. Look up latest official documentation for the relevant framework/tooling using context7 or WebSearch. Return version info, stability assessment, migration complexity, known breaking changes, and upgrade path. Include source URLs."
 )
 ```
 
+Wait up to 30 seconds for all background subagents to complete. If a subagent returns no result or times out, mark its section as [No external data found] and proceed.
+
 **After all subagents complete:**
 1. Read each subagent's findings
-2. Synthesize into `working-memory/mckinsey-output.md`
+2. Synthesize into `.brain/working-memory/mckinsey-output.md`
 3. If any subagent returned nothing: mark that section as `[No external data found]`
-4. If any subagent failed entirely: mark as `[Subagent failed — no external data]` and proceed with internal scoring only
+4. If any subagent failed entirely: mark as `[Subagent failed - no external data]` and proceed with internal scoring only
+5. If two subagents return conflicting recommendations on the same dimension (e.g., one recommends library A, another recommends library B for the same use case), flag the conflict explicitly in the output card under a 'Conflicting Signals' subsection.
 
 Mark `[estimated]` if search returns nothing. Include contradictions between subagent findings.
 
@@ -98,7 +98,7 @@ For each: score, pros (2–4), cons (2–4), time-to-production, reversibility, 
 
 ### Step 5: Output Card
 
-Write `working-memory/mckinsey-output.md`:
+Write `.brain/working-memory/mckinsey-output.md`:
 
 ```markdown
 ---
@@ -122,8 +122,11 @@ architecture: true
 [1–3 key findings from sub-agents. If none: "No external benchmarks found."]
 
 **Sources:**
-- [Finding 1 — URL]
-- [Finding 2 — URL]
+- [Finding 1 - URL]
+- [Finding 2 - URL]
+
+## Conflicting Signals
+- [List any conflicts across subagent recommendations on the same dimension. If none: "None."]
 
 ## ALTERNATIVES
 
@@ -191,7 +194,7 @@ When brain-task invokes brain-mckinsey:
 1. Task classification detected as "architectural"
 2. brain-task calls `/brain-mckinsey` with decision description
 3. Skill loads context, runs scoring, launches sub-agents
-4. Returns `working-memory/mckinsey-output.md` for developer review
+4. Returns `.brain/working-memory/mckinsey-output.md` for developer review
 5. Developer approves/rejects recommendation
 6. If approved, ADR is created at implementation time (not by mckinsey)
 7. If rejected, developer documents rationale in task notes

@@ -14,7 +14,11 @@ description: Health dashboard — display Brain stats and regenerate 3D visualiz
 brain-status is a pure read-only operation — it can safely run as a Haiku subagent:
 
 ```
-Agent(model: "haiku", description: "Brain health dashboard")
+Agent(
+  model: "haiku",
+  description: "Generate brain health dashboard",
+  prompt: "You are generating a brain health report. Read the following data:\n\n[inline the content of .brain/progress/brain-project-state.json]\n[inline the last 20 lines of .brain/progress/activity.md]\n\nOutput a formatted health report with: total tasks completed, model usage breakdown, subagent dispatch rates, circuit breaker state, tasks since last consolidation. Flag any regions with no activity in >30 days as stale."
+)
 ```
 
 The subagent:
@@ -24,6 +28,8 @@ The subagent:
 4. Formats dashboard output
 
 Fallback: if subagent dispatch fails or is unavailable, runs inline.
+
+**Inline fallback:** If subagent fails, execute the same steps inline: read the files directly and format the report in the current session.
 
 ## Trigger
 
@@ -39,7 +45,7 @@ From `.brain/brain.db`:
 - Count lessons per region
 - Find latest `updated_at` per region
 - Detect staleness (>30 days, >60 days)
-- Count pending escalations in `.brain/lessons/inbox/escalation-*.md`
+- Count pending escalations in `.brain/lessons/inbox/escalation-*.md` (These files are created by brain-consolidate during the escalation review phase, not by brain-lesson.)
 
 From `.brain/progress/brain-project-state.json`:
 - Circuit breaker status (closed/open/half-open), consecutive failures, last reset
