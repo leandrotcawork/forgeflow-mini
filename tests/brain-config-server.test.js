@@ -78,7 +78,7 @@ var activityFile = path.join(progressDir, 'activity.md');
 function setupTestConfig() {
   var baseConfig = {
     brain_id: 'test-brain',
-    version: '0.5.0',
+    version: '0.6.0',
     created_at: '2026-03-26T10:00:00Z',
     project_root: '.',
     brain_root: '.brain',
@@ -341,6 +341,7 @@ test('brain_config_read: errors when config missing', function () {
   var result = server.brainConfigRead({});
   assert(!result.ok);
   assert(result.error.indexOf('not found') !== -1);
+  setupTestConfig();
 });
 
 // ---------------------------------------------------------------------------
@@ -385,6 +386,10 @@ test('brain_config_write: handles dynamic linter keys', function () {
   var result = server.brainConfigWrite({ key: 'linters..rs', value: 'cargo clippy --fix' });
   assert(result.ok);
   assertEqual(result.data.new_value, 'cargo clippy --fix');
+
+  // Verify it was actually persisted to disk
+  var onDisk = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  assertEqual(onDisk.linters['.rs'], 'cargo clippy --fix');
 });
 
 test('brain_config_write: logs change to activity.md', function () {
@@ -441,7 +446,7 @@ test('brain_config_validate: validates entire config', function () {
   var result = server.brainConfigValidate({});
   assert(result.ok);
   assert(result.data.valid);
-  assert(result.data.checked > 0);
+  assert(result.data.checked >= 30, 'Expected at least 30 fields checked, got ' + result.data.checked);
 });
 
 test('brain_config_validate: reports error for unknown section', function () {
@@ -512,10 +517,15 @@ test('brain_config_diff: no changes when values same', function () {
 test('brain_config_diff: works with original/modified objects', function () {
   setupTestConfig();
   var orig = { learning: { confidence_initial: 0.3 } };
-  var mod = { learning: { confidence_initial: 0.6 } };
+  var mod  = { learning: { confidence_initial: 0.6 } };
   var result = server.brainConfigDiff({ original: orig, modified: mod });
   assert(result.ok);
   assert(result.data.has_changes);
+  assertEqual(result.data.change_count, 1);
+  var d = result.data.diffs[0];
+  assertEqual(d.key, 'learning.confidence_initial');
+  assertEqual(d.before, 0.3);
+  assertEqual(d.after, 0.6);
 });
 
 test('brain_config_diff: detects linter changes', function () {
@@ -562,9 +572,9 @@ test('SCHEMA covers all sections', function () {
     schemaSections[section] = true;
   });
 
-  var expected = ['database', 'hooks', 'resilience', 'subagents', 'learning',
+  var expected = ['database', 'hooks', 'linters', 'resilience', 'subagents', 'learning',
     'context_loading', 'token_budgets', 'token_optimization', 'consolidation',
-    'lesson_escalation', 'weight_decay'];
+    'lesson_escalation', 'weight_decay', 'cortex_regions'];
 
   expected.forEach(function (s) {
     assert(schemaSections[s], 'Schema missing section: ' + s);
@@ -635,7 +645,8 @@ test('CLI: unknown tool returns error', function () {
     assert(false, 'Should have thrown');
   } catch (err) {
     var output = (err.stdout || '') + (err.stderr || '');
-    assert(output.indexOf('Unknown tool') !== -1 || err.status === 1);
+    assert(output.indexOf('Unknown tool') !== -1 && err.status === 1,
+      'Expected exit 1 AND "Unknown tool" in output. Got status=' + err.status + ' output=' + output);
   }
 });
 
