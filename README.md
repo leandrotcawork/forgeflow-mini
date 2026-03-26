@@ -5,7 +5,7 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
 <p align="center">
   <img src="https://img.shields.io/badge/Version-0.6.0-blue" alt="Version 0.6.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
-  <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
+  <img src="https://img.shields.io/badge/Skills-15-orange" alt="15 Skills">
   <img src="https://img.shields.io/badge/Hooks-8-yellow" alt="8 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
@@ -63,6 +63,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Quick side question | `/brain-aside` | Answer question without losing pipeline context |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
 | Upgrade from v0.2 | `/brain-init --upgrade` | Adds v0.6.0 features without full re-init |
+| Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
 
 ---
 
@@ -171,14 +172,14 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 +-- brain.db               SQLite index (sinapses + lessons + links + state)
 ```
 
-### Skill Map (14 Skills)
+### Skill Map (15 Skills)
 
 | Skill | Type | Purpose |
 |---|---|---|
 | `brain-decision` | Router | Classifies, scores, routes, circuit breaker check |
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
 | `brain-task` | Orchestrator | Dispatches subagents or implements inline, manages pipeline |
-| `brain-plan` | Planner | Decomposes complex tasks into subtasks |
+| `brain-plan` | Planner | Cortex-Linked TDD planner — micro-steps, sinapse linking, file design, self-review gates |
 | `brain-codex-review` | Reviewer | Quality gate (runs as Sonnet subagent for Codex tasks) |
 | `brain-document` | Documenter | Proposes sinapse updates (Haiku subagent for simple tasks) |
 | `brain-lesson` | Learner | Captures failures with confidence scoring |
@@ -189,6 +190,7 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
 | `brain-eval` | Evaluator | Define success criteria before implementation |
 | `brain-aside` | Context Saver | Quick question without losing pipeline state |
+| `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
 ### Hook Architecture (8 Hooks)
 
