@@ -3,7 +3,7 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.7.0-blue" alt="Version 0.7.0">
+  <img src="https://img.shields.io/badge/Version-0.9.0-blue" alt="Version 0.9.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-16-orange" alt="16 Skills">
   <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
@@ -50,6 +50,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 
 | I want to... | Use | What happens |
 |---|---|---|
+| **Start anything** | `/brain-dev [anything]` | Classifies request, evaluates brain knowledge, routes to brain-plan/brain-consult/brain-task. Primary daily entry point. |
 | Build a feature | `/brain-task "description"` | Routes, loads context, dispatches subagent or implements inline, reviews |
 | Debug something stuck | `/brain-task --debug "description"` | Routes to Opus for root cause analysis |
 | Plan before building | `/brain-task --plan "description"` | Architecture plan with developer approval gate |
@@ -61,7 +62,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Record a failure | `/brain-lesson "what failed"` | Captures lesson with confidence scoring |
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses/lessons, optionally researches docs or gets Codex opinion |
-| Quick side question | `/brain-aside` | Pipeline interrupt -- saves state, answers without context loading |
+| Quick side question | `/brain-aside` | Pipeline interrupt -- saves state, answers without context loading **(deprecated — use brain-consult)** |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
 | Upgrade from older version | `/brain-init --upgrade` | Adds v0.7.0 features (FTS5, consult-log) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
@@ -415,6 +416,12 @@ You want to...
 Every task flows through a self-contained pipeline. No hooks required -- hooks enhance when present.
 
 ```
+Developer invokes: /brain-dev [anything]
+  → brain-dev classifies + evaluates silently
+  → routes to brain-plan (build/refactor) or brain-consult (fix/debug/question)
+  → brain-plan: Q&A (1–3 questions) → approach proposals → TDD plan
+  → brain-dev dispatches brain-task as fresh subagent per step
+
 brain-decision -> brain-task (Steps 1-6, all inline or subagent) -> brain-document -> brain-consolidate
    classify       Step 1: Load context (brain-map)
    route          Step 2: Generate execution context
@@ -518,6 +525,7 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 
 | Skill | Type | Purpose |
 |---|---|---|
+| `brain-dev` | Router | Primary entry point — classifies ANY request, evaluates against brain knowledge, routes to brain-plan/brain-consult/brain-task. Replaces brain-decision as the developer-facing command. |
 | `brain-decision` | Router | Classifies, scores, routes, circuit breaker check |
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
 | `brain-task` | Orchestrator | Dispatches subagents or implements inline, manages pipeline |
@@ -532,7 +540,7 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
 | `brain-eval` | Evaluator | Define success criteria before implementation |
 | `brain-consult` | Consultant | Brain-informed Q&A — 3 modes (Quick/Research/Consensus), FTS5 retrieval, threading |
-| `brain-aside` | Interrupt Handler | Pipeline interrupt — saves state, no context loading |
+| `brain-aside` | Interrupt Handler | Pipeline interrupt — saves state, no context loading **(deprecated — use brain-consult)** |
 | `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
 ### Hook Architecture (9 Hooks)

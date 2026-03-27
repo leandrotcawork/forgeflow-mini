@@ -2,6 +2,27 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.9.0] — 2026-03-27
+
+### Added
+- **`/brain-dev`** — New primary developer entry point. Classifies any request (build/fix/debug/review/question/refactor), evaluates against brain sinapses silently, writes a dev-context handoff file, and routes to the appropriate skill. Replaces `/brain-decision` as the command developers call daily.
+- **`brain-plan` Phase 0** — Interactive Q&A phase: reads dev-context handoff, asks 1–3 targeted questions one at a time, proposes 2 implementation approaches with trade-offs, waits for approval before generating the TDD plan.
+- **`scripts/brain-parse-plan.js`** — Zero-LLM script that parses an implementation plan MD file into a JSON task array. Used by brain-dev Phase 3 to populate TodoWrite without LLM file-reading. 7 unit tests.
+- **Subagent dispatch loop in brain-dev** — Sequential fresh-subagent execution (spec review → quality review per task), matching superpowers subagent-driven-development pattern.
+
+### Changed
+- **`brain-plan`** — Removed parallel dispatch language. `--dispatch` flag renamed to `--subagents` (sequential fresh subagents, not parallel). Execution model is always sequential.
+- **`brain-task`** — CASE B warning updated for brain-dev subagent dispatch context. Step 1 documented as the single owner of context loading.
+- **`brain-consult`** — Absorbs brain-aside pipeline-check-and-remind behaviour. Automatically detects active brain-task pipeline and appends resume reminder to consultation responses.
+- **`brain-decision`** — Removed stale MetalShopping section. Added PRIORITY OVERRIDE row to model selection table (debug intent always → Opus). Fixed plan mode: brain-map owned by brain-task Step 1, not brain-decision.
+
+### Deprecated
+- **`brain-aside`** — Functionality absorbed into brain-consult. Skill file preserved with deprecation notice. Use `/brain-consult` for questions during an active pipeline.
+
+### Performance
+- brain-parse-plan.js replaces LLM iteration over plan files during dispatch — saves ~1-2k tokens per multi-step execution
+- Phase 0 Q&A in brain-plan prevents wrong-assumption rework cycles (estimated savings: 20-60k tokens per complex task where assumptions would have been wrong)
+
 ## [0.8.0] - 2026-03-27
 
 ### Added
