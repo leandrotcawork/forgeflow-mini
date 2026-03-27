@@ -33,12 +33,79 @@ brain-decision → brain-map → brain-plan → brain-task (Steps 1-6)
 
 ## Workflow
 
+---
+
+## Phase 0: Interactive Planning (runs BEFORE Stage 1)
+
+This phase runs when brain-plan is called by brain-dev. It reads the dev-context handoff file, asks targeted questions, proposes approaches, and waits for developer approval before generating the plan. Skip to Stage 1 if called directly without a dev-context file.
+
+### Step 0a: Read dev-context handoff file
+
+Read `.brain/working-memory/dev-context-{task_id}.md` (written by brain-dev Phase 1).
+
+Extract:
+- `intent`, `domain`, `complexity_score`, `model`
+- `concerns` — issues brain-dev flagged (e.g., "conflicts with sinapse-auth-001")
+- `relevant_sinapses` — already loaded by brain-dev (use these, do NOT re-query brain.db for the same sinapses)
+
+If the file does NOT exist (brain-plan called standalone without brain-dev):
+→ Load context yourself: query brain.db for domain sinapses (Tier 1, max 5). Continue to Step 0b.
+
+### Step 0b: Ask clarifying questions (1–3, one at a time)
+
+Rules:
+- **One question per message.** Wait for the answer before asking the next.
+- **Maximum 3 questions.** Stop after 3 even if more would be useful.
+- **Skip questions** whose answers are obvious from the task description.
+- **Prioritise concerns** from brain-dev: if a concern was flagged, ask about it first.
+
+Question priority order:
+1. Any concern from dev-context (e.g., "brain-dev flagged a potential conflict with the auth sinapse — is this change meant to replace or extend the current auth flow?")
+2. Implementation approach (if multiple valid approaches exist): "Should this be event-driven or synchronous?"
+3. Constraints: "Does this need to be backwards compatible?" / "Is zero-downtime deployment required?"
+
+Domain-specific example questions:
+- **backend:** "Should this endpoint be versioned (v2) or replace v1?"
+- **frontend:** "Is this replacing the existing component or adding a new variant alongside it?"
+- **database:** "Can we schedule a migration window, or must this be zero-downtime?"
+- **cross-domain:** "Which domain is the source of truth — backend or analytics?"
+
+### Step 0c: Propose 2 implementation approaches
+
+Based on task + answers + brain context, present exactly 2 options:
+
+```
+**Option A (Recommended): {short title}**
+Approach: {1–2 sentences describing the technical approach}
+Pros: {2–3 bullets}
+Cons: {1–2 bullets}
+Sinapse link: [[sinapse-id]] if applicable
+
+**Option B: {short title}**
+Approach: {1–2 sentences}
+Pros: {2–3 bullets}
+Cons: {1–2 bullets}
+
+**My recommendation: Option A** — {1 sentence reason, referencing a sinapse or lesson if one applies}
+```
+
+Wait for developer's choice before proceeding to Stage 1.
+
+### Step 0d: Confirm approach and proceed
+
+After developer selects or approves an approach:
+- Note the chosen approach
+- Proceed to Stage 1 (Analyse Context Packet) — all micro-steps must reflect the chosen approach
+- If dev-context was present: skip re-loading sinapses already listed in dev-context.relevant_sinapses
+
+---
+
 ### Input
 
 - Context packet (from `.brain/working-memory/context-packet-{task_id}.md`)
 - Task description
 - Optional: stakeholder constraints, deadline
-- Optional: `--dispatch` flag (signals brain-task to use Path F dispatcher mode)
+- Optional: `--subagents` flag (signals brain-task to use Path F dispatcher mode)
 
 ### Process
 
@@ -239,7 +306,7 @@ Per-micro-step estimate based on:
 ```
 Sum all micro-step estimates. If total > 80k, warn:
 "This plan will consume ~{N}k tokens. Consider splitting into multiple sessions
-or using --dispatch flag for parallel subagent execution."
+or using --subagents flag for parallel subagent execution."
 ```
 
 ---
@@ -332,13 +399,13 @@ estimated_tokens: [total]k
 
 1. M1 (0 deps) -> [N]k tokens
 2. M2 (depends on M1) -> [N]k tokens
-3. M3 (depends on M1) -> [N]k tokens [can parallel with M2]
+3. M3 (depends on M1) -> [N]k tokens [sequential after M2]
 4. M4 (depends on M2, M3) -> [N]k tokens
 
-**Parallelizable groups:**
+**Execution groups (sequential — fresh subagent per step):**
 - Group 1: M1 (independent)
-- Group 2: M2, M3 (both depend only on M1 — can run in parallel)
-- Group 3: M4 (depends on Group 2)
+- Group 2: M2, then M3 (both depend on M1, run sequentially)
+- Group 3: M4 (runs after Group 2 completes)
 
 ## Total Token Budget
 
@@ -371,7 +438,7 @@ estimated_tokens: [total]k
 **Dispatch ready:** true
 **Recommended mode:** [inline | dispatch]
 - inline: Execute micro-steps sequentially in current session (< 5 steps or < 40k tokens)
-- dispatch: Use brain-task Path F to dispatch subagents per micro-step (>= 5 steps or >= 40k tokens)
+- subagents: Use brain-dev Phase 3 to dispatch fresh subagents per micro-step (>= 5 steps or >= 40k tokens)
 
 **Subagent model per step:**
 | Step | Model | Reason |
@@ -384,8 +451,8 @@ estimated_tokens: [total]k
 ## Next Steps
 
 1. Run Readiness Gate (verify all specs can be created)
-2. If --dispatch OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (parallel where independent)
-3. If inline (step_count < 5 AND no --dispatch): brain-task Path F executes micro-steps sequentially without parallel dispatch
+2. If --subagents OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (parallel where independent)
+3. If inline (step_count < 5 AND no --subagents): brain-task Path F executes micro-steps sequentially without parallel dispatch
 Note: Expanded plans (plan_type: expanded) ALWAYS route to Path F. Path E handles only legacy standard plans.
 4. Update status after each micro-step
 5. Run /brain-document on completion
@@ -592,7 +659,7 @@ Cross-reference each micro-step against:
 **Budget warning threshold:** If total > 80k tokens:
 ```
 WARNING: This plan estimates ~{N}k tokens.
-Recommendation: Use --dispatch flag for parallel subagent execution,
+Recommendation: Use --subagents flag for parallel subagent execution,
 or split into 2 sessions at micro-step M{breakpoint}.
 ```
 
@@ -602,8 +669,8 @@ or split into 2 sessions at micro-step M{breakpoint}.
 
 - **Path F (dispatch):** brain-task reads the plan, dispatches one subagent per micro-step. Used when:
   - `plan_type: expanded` AND `dispatch_ready: true` AND (`step_count >= 5` OR `estimated_tokens >= 40k`), OR
-  - `--dispatch` flag is passed (overrides dispatch_ready threshold check)
-- **Path F inline:** micro-steps execute sequentially when `dispatch_ready: true` but `step_count < 5` and `tokens < 40k`, and `--dispatch` was not passed.
+  - `--subagents` flag is passed (overrides dispatch_ready threshold check)
+- **Path F inline:** micro-steps execute sequentially when `dispatch_ready: true` but `step_count < 5` and `tokens < 40k`, and `--subagents` was not passed.
 - **Legacy plans (`plan_type: standard` or missing):** brain-task Path E executes as before — no micro-step dispatch.
 
 ---
