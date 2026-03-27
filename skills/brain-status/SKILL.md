@@ -47,6 +47,11 @@ From `.brain/brain.db`:
 - Detect staleness (>30 days, >60 days)
 - Count pending escalations in `.brain/lessons/inbox/escalation-*.md` (These files are created by brain-consolidate during the escalation review phase, not by brain-lesson.)
 
+From `.brain/progress/consult-log.md` (v0.7.0):
+- Count total consultations by mode (Quick/Research/Consensus)
+- Count active threads (consult-*.json files < 10 min old in `.brain/working-memory/`)
+- Count audit files pending TTL cleanup
+
 From `.brain/progress/brain-project-state.json`:
 - Circuit breaker status (`circuit_breaker.state`: closed/open/half-open), failure count (`circuit_breaker.failure_count`), cooldown until (`circuit_breaker.cooldown_until`)
 - Subagent dispatch counts by model (`subagent_usage.by_model.haiku`, `subagent_usage.by_model.sonnet`) with success/fallback rates
@@ -88,6 +93,11 @@ Subagent Usage:
   Haiku dispatches:  12 (11 success, 1 fallback-to-inline)
   Sonnet dispatches: 3  (3 success, 0 fallback-to-inline)
   Avg task tokens:   ~8.5k
+
+Consultation Activity (v0.7.0):
+  Total consultations: 47 (Quick: 31, Research: 14, Consensus: 2)
+  Active threads: 1 (domain: backend, last: 3 min ago)
+  Audit files: 12 in working-memory (7-day TTL)
 
 Pending actions:
   ⚠️  2 stale sinapses (>30 days)

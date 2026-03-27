@@ -2,6 +2,38 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.7.0] - 2026-03-27
+
+### Added
+- **brain-consult** (new skill) -- Brain-informed consultation for questions, architecture guidance, and debugging advice without full task orchestration. Three modes: Quick (Tier 1A/1B, 3-6k tokens), Research (+ Context7/WebSearch, 12-20k tokens), Consensus (+ Codex multi-model via `--consensus` flag, 15-25k tokens). Fills the gap between brain-aside (no context) and brain-task (full pipeline).
+- **Conversation threading** -- brain-consult detects follow-up questions within 10 minutes on the same domain and includes prior Q&A as thread context, saving token re-loading.
+- **Consultation audit trail** -- `.brain/working-memory/consult-{timestamp}.json` per consultation with mode, domain, loaded sinapse/lesson IDs, external sources, confidence. 7-day TTL, auto-pruned by brain-consolidate.
+- **Separate consultation log** -- `.brain/progress/consult-log.md` keeps consultation history separate from `activity.md` to avoid polluting task analytics.
+- **FTS5 full-text search** (system-wide) -- `sinapses_fts` and `lessons_fts` virtual tables for semantic keyword retrieval. Used by brain-consult (Tier 2 scored retrieval), brain-map (hybrid queries), brain-consolidate (semantic lesson grouping), and brain-status (topic relevance). Backward compatible: falls back to LIKE queries if FTS5 unavailable.
+- **Skill count** -- 15 -> 16 skills (added brain-consult).
+
+### Changed
+- **brain-aside** -- Updated description for trigger disambiguation: pipeline interrupt handler only, brain-consult for knowledge-based consultation.
+- **brain-map** -- Added FTS5 hybrid query option alongside existing weight-ordered queries. Falls back to standard queries when FTS5 unavailable or no keywords provided.
+- **brain-consolidate** -- Added Step 6.5 (consult-*.json TTL cleanup) and Step 6.6 (FTS5 semantic lesson grouping for escalation detection).
+- **brain-status** -- Added consultation activity section showing total consultations by mode, active threads, and audit file count.
+- **build_brain_db.py** -- Creates FTS5 virtual tables and rebuilds indexes after data population. Includes FTS5 migration for existing brains.
+
+## [0.6.1] - 2026-03-26
+
+### Fixed
+- **MCP config server** — Replace `_readError` string sentinel with `Symbol('readError')` to prevent false errors on configs containing that key
+- **MCP config server** — Mark `database.path` and `database.schema_version` as `readonly: true` in validation schema
+- **brain-setup** — Add `project_root` and `brain_root` to readonly guard list; mark `database.path`/`schema_version` read-only in section table
+- **brain-task** — Remove duplicate `failure_count` increment from half-open circuit breaker probe failure block
+- **brain-task** — Add `implementation-plan-{task_id}.md` to Step 6.2 archive list (plan-mode tasks)
+- **brain-decision** — Correct `brain-state.json` path to `.brain/working-memory/brain-state.json`
+- **brain-plan/brain-task** — Clarify Path E/F routing; expanded plans always route to Path F
+- **Tests** — Fix tautological `_template` missing-file assertion; add `finally` cleanup block
+- **Tests** — Add positive `Failed to read` assertions to corrupt JSON tests
+- **Tests** — Add `brainConfigWrite` corrupt config test (57 tests total)
+- **CHANGELOG** — Fix version order: 0.6.0 → 0.5.0 → 0.4.1 → 0.4.0 → 0.3.0
+
 ## [0.6.0] - 2026-03-26
 
 ### Added

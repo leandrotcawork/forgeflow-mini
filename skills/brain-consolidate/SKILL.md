@@ -238,7 +238,43 @@ For each promoted lesson:
 - Set status = 'promoted' in lessons table
 - Do NOT update sinapse weights (lesson promotion is orthogonal to sinapse usage)
 
-### Step 6.5: Verify Archival
+### Step 6.5: Clean Consultation Artifacts (v0.7.0)
+
+Clean up brain-consult audit trail files:
+
+1. Scan `.brain/working-memory/` for `consult-*.json` files
+2. Delete any with `timestamp` older than 7 days (TTL expired)
+3. If > 50 remain after TTL cleanup, prune oldest until 50
+4. Output: `Consultation artifacts cleaned: {N} expired, {M} pruned`
+
+### Step 6.6: FTS5 Lesson Grouping (v0.7.0)
+
+**Pre-requisite:** If Step 6 modified any lesson rows (status, evidence, weight), rebuild the FTS5 index first:
+```sql
+INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild');
+```
+This ensures Step 6.6 queries current data, not stale pre-consolidation content. Skip if no lesson rows were modified.
+
+When checking for escalation candidates in Step 4, supplement the exact domain+tags grouping with FTS5 semantic matching:
+
+```sql
+-- Find semantically related lessons that share patterns but not exact tags
+SELECT l.id, l.title, l.domain, l.tags, l.confidence,
+       rank AS fts_rank
+FROM lessons_fts
+JOIN lessons l ON l.rowid = lessons_fts.rowid
+WHERE lessons_fts MATCH '{pattern_keywords_from_candidate}'
+  AND l.status IN ('active', 'promotion_candidate')
+  AND l.id NOT IN ({already_grouped_ids})
+ORDER BY rank DESC
+LIMIT 5
+```
+
+This catches related lessons that brain-lesson flagged independently but share the same underlying pattern despite different tags. Surface these alongside the exact-match group for developer review.
+
+**Fallback:** If FTS5 tables don't exist, use the standard domain+tags grouping only.
+
+### Step 6.7: Verify Archival
 
 **Note:** Per-task archival is owned by brain-task Step 6 (runs inline after each task). By the time brain-consolidate runs, context files should already be in `.brain/progress/completed-contexts/`.
 

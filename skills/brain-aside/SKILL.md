@@ -1,6 +1,6 @@
 ﻿---
 name: brain-aside
-description: Answer a quick question without losing current brain-task context -- auto-saves and restores pipeline state
+description: Pipeline interrupt handler -- saves brain-task state during asides and reminds to resume. No brain context loading -- for brain-informed answers with sinapses, conventions, and lessons, use /brain-consult instead.
 ---
 
 # brain-aside -- Quick Question

@@ -148,11 +148,15 @@ def create_tables(conn):
     """Create all database tables."""
     cursor = conn.cursor()
 
-    # Drop existing tables
+    # Drop existing tables — FTS5 virtual tables MUST be dropped before
+    # their backing content tables to avoid content-sync corruption.
+    cursor.execute('DROP TABLE IF EXISTS sinapses_fts')
+    cursor.execute('DROP TABLE IF EXISTS lessons_fts')
     cursor.execute('DROP TABLE IF EXISTS sinapse_links')
     cursor.execute('DROP TABLE IF EXISTS lessons')
     cursor.execute('DROP TABLE IF EXISTS consolidation_log')
     cursor.execute('DROP TABLE IF EXISTS sinapses')
+    cursor.execute('DROP TABLE IF EXISTS brain_state')
 
     # Create sinapses table — canonical schema
     cursor.execute('''
@@ -245,6 +249,34 @@ def create_tables(conn):
         )
     ''')
 
+    # Create FTS5 virtual tables — v0.7.0
+    # Content-sync tables mirroring sinapses/lessons for semantic search.
+    # Wrapped in try/except: FTS5 requires SQLite compiled with it enabled.
+    try:
+        cursor.execute('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS sinapses_fts USING fts5(
+                id UNINDEXED,
+                title,
+                content,
+                tags,
+                content=sinapses,
+                content_rowid=rowid
+            )
+        ''')
+        cursor.execute('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
+                id UNINDEXED,
+                title,
+                tags,
+                evidence,
+                content=lessons,
+                content_rowid=rowid
+            )
+        ''')
+        print('   [FTS5] Virtual tables created')
+    except Exception as e:
+        print(f'   [FTS5] Skipped — not available ({e})')
+
     conn.commit()
 
 def migrate_tables(conn):
@@ -285,6 +317,44 @@ def migrate_tables(conn):
             print('   [migrate] lessons.evidence column: already exists')
     except Exception as e:
         print(f'   [migrate] lessons.evidence column: skipped ({e})')
+
+    # Migration 3: Create FTS5 virtual tables if missing (v0.7.0)
+    # Each table is checked and created independently to avoid partial failures.
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sinapses_fts'")
+        sinapses_fts_exists = cursor.fetchone() is not None
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lessons_fts'")
+        lessons_fts_exists = cursor.fetchone() is not None
+
+        if not sinapses_fts_exists or not lessons_fts_exists:
+            if not sinapses_fts_exists:
+                cursor.execute('''
+                    CREATE VIRTUAL TABLE IF NOT EXISTS sinapses_fts USING fts5(
+                        id UNINDEXED, title, content, tags,
+                        content=sinapses, content_rowid=rowid
+                    )
+                ''')
+                print('   [migrate] sinapses_fts: created')
+
+            if not lessons_fts_exists:
+                cursor.execute('''
+                    CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
+                        id UNINDEXED, title, tags, evidence,
+                        content=lessons, content_rowid=rowid
+                    )
+                ''')
+                print('   [migrate] lessons_fts: created')
+
+            # Note: FTS5 rebuild is NOT called here because create_tables()
+            # drops and recreates base tables before migrate_tables() runs,
+            # so sinapses/lessons are empty at this point. The authoritative
+            # rebuild fires after data insertion in main().
+
+            migrations_applied += 1
+        else:
+            print('   [migrate] FTS5 virtual tables: already exist')
+    except Exception as e:
+        print(f'   [migrate] FTS5 virtual tables: skipped ({e})')
 
     conn.commit()
     return migrations_applied
@@ -400,8 +470,9 @@ def main():
             except Exception as e:
                 print(f'[Warn] Error inserting sinapse {record_id}: {e}')
 
-        # Insert links into sinapse_links
-        if links:
+        # Insert links into sinapse_links (sinapses only, not lessons)
+        # Lessons use 'related_links' stored as JSON in the lessons table.
+        if links and not is_lesson(file_path):
             for target_id in links:
                 try:
                     cursor.execute('INSERT INTO sinapse_links (source_id, target_id) VALUES (?, ?)', (record_id, target_id))
@@ -410,9 +481,19 @@ def main():
                     pass
 
     conn.commit()
+
+    # Rebuild FTS5 indexes after all data is inserted
+    try:
+        cursor.execute("INSERT INTO sinapses_fts(sinapses_fts) VALUES('rebuild')")
+        cursor.execute("INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild')")
+        conn.commit()
+        print(f'   [FTS5] Indexes rebuilt ({sinapses_count} sinapses, {lessons_count} lessons)')
+    except Exception:
+        print('   [FTS5] Rebuild skipped — tables not available')
+
     conn.close()
 
-    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log, brain_state')
+    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log, brain_state, sinapses_fts, lessons_fts')
     print(f'[Files] Scanned {len(files)} .md files')
     print(f'   -> {sinapses_count} sinapses indexed')
     print(f'   -> {lessons_count} lessons indexed')

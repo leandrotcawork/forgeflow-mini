@@ -123,3 +123,35 @@ CREATE TABLE IF NOT EXISTS brain_state (
     value      TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+----------------------------------------------------------------------
+-- FTS5 — Full-text search indexes for semantic retrieval (v0.7.0)
+----------------------------------------------------------------------
+-- Used by brain-consult (Tier 2 retrieval), brain-map (hybrid queries),
+-- brain-consolidate (semantic lesson grouping), brain-status (topic relevance).
+--
+-- These are content-sync tables: they mirror data from sinapses/lessons
+-- and must be rebuilt after any INSERT/UPDATE via:
+--   INSERT INTO sinapses_fts(sinapses_fts) VALUES('rebuild');
+--   INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild');
+--
+-- Backward compatible: if FTS5 is not available, skills fall back to
+-- LIKE queries on structured fields (region, tags, domain).
+
+CREATE VIRTUAL TABLE IF NOT EXISTS sinapses_fts USING fts5(
+    id UNINDEXED,
+    title,
+    content,
+    tags,
+    content=sinapses,
+    content_rowid=rowid
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
+    id UNINDEXED,
+    title,
+    tags,
+    evidence,
+    content=lessons,
+    content_rowid=rowid
+);

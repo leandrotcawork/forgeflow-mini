@@ -3,9 +3,9 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.6.1-blue" alt="Version 0.6.1">
+  <img src="https://img.shields.io/badge/Version-0.7.0-blue" alt="Version 0.7.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
-  <img src="https://img.shields.io/badge/Skills-15-orange" alt="15 Skills">
+  <img src="https://img.shields.io/badge/Skills-16-orange" alt="16 Skills">
   <img src="https://img.shields.io/badge/Hooks-8-yellow" alt="8 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
@@ -60,10 +60,351 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Review completed work | `/brain-consolidate` | Batch-review sinapses, surface escalations, update weights |
 | Record a failure | `/brain-lesson "what failed"` | Captures lesson with confidence scoring |
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
-| Quick side question | `/brain-aside` | Answer question without losing pipeline context |
+| Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses/lessons, optionally researches docs or gets Codex opinion |
+| Quick side question | `/brain-aside` | Pipeline interrupt -- saves state, answers without context loading |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
-| Upgrade from v0.2 | `/brain-init --upgrade` | Adds v0.6.1 features without full re-init |
+| Upgrade from older version | `/brain-init --upgrade` | Adds v0.7.0 features (FTS5, consult-log) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
+
+---
+
+## Usage Examples
+
+### Example 1: Starting a New Project
+
+```
+> /brain-init
+
+[Brain] Scanning project...
+  Language: TypeScript (Next.js)
+  Structure: monorepo (apps/web, apps/api, packages/shared)
+  Tests: Jest + Playwright
+  Linting: ESLint + Prettier
+
+[Brain] Generating hippocampus...
+  architecture.md -- project structure, tech stack, data flow
+  conventions.md  -- naming rules, import order, error handling patterns
+  strategy.md     -- product goals, current phase
+
+[Brain] Generating cortex...
+  cortex/backend/  -- 4 sinapses (auth, API routes, middleware, DB access)
+  cortex/frontend/ -- 3 sinapses (components, state management, routing)
+  cortex/database/ -- 2 sinapses (schema patterns, migration conventions)
+
+[Brain] Building brain.db (SQLite + FTS5 indexes)...
+  9 sinapses indexed, 0 lessons, 0 links
+  FTS5 virtual tables: sinapses_fts, lessons_fts
+
+[Brain] Install hooks? (minimal/standard/strict/skip): standard
+  Installed 6 hooks (Tier 1 + 2)
+
+Ready. Use /brain-task to start building.
+```
+
+### Example 2: Building a Feature
+
+```
+> /brain-task "Add Mercado Livre product listing API integration"
+
+[Brain] Decision: score 45 (backend, medium risk, feature)
+  Model: Codex (inline + parallel review)
+  Plan mode: no (score < 50)
+
+[Brain] Loading context...
+  Tier 1: architecture + conventions + 3 lessons
+  Tier 2: 5 backend sinapses (auth, API routes, adapters, error handling, outbox)
+  Tokens: ~18k context loaded
+
+[Brain] Implementing inline...
+  Created: apps/api/src/modules/mercadolivre/adapter.ts
+  Created: apps/api/src/modules/mercadolivre/types.ts
+  Modified: apps/api/src/modules/mercadolivre/routes.ts
+
+[Brain] Verification (6-phase)...
+  Build: pass | Types: pass | Lint: pass | Tests: pass | Security: pass | Diff: clean
+
+[Brain] Task complete: 2026-03-27-ml-product-listing
+  Files: 3 created, 1 modified
+  Tokens: ~42k total
+```
+
+### Example 3: Asking Questions During Implementation (brain-consult)
+
+While implementing a feature, you hit a problem. Instead of raw conversation (no brain context) or full `/brain-task` (overkill for a question), use `/brain-consult`:
+
+```
+> /brain-consult "Why is the Mercado Livre API returning 401 on product listing?"
+
+[Brain] Consult (research) | Domain: backend | Loading context...
+
+The 401 error is likely caused by token expiration. Per your conventions
+([[hippocampus-conventions]]), all external API adapters must implement
+token refresh logic.
+
+Per [[sinapse-backend-auth]]: your project uses the adapter pattern for
+external APIs. The ML SDK uses OAuth2 with 6-hour token expiry.
+
+From documentation (Context7: mercadolibre-sdk):
+- Access tokens expire after 6 hours
+- Use POST /oauth/token with grant_type=refresh_token
+- Store refresh tokens securely (env var, not DB)
+
+Note: [[lesson-00042]] warns that hardcoding token expiry leads to
+race conditions -- use the SDK's built-in refresh interceptor instead.
+
+---
+Brain context: Tier 1+2 (3 sinapses, 2 lessons) + 1 external lookup
+```
+
+**Follow-up question (same thread, automatic context reuse):**
+
+```
+> /brain-consult "What about rate limiting for the ML API?"
+
+[Brain] Consult (research) | Domain: backend | Thread: continuing...
+
+[Uses prior thread context -- no need to re-explain what ML API is]
+
+The ML API enforces per-app rate limits. From documentation:
+- 10,000 requests/hour for certified apps
+- Implement exponential backoff with jitter
+- Use the X-RateLimit-Remaining header to preemptively throttle
+
+Per [[sinapse-backend-adapters]]: your adapter base class already has
+a retryWithBackoff() utility. Use it in the ML adapter.
+
+---
+Brain context: Tier 1A (thread reuse) + 1 external lookup
+```
+
+**Getting a second opinion from Codex:**
+
+```
+> /brain-consult --consensus "Should we use the official ML SDK or build a raw HTTP client?"
+
+[Brain] Consult (consensus) | Domain: backend | Models: Claude + Codex
+
+### Claude Assessment (with brain context)
+Use the official SDK. Per [[sinapse-backend-adapters]], your project
+standardizes on official SDKs when available. The ML SDK handles
+OAuth2 refresh, rate limiting, and pagination automatically.
+
+### Codex Assessment
+Recommends the official SDK as well, but flags that the SDK's TypeScript
+types are incomplete for the /items endpoint. Suggests using the SDK
+with a thin type-extension layer for missing fields.
+
+### Synthesis
+- Agreement: use the official SDK (maintenance, auth handling, community support)
+- Divergence: Codex flags incomplete types that Claude didn't catch
+- Recommendation: use SDK + extend types for /items endpoint
+
+---
+Brain context: Tier 1+2 (3 sinapses, 1 lesson) | Consensus: aligned with nuance
+```
+
+### Example 4: Debugging
+
+```
+> /brain-task --debug "Product listing returns empty array but ML API shows products"
+
+[Brain] Decision: score 30 + debugging override -> Opus
+  Model: Opus (full codebase access for root cause analysis)
+
+[Brain] Loading debug context...
+  Tier 1+2: architecture, conventions, 3 lessons, 5 backend sinapses
+  Error context: empty array return, expected products
+
+[Brain] Root cause analysis...
+  Found: MLAdapter.listProducts() maps response.results but ML API
+  returns response.body.results (nested one level deeper)
+
+  Fix: apps/api/src/modules/mercadolivre/adapter.ts:47
+  - return response.results.map(mapProduct)
+  + return response.body.results.map(mapProduct)
+
+[Brain] Verification: all 6 phases pass
+[Brain] Lesson captured: lesson-00043 "ML API response nesting" (confidence 0.3)
+```
+
+### Example 5: Recording a Failure
+
+When something breaks and you want the brain to remember:
+
+```
+> /brain-lesson "ML API pagination breaks when offset exceeds total count -- returns 500 instead of empty array"
+
+[Brain] Lesson captured:
+  ID: lesson-00044
+  Domain: backend
+  Severity: medium
+  Confidence: 0.3 (initial)
+  Rule: Always guard ML API pagination with offset < total check
+
+  Stored: .brain/cortex/backend/lessons/lesson-00044.md
+```
+
+### Example 6: Strategic Architecture Decision
+
+```
+> /brain-mckinsey "Should we cache ML product data locally or always fetch live?"
+
+[Brain] McKinsey Layer -- Strategic Analysis
+
+Internal Scoring:
+  Business Impact: 8/10 (reduces API costs, improves response times)
+  Tech Risk: 4/10 (cache invalidation is manageable)
+  Effort: 6/10 (Redis setup + TTL logic)
+  Strategic Alignment: 9/10 (aligns with performance targets)
+  Composite: 7.2/10
+
+External Research (3 parallel subagents):
+  - ML API rate limits: 10k/hour, caching reduces pressure
+  - Industry practice: TTL cache (15-30 min) is standard for marketplace data
+  - ML webhook support: available for price/stock changes (push invalidation)
+
+3 Alternatives:
+  A. Redis TTL cache (15 min) + webhook invalidation [Recommended, score 8.1]
+  B. In-memory cache (5 min) -- simpler but no persistence [score 6.4]
+  C. Full sync with local DB -- maximum speed but complex [score 5.8]
+
+Recommendation: Option A. Redis TTL cache with ML webhooks for
+real-time price/stock invalidation. 15-min TTL for catalog data.
+```
+
+### Example 7: Checking Brain Health
+
+```
+> /brain-status
+
+Brain Status -- my-ecommerce-app
+
+Region           | Sinapses | Lessons | Avg Weight | Last Updated | Status
+-----------------+----------+---------+------------+--------------+-----------
+hippocampus      | 5        | 0       | 0.87       | 2026-03-27   | healthy
+cortex/backend   | 6        | 8       | 0.78       | 2026-03-27   | healthy
+cortex/frontend  | 3        | 2       | 0.71       | 2026-03-25   | healthy
+cortex/database  | 2        | 1       | 0.62       | 2026-03-22   | stale (5d)
+cortex/infra     | 1        | 0       | 0.45       | 2026-02-10   | very stale (45d)
+
+Circuit Breaker: closed (normal)
+Subagent Usage: Haiku 12/12 success, Sonnet 5/6 (1 fallback)
+
+Consultation Activity:
+  Total: 23 (Quick: 15, Research: 7, Consensus: 1)
+  Active threads: 1 (backend, last: 3 min ago)
+
+Pending: 1 escalation proposal, 2 stale regions need attention
+```
+
+### Example 8: Consolidation Cycle
+
+After completing several tasks, review and promote knowledge:
+
+```
+> /brain-consolidate
+
+[Brain] Consolidation Cycle #3
+
+Inventory: 6 tasks completed since last consolidation
+  - 2026-03-27-ml-product-listing (success, Codex)
+  - 2026-03-27-ml-auth-refresh (success, Sonnet)
+  - 2026-03-27-ml-debug-empty-array (success, Opus)
+  - 2026-03-27-ml-pagination-guard (success, Sonnet)
+  - 2026-03-27-ml-rate-limiter (success, Sonnet)
+  - 2026-03-27-ml-cache-setup (success, Codex)
+
+Sinapse Updates Proposed: 3
+  [1] cortex/backend/adapters.md -- add ML adapter patterns [y/n/m]: y
+  [2] cortex/backend/auth.md -- add OAuth2 refresh pattern [y/n/m]: y
+  [3] sinapses/caching.md -- new cross-cutting cache pattern [y/n/m]: y
+
+Escalation Proposal:
+  3 lessons share pattern: "ML API response format gotchas"
+  (lesson-00042, 00043, 00044)
+  Promote to convention? [y/n]: y
+  -> Added to hippocampus/conventions.md
+
+Consolidation complete:
+  3 sinapse updates approved
+  1 convention promoted (confidence 1.0)
+  6 task artifacts archived
+  Brain.db: 3 sinapses reweighted (+0.02 freshness boost)
+```
+
+### Example 9: Quick Pipeline Interrupt (brain-aside)
+
+Mid-task, you need to ask something unrelated:
+
+```
+[Brain-task running Step 3 for task 2026-03-27-ml-cache...]
+
+> /brain-aside
+
+You: "What's our Redis connection string format?"
+
+[Brain] It's in .env as REDIS_URL=redis://host:port/db
+
+Brain pipeline was at Step 3 for task 2026-03-27-ml-cache.
+Continue with /brain-task --resume
+```
+
+### Example 10: Configuring Brain Settings
+
+```
+> /brain-setup hooks
+
+[Brain Setup] Section: hooks
+
+Current values:
+| Setting            | Value    | Description                    |
+|--------------------|----------|--------------------------------|
+| profile            | standard | Hook tier (minimal/standard/strict) |
+| individual_overrides | {}     | Per-hook enable/disable        |
+
+Change a setting? (enter key name or 'done'): profile
+New value: strict
+  Before: standard
+  After:  strict
+  This adds the activityObserver hook (Tier 3).
+  Apply? [y/n]: y
+
+Updated. Change logged to activity.md.
+```
+
+### When to Use What -- Decision Flowchart
+
+```
+You want to...
+    |
+    +-- Ask a question? ---------> /brain-consult "question"
+    |   |                            Quick: "remind me how we..."
+    |   |                            Research: "why is this error..."
+    |   |                            --consensus: "which approach..."
+    |   |
+    |   +-- Mid-pipeline? -------> /brain-aside (no context, just interrupt)
+    |
+    +-- Build/fix/implement? ----> /brain-task "description"
+    |   |                            Auto-routes by complexity (Haiku/Sonnet/Codex/Opus)
+    |   |
+    |   +-- Need a plan first? --> /brain-task --plan "description"
+    |   +-- Debugging? ---------> /brain-task --debug "description"
+    |
+    +-- Strategic decision? -----> /brain-mckinsey "decision"
+    |                               Parallel research + scoring framework
+    |
+    +-- Something broke? --------> /brain-lesson "what failed"
+    |                               Captures with confidence scoring
+    |
+    +-- Review brain state? -----> /brain-status (health dashboard)
+    |                               /brain-consolidate (batch review + promote)
+    |
+    +-- Verify code quality? ----> /brain-verify (6-phase check)
+    |                               /brain-eval (define success criteria)
+    |
+    +-- Configure? --------------> /brain-setup [section]
+    |                               /brain-init (first time or upgrade)
+```
 
 ---
 
@@ -167,12 +508,12 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 |   +-- infra/
 +-- sinapses/              Cross-cutting knowledge flows
 +-- lessons/               cross-domain/ + inbox/ + archived/
-+-- working-memory/        Ephemeral task artifacts + brain-state.json
-+-- progress/              activity.md + brain-health.md + brain-project-state.json
-+-- brain.db               SQLite index (sinapses + lessons + links + state)
++-- working-memory/        Ephemeral task artifacts + brain-state.json + consult-*.json
++-- progress/              activity.md + consult-log.md + brain-health.md + brain-project-state.json
++-- brain.db               SQLite index (sinapses + lessons + links + state + FTS5)
 ```
 
-### Skill Map (15 Skills)
+### Skill Map (16 Skills)
 
 | Skill | Type | Purpose |
 |---|---|---|
@@ -189,7 +530,8 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-init` | Initializer | Scans project, generates brain, installs hooks |
 | `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
 | `brain-eval` | Evaluator | Define success criteria before implementation |
-| `brain-aside` | Context Saver | Quick question without losing pipeline state |
+| `brain-consult` | Consultant | Brain-informed Q&A — 3 modes (Quick/Research/Consensus), FTS5 retrieval, threading |
+| `brain-aside` | Interrupt Handler | Pipeline interrupt — saves state, no context loading |
 | `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
 ### Hook Architecture (8 Hooks)
@@ -236,6 +578,9 @@ Located in `.brain/` root after initialization. Key sections:
 | Complex feature (Codex inline) | ~120k | ~15k review | ~135k |
 | Debugging (Opus inline) | ~130k | 0 | ~130k |
 | Consolidation cycle | ~20k | 0 | ~20k |
+| Consultation (Quick) | ~3-6k | 0 | ~3-6k |
+| Consultation (Research) | ~12-20k | 0 | ~12-20k |
+| Consultation (Consensus) | ~15-25k | ~5k Codex | ~20-30k |
 
 ---
 
@@ -283,8 +628,16 @@ Run `python scripts/build_brain_db.py --brain-path .brain` to rebuild. The markd
 **How do I upgrade from v0.2.0?**
 Run `/brain-init --upgrade`. It adds missing config keys, state files, and database tables without touching existing brain content.
 
+**When should I use `/brain-consult` vs `/brain-task`?**
+Use `/brain-consult` for questions ("how should I...", "why is this error...", "which approach..."). Use `/brain-task` for implementation ("add this feature", "fix this bug", "refactor this module"). Rule of thumb: if the answer requires writing code files, it is a brain-task. If the answer is knowledge or guidance, it is brain-consult.
+
+**What are the three brain-consult modes?**
+- **Quick** (3-6k tokens): simple questions with brain context. Auto-selected for "remind me", "which file", "explain".
+- **Research** (12-20k tokens): adds external doc lookup via Context7/WebSearch. Auto-selected for "error", "API", "documentation". Also the default when uncertain.
+- **Consensus** (15-25k tokens): adds independent Codex analysis. Never auto-selected -- use `--consensus` flag explicitly.
+
 **How much does it cost in tokens?**
-A typical 3-task Sonnet session uses ~210k tokens (vs ~260k without subagents). The 76% main context savings means more tasks per session before compaction.
+A typical 3-task Sonnet session uses ~210k tokens (vs ~260k without subagents). The 76% main context savings means more tasks per session before compaction. Quick consultations cost only 3-6k tokens -- significantly cheaper than a brain-task invocation.
 
 ---
 

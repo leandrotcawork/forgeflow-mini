@@ -250,6 +250,30 @@ Output: .brain/working-memory/context-packet-{task_id}.md
 
 ---
 
+## FTS5 Hybrid Queries (v0.7.0)
+
+When task keywords are available (from brain-decision), Tier 2 can use FTS5 to boost relevance:
+
+```sql
+-- Hybrid: domain filter + FTS5 keyword boost
+SELECT s.id, s.title, s.region, s.tags, s.links, s.weight,
+       rank AS fts_rank
+FROM sinapses_fts
+JOIN sinapses s ON s.rowid = sinapses_fts.rowid
+WHERE sinapses_fts MATCH '{task_keywords}'
+  AND s.region LIKE '%{domain}%'
+ORDER BY (s.weight * 0.6) + (rank * -0.4) DESC
+LIMIT 5
+```
+
+**Fallback:** If FTS5 tables don't exist (pre-v0.7.0 brain) or FTS5 returns < 2 results, use the standard weight-ordered query from Step 3 above.
+
+**When to use FTS5 vs standard:**
+- FTS5 hybrid: when brain-decision provides a task description with searchable keywords
+- Standard (weight-only): when `--lightweight` flag is passed (Haiku tasks) or no keywords available
+
+---
+
 ## Lessons Integration
 
 Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If promotion candidates are detected (3+ same domain+tag), flag in context packet: "⚠ 3+ lessons suggest: [pattern]".

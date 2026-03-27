@@ -110,6 +110,50 @@ superseded          superseded
 
 ---
 
+### `sinapses_fts` — Full-text search index for sinapses (v0.7.0)
+
+FTS5 virtual table mirroring `sinapses` for semantic keyword retrieval. Used by brain-consult (Tier 2 scored retrieval), brain-map (hybrid queries), brain-consolidate (semantic lesson grouping), and brain-status (topic relevance).
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | TEXT (UNINDEXED) | Sinapse ID, not searchable but returned in results |
+| `title` | TEXT | Searchable sinapse title |
+| `content` | TEXT | Searchable full markdown content |
+| `tags` | TEXT | Searchable tags JSON |
+
+**Content-sync table:** mirrors data from `sinapses`. Must be rebuilt after INSERT/UPDATE:
+```sql
+INSERT INTO sinapses_fts(sinapses_fts) VALUES('rebuild');
+```
+
+**Key queries:**
+- brain-consult Tier 2: `JOIN sinapses s ON s.rowid = sinapses_fts.rowid WHERE sinapses_fts MATCH '{keywords}' ORDER BY (s.weight * 0.6) + (rank * -0.4) DESC`
+- brain-map hybrid: `JOIN sinapses s ON s.rowid = sinapses_fts.rowid WHERE sinapses_fts MATCH '{keywords}' AND s.region LIKE '%{domain}%' ORDER BY ... DESC`
+
+**Backward compatible:** If FTS5 is unavailable, skills fall back to LIKE queries on structured fields.
+
+---
+
+### `lessons_fts` — Full-text search index for lessons (v0.7.0)
+
+FTS5 virtual table mirroring `lessons` for semantic keyword retrieval. Used by brain-consolidate (find semantically related lessons for escalation grouping).
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | TEXT (UNINDEXED) | Lesson ID, not searchable but returned in results |
+| `title` | TEXT | Searchable lesson title |
+| `tags` | TEXT | Searchable tags JSON |
+| `evidence` | TEXT | Searchable evidence description |
+
+**Content-sync table:** mirrors data from `lessons`. Must be rebuilt after INSERT/UPDATE:
+```sql
+INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild');
+```
+
+**Backward compatible:** If FTS5 is unavailable, skills fall back to exact domain+tags queries.
+
+---
+
 ### `consolidation_log` — Tracks brain-consolidate runs
 
 One row per consolidation cycle. Used to determine task count "since last consolidate" for the auto-suggest threshold.
