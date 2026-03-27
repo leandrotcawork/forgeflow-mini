@@ -24,9 +24,10 @@ PLUGIN_JSON=".claude-plugin/plugin.json"
 MARKETPLACE_JSON=".claude-plugin/marketplace.json"
 PACKAGES_JSON="packages.json"
 README_MD="README.md"
+CHANGELOG_MD="CHANGELOG.md"
 TAG="v${VERSION}"
 
-for file in "$PLUGIN_JSON" "$MARKETPLACE_JSON" "$PACKAGES_JSON" "$README_MD"; do
+for file in "$PLUGIN_JSON" "$MARKETPLACE_JSON" "$PACKAGES_JSON" "$README_MD" "$CHANGELOG_MD"; do
   if [[ ! -f "$file" ]]; then
     echo "Error: required file not found: $file"
     exit 1
@@ -98,10 +99,57 @@ PY
 BRAIN_CONFIG="templates/brain/brain.config.json"
 BRAIN_STATE="templates/brain/progress/brain-project-state.json"
 
+# ── Post-update validation ──────────────────────────────────────────
+echo ""
+echo "── Validation ──"
+
+# Count skills in the skills/ directory
+SKILL_COUNT=$(find skills -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')
+echo "  Skills on disk: ${SKILL_COUNT}"
+
+# Count skills registered in plugin.json
+PLUGIN_SKILL_COUNT=$(python -c "import json; d=json.load(open('$PLUGIN_JSON')); print(len(d.get('claude_code',{}).get('skills',[])))")
+echo "  Skills in plugin.json: ${PLUGIN_SKILL_COUNT}"
+
+if [[ "$SKILL_COUNT" != "$PLUGIN_SKILL_COUNT" ]]; then
+  echo "  !! WARNING: Skill count mismatch! ${SKILL_COUNT} on disk vs ${PLUGIN_SKILL_COUNT} in plugin.json"
+  echo "  !! Update .claude-plugin/plugin.json skills list before releasing."
+  exit 1
+fi
+
+# Check README badge matches
+README_BADGE_COUNT=$(grep -o "Skills-[0-9]*" "$README_MD" | head -1 | grep -o "[0-9]*")
+echo "  Skills in README badge: ${README_BADGE_COUNT}"
+
+if [[ "$SKILL_COUNT" != "$README_BADGE_COUNT" ]]; then
+  echo "  !! WARNING: README badge says ${README_BADGE_COUNT} but ${SKILL_COUNT} skills exist!"
+  exit 1
+fi
+
+# Check CHANGELOG has this version
+if ! grep -q "\[${VERSION}\]" "$CHANGELOG_MD"; then
+  echo "  !! WARNING: CHANGELOG.md has no entry for [${VERSION}]"
+  echo "  !! Add a changelog entry before releasing."
+  exit 1
+fi
+
+# Check no stale versions remain
+STALE=$(grep -rn "\"version\": \"" .claude-plugin/ packages.json templates/brain/brain.config.json templates/brain/progress/brain-project-state.json 2>/dev/null | grep -v "$VERSION" || true)
+if [[ -n "$STALE" ]]; then
+  echo "  !! WARNING: Stale version references found:"
+  echo "$STALE"
+  exit 1
+fi
+
+echo "  All checks passed."
+echo ""
+
+# ── Commit, tag, push ───────────────────────────────────────────────
 git add "$PLUGIN_JSON" "$MARKETPLACE_JSON" "$PACKAGES_JSON" "$README_MD" "$BRAIN_CONFIG" "$BRAIN_STATE"
 git commit -m "chore(release): ${TAG}"
 git tag "$TAG"
 git push
 git push origin "$TAG"
 
-echo "Release updated and pushed: ${TAG}"
+echo ""
+echo "Release ${TAG} committed, tagged, and pushed."

@@ -1,7 +1,7 @@
 {
   "name": "forgeflow-mini",
-  "version": "0.6.1",
-  "description": "Brain-driven development plugin for Claude Code — subagent dispatch, 15 skills, 8 hooks, circuit breaker, confidence-scored learning",
+  "version": "0.7.0",
+  "description": "Brain-driven development plugin for Claude Code — 16 skills, FTS5 search, brain-consult, subagent dispatch, 8 hooks, circuit breaker, confidence-scored learning",
   "author": "ForgeFlow contributors",
   "license": "MIT",
   "repository": {

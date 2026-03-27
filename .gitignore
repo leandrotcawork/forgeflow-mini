@@ -32,3 +32,6 @@ tests/
 
 # Git worktrees
 .worktrees/
+
+# Superpowers plans (local, not committed)
+docs/superpowers/plans/
