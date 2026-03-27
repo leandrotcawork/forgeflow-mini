@@ -1,21 +1,20 @@
-﻿---
+---
 name: brain-aside
-description: Pipeline interrupt handler -- saves brain-task state during asides and reminds to resume. No brain context loading -- for brain-informed answers with sinapses, conventions, and lessons, use /brain-consult instead.
+description: DEPRECATED — pipeline-check-and-remind behavior absorbed into brain-consult. Use /brain-consult for questions during an active pipeline.
+metadata:
+  deprecated: true
+  replaced_by: brain-consult
 ---
 
-# brain-aside -- Quick Question
+# brain-aside — DEPRECATED
 
-When the developer asks a question during an active brain-task pipeline:
+> **This skill has been absorbed into `/brain-consult` as of v0.9.0.**
+> Use `/brain-consult` for any question during an active brain-task pipeline.
+> brain-consult automatically detects the active pipeline and appends a resume reminder.
 
-## Execution
+## Original behavior (now in brain-consult Pre-Step)
 
-1. Check if brain-task is active (.brain/working-memory/brain-state.json current_pipeline_step > 0)
-2. If active: save a note that an aside is in progress
-3. Answer the question directly (no pipeline overhead)
-4. After answering: output reminder:
-   "Brain pipeline was at Step {N} for task {task_id}. Continue with /brain-task --resume"
-
-If no brain-task is active, just answer the question normally.
-
-## Token Budget
-Minimal -- just the question and answer.
+When brain-task pipeline is active:
+1. Check brain-state.json for current_pipeline_step
+2. Answer the question
+3. Append resume reminder: "Brain pipeline at Step {N} for {task_id}. Resume: /brain-task --resume"

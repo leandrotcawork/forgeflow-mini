@@ -37,6 +37,22 @@ Do NOT use for:
 
 ## EXECUTE THESE STEPS NOW
 
+### Pre-Step: Pipeline Check (absorbed from brain-aside)
+
+Check `.brain/working-memory/brain-state.json`:
+- Read `current_pipeline_step` and `last_task_id`
+- If `current_pipeline_step > 0`: note that a brain-task pipeline is active. At the END of this consultation response, append:
+
+```
+---
+⚠️  Brain pipeline active: Task {last_task_id} paused at Step {current_pipeline_step}.
+Resume when ready: /brain-task --resume
+```
+
+- If `current_pipeline_step == 0` or file doesn't exist: no note needed. Proceed normally.
+
+This replaces `/brain-aside`. If you previously used brain-aside to pause during a pipeline, use brain-consult instead.
+
 ### Step 1: Pipeline Check + Question Analysis
 
 **1a: Check active pipeline**
