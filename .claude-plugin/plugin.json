@@ -1,7 +1,7 @@
 {
   "name": "forgeflow-mini",
-  "description": "Brain-driven development plugin — subagent dispatch, TDD micro-step planning, 15 skills, 8 hooks, circuit breaker, confidence-scored learning",
-  "version": "0.6.1",
+  "description": "Brain-driven development plugin — 16 skills, FTS5 search, brain-consult (3-mode Q&A), subagent dispatch, TDD micro-step planning, 8 hooks, circuit breaker, confidence-scored learning",
+  "version": "0.7.0",
   "author": {
     "name": "ForgeFlow contributors"
   },
@@ -56,8 +56,13 @@
         "trigger": "/brain-eval \"feature to evaluate\""
       },
       {
+        "name": "brain-consult",
+        "description": "Brain-informed consultation — answers questions using brain context (sinapses, conventions, lessons) without full task orchestration. 3 modes: Quick, Research (+docs), Consensus (+Codex). The default for non-implementation questions.",
+        "trigger": "/brain-consult \"question\""
+      },
+      {
         "name": "brain-aside",
-        "description": "Answer a quick question without losing current brain-task pipeline context",
+        "description": "Pipeline interrupt handler — saves brain-task state during asides, no context loading. For brain-informed answers use /brain-consult.",
         "trigger": "/brain-aside \"question\""
       },
       {
