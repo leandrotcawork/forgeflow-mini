@@ -332,7 +332,6 @@ This enables brain-aside to display pipeline context and brain-task to resume af
 | No context file for Codex/Sonnet | Model works blind, lower quality | Always generate context file with sinapses + examples |
 | Plan mode for trivial tasks | Overengineering, slows down | Only plan if score >= 50 or critical |
 | Skip plan mode for debugging | Can't assess root cause properly | Always plan for critical bugs (Opus) |
-| Mix sinapses with T1 contracts | Conflicting context, confusion | Keep brain-task and $ms workflows separate |
 
 ---
 
