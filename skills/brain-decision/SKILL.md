@@ -139,6 +139,7 @@ Use the score from Step 2 to pick the model:
 ```
 Complexity | Type | Model | When | Token Budget | Use Case
 -----------|------|-------|------|--------------|----------
+**ANY** | **debugging** | **Opus** | **PRIORITY OVERRIDE — always wins, regardless of score** | 120-200k | Any "why", "investigate", "broken", "debug"
 any | debugging | Opus | Any debugging task | 120-200k | "Bug", "Stuck", "Why is this failing"
 any | debugging + critical risk | Opus (+ plan) | Critical debugging or security | 150-200k | "Data leak", "Integrity error"
 0-19 | non-debugging | Haiku | Trivial, simple fixes | 8-15k | "Fix typo", "Change color"
@@ -214,9 +215,9 @@ Trigger Plan Mode If:
 **If plan mode triggered:**
 ```
 1. Announce: "🔵 PLAN MODE: [task description]"
-2. Invoke /brain-map to load context and generate .brain/working-memory/context-packet-{task_id}.md
-   (brain-plan reads this file at Stage 1 — it MUST exist before brain-plan runs)
-3. Invoke /brain-plan — reads context-packet-{task_id}.md and generates .brain/working-memory/implementation-plan-{task_id}.md
+2. Invoke /brain-plan — brain-plan will invoke brain-map internally via brain-task Step 1 to load context.
+   brain-decision does NOT call brain-map. Context loading is owned by brain-task Step 1 only.
+   brain-plan generates .brain/working-memory/implementation-plan-{task_id}.md
    brain-plan produces a Cortex-Linked TDD plan (plan_type: expanded) with:
    - Sinapse index linking conventions to sinapse IDs
    - File structure design (all files before any code)
@@ -332,42 +333,6 @@ This enables brain-aside to display pipeline context and brain-task to resume af
 | Plan mode for trivial tasks | Overengineering, slows down | Only plan if score >= 50 or critical |
 | Skip plan mode for debugging | Can't assess root cause properly | Always plan for critical bugs (Opus) |
 | Mix sinapses with T1 contracts | Conflicting context, confusion | Keep brain-task and $ms workflows separate |
-
----
-
-## Integration with MetalShopping Workflow
-
-**Parallel Execution (Recommended):**
-
-```
-Developer task: "Add product margin calculation to analytics"
-
-Option A: Use $ms (T1-T7 pipeline)
-  $ms "Add product margin..."
-    → T1: Event contract
-    → T2: Backend event handler
-    → T3: Analytics worker (Python)
-    → T4: SDK generation
-    → T5: Frontend display
-    → T6: Tests
-    → T7: Docs
-
-Option B: Use brain-decision (Codex)
-  /brain-task "Add product margin to analytics"
-    → brain-decision classifies (complexity: 55)
-    → Routes to Codex
-    → Generates codex-context.md (sinapses + patterns)
-    → Codex implements feature end-to-end
-    → brain-document proposes sinapses updates
-    → brain-consolidate batches results
-
-Developer chooses based on:
-- Do we need rigorous contracts? → use $ms
-- Do we want fast iteration? → use brain-decision
-- First time seeing pattern? → use brain-decision
-```
-
-**Decision:** Start parallel. Use brain-decision for 5-10 tasks. Measure tokens/time/quality. Then choose workflow per task.
 
 ---
 
