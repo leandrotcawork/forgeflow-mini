@@ -472,7 +472,7 @@ Flags:
 | **brain-task** | Escalation target. When consultation evolves into implementation, suggest /brain-task. |
 | **brain-lesson** | Suggestion target. When consultation reveals a learning, suggest /brain-lesson. brain-consult never creates lesson files. |
 | **brain-mckinsey** | Escalation target for high-stakes architectural decisions. If question is "should we adopt X for our entire stack?", suggest /brain-mckinsey. |
-| **brain-consolidate** | brain-consolidate cleans consult-*.json files older than 7 days during its cleanup step. |
+| **brain-consolidate** | Secondary cleanup path for consult-*.json files. Primary cleanup is automatic via sessionEnd hook (7-day TTL + 50 max cap). brain-consolidate remains a fallback for missed cleanups. |
 
 ---
 

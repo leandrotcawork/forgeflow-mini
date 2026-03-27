@@ -37,6 +37,19 @@ Developer invokes: `/brain-status`
 
 ## Workflow
 
+## Dashboard Generation (Delegated to Script — v0.8.0)
+
+Run:
+```bash
+python scripts/brain-status-report.py --brain-path .brain --format both
+```
+
+Display the text dashboard directly to the developer. Use the JSON data for any follow-up analysis.
+
+**LLM still owns:** Step 4 (regenerate visualization) and narrative interpretation of stale regions or coverage gaps.
+
+**Fallback:** If the script is unavailable, query brain.db and state files manually as described below.
+
 ### Step 1: Query brain.db and Project State
 
 From `.brain/brain.db`:

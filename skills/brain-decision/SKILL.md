@@ -24,16 +24,31 @@ brain-decision [plan mode] → brain-map → brain-plan → brain-task (Steps 1�
 
 ## EXECUTE THESE STEPS NOW
 
-### Pre-Step: Circuit Breaker Check
+### Pre-Step: Circuit Breaker Check (Hook-Enforced — v0.8.0)
+
+Circuit breaker enforcement is handled by the `circuitBreakerCheck` hook (Tier 1, PreToolUse).
+If the breaker is open, the hook blocks execution before brain-decision runs.
+No manual check is needed in this skill.
+
+The hook reads `.brain/progress/brain-project-state.json` and:
+- `closed` -> allows execution
+- `open` + cooldown active -> blocks with message
+- `open` + cooldown expired -> allows as half-open probe
+- `half-open` -> allows with probe context
+
+<details>
+<summary>Legacy reference: manual circuit breaker check (pre-v0.8.0)</summary>
 
 Before classifying, check `.brain/progress/brain-project-state.json`:
 - If `circuit_breaker.state` == "open" AND current time < `cooldown_until`:
-  → Output: "BRAIN: Circuit breaker OPEN. {N} consecutive failures detected. Cooling down until {time}. Try: (1) different approach, (2) /brain-lesson to capture the failure, (3) manual implementation."
-  → Do NOT proceed with routing.
+  -> Output: "BRAIN: Circuit breaker OPEN. {N} consecutive failures detected. Cooling down until {time}. Try: (1) different approach, (2) /brain-lesson to capture the failure, (3) manual implementation."
+  -> Do NOT proceed with routing.
 - If `circuit_breaker.state` == "half-open":
-  → Output: "BRAIN: Circuit breaker HALF-OPEN. Allowing one probe task."
-  → Proceed normally.
+  -> Output: "BRAIN: Circuit breaker HALF-OPEN. Allowing one probe task."
+  -> Proceed normally.
 - Otherwise: proceed.
+
+</details>
 
 ---
 

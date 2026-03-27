@@ -808,6 +808,39 @@ After tests pass, invoke `/brain-codex-review`:
 
 The `TaskCompleted` hook only fires when a Task tool subagent completes. When brain-task runs in the main session (the normal case), no hook fires. Always execute Steps 4-6 inline.
 
+### Steps 4+5+6.2+6.4+6.5: Post-Task Automation (Delegated)
+
+**These steps are delegated to `scripts/brain-post-task.js`.** Do NOT manually edit
+task-completion records, activity.md, brain-state.json, or brain-project-state.json for these steps.
+
+Run:
+```bash
+node scripts/brain-post-task.js \
+  --task-id "{task_id}" \
+  --status "{success|failure}" \
+  --model "{model}" \
+  --domain "{domain}" \
+  --score {score} \
+  --files-changed '{files_json_array}' \
+  --sinapses-loaded '{sinapses_json_array}' \
+  --lessons-loaded '{lessons_json_array}' \
+  --short-description "{short_description}" \
+  --task-description "{full_task_description}" \
+  --tests-summary "{tests_pass_fail_summary}"
+```
+
+Read the JSON output:
+- `consolidation_needed: true` -> output: "BRAIN: 5+ tasks accumulated -- run /brain-consolidate"
+- `circuit_breaker_state.state: "open"` -> output breaker warning to developer
+
+**LLM still owns:** Step 6.1 (brain-document sinapse proposals) and Step 6.3 (/commit).
+**LLM still writes:** The "Lessons" section of the task-completion record (requires AI reasoning about non-obvious findings).
+
+---
+
+<details>
+<summary>Legacy reference (pre-v0.8.0)</summary>
+
 ### Step 4: Create task-completion record
 
 Create `.brain/working-memory/task-completion-{task_id}.md`:
@@ -931,6 +964,8 @@ ON FAILURE:
 ```
 
 **Compaction advice:** SAFE to compact after Step 6. If context pressure > 75%, skip optional steps (detailed brain-document analysis, verbose archival notes) and output minimal completion summary instead.
+
+</details>
 
 ---
 

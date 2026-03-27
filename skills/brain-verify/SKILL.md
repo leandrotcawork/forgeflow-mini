@@ -8,6 +8,22 @@ description: 6-phase implementation verification — build, types, lint, tests, 
 ## Pipeline Position
 Called by brain-task at Step 3.5, or manually via `/brain-verify`.
 
+## Execution (Delegated to Script — v0.8.0)
+
+Run all 6 phases via script:
+```bash
+bash scripts/brain-verify.sh --json --project-root .
+```
+
+Read the JSON output. LLM responsibility:
+- If `overall_verdict: "GO"` -> continue pipeline
+- If `overall_verdict: "NO_GO"` -> stop pipeline, report blocking phase to developer
+- If any phase has `status: "FAIL"` but is non-blocking -> summarize and continue
+- If any phase has `status: "WARN"` -> note in output
+- Interpret ambiguous failures (the ONLY part requiring AI reasoning)
+
+**Fallback:** If the script is unavailable or fails with exit code 3, fall back to running phases manually as described below.
+
 ## Execution Flow
 
 Run these 6 phases IN ORDER. Stop on first blocking failure.
