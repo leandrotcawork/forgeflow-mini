@@ -325,10 +325,11 @@ function appendActivityRow(brainPath, args) {
       throw new Error('Failed to create activity.md: ' + activityPath);
     }
   } else {
-    // Append row, ensure there is a newline before appending
-    var suffix = existing.endsWith('\n') ? '' : '\n';
-    var ok2 = writeFile(activityPath, existing + suffix + row + '\n');
-    if (!ok2) {
+    // Append row — O(1), no full-file rewrite
+    try {
+      var suffix = existing.endsWith('\n') ? '' : '\n';
+      fs.appendFileSync(activityPath, suffix + row + '\n', 'utf-8');
+    } catch (_) {
       throw new Error('Failed to append to activity.md: ' + activityPath);
     }
   }
@@ -461,6 +462,15 @@ function computeCircuitBreakerNextState(currentCB, status, now, config) {
     cb.cooldown_until = null;
   } else {
     // Failure
+    // Check if previous failure was outside the window — if so, reset count first
+    if (currentCB && currentCB.last_failure_at) {
+      var lastFailureTime = new Date(currentCB.last_failure_at).getTime();
+      var elapsed = (now.getTime() - lastFailureTime) / 1000;
+      if (elapsed > windowSeconds) {
+        cb.failure_count = 0;
+      }
+    }
+
     cb.failure_count += 1;
     cb.last_failure_at = now.toISOString();
 
@@ -470,25 +480,11 @@ function computeCircuitBreakerNextState(currentCB, status, now, config) {
       cb.cooldown_until = new Date(now.getTime() + cooldownSeconds * 1000).toISOString();
       message = 'CIRCUIT BREAKER RE-OPENED: Probe task failed. Cooldown extended.';
     } else if (cb.failure_count >= failureThreshold) {
-      // Check if all failures occurred within the window
-      var inWindow = true;
-      if (currentCB && currentCB.last_failure_at) {
-        var lastFailureTime = new Date(currentCB.last_failure_at).getTime();
-        var elapsed = (now.getTime() - lastFailureTime) / 1000;
-        if (elapsed > windowSeconds) {
-          // Outside window, reset count and do not open
-          cb.failure_count = 1;
-          inWindow = false;
-        }
-      }
-
-      if (inWindow && cb.failure_count >= failureThreshold) {
-        cb.state = 'open';
-        cb.cooldown_until = new Date(now.getTime() + cooldownSeconds * 1000).toISOString();
-        message = 'CIRCUIT BREAKER OPENED: ' + failureThreshold +
-          ' consecutive failures in ' + Math.floor(windowSeconds / 60) +
-          ' min. Pipeline blocked for ' + Math.floor(cooldownSeconds / 60) + ' min.';
-      }
+      cb.state = 'open';
+      cb.cooldown_until = new Date(now.getTime() + cooldownSeconds * 1000).toISOString();
+      message = 'CIRCUIT BREAKER OPENED: ' + failureThreshold +
+        ' consecutive failures in ' + Math.floor(windowSeconds / 60) +
+        ' min. Pipeline blocked for ' + Math.floor(cooldownSeconds / 60) + ' min.';
     }
   }
 

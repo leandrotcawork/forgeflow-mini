@@ -102,8 +102,11 @@ run_check() {
   log "Phase $phase (${PHASE_NAME[$phase]}): running '$cmd'"
 
   local output exit_code
-  output=$(eval "$cmd" 2>&1) || true
-  exit_code=${PIPESTATUS[0]:-$?}
+  if output=$(eval "$cmd" 2>&1); then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
   PHASE_EXIT[$phase]=$exit_code
 
   if [[ $exit_code -eq 0 ]]; then
@@ -273,14 +276,14 @@ phase_diff() {
   fi
 
   local file_count
-  # Count both staged and unstaged changes
-  file_count=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
-  # Fallback: if HEAD doesn't exist (initial commit), count all tracked changes
+  # Count distinct changed files (staged + unstaged, deduplicated)
+  file_count=$(git diff --name-only HEAD 2>/dev/null | sort -u | wc -l | tr -d ' ')
+  # Fallback: if HEAD doesn't exist (initial commit), union staged and unstaged
   if [[ "$file_count" -eq 0 ]]; then
-    file_count=$(git diff --name-only 2>/dev/null | wc -l | tr -d ' ')
-    local staged
-    staged=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
-    file_count=$((file_count + staged))
+    file_count=$(
+      { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; } \
+        | sort -u | wc -l | tr -d ' '
+    )
   fi
 
   PHASE_STATUS[6]="PASS"

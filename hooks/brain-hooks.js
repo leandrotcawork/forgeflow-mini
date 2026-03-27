@@ -277,15 +277,21 @@ function pruneConsultAuditFiles(wmDir, nowIso, maxAgeDays, maxFiles) {
   if (remaining.length > maxFiles) {
     remaining.sort(function (a, b) { return a.mtime - b.mtime; });
     var toDelete = remaining.length - maxFiles;
-    for (var k = 0; k < toDelete; k++) {
-      try {
-        fs.unlinkSync(remaining[k].path);
-        result.deleted_for_cap++;
-      } catch {
-        // ignore delete failures
+    var survivors = [];
+    for (var k = 0; k < remaining.length; k++) {
+      if (k < toDelete) {
+        try {
+          fs.unlinkSync(remaining[k].path);
+          result.deleted_for_cap++;
+        } catch {
+          // Delete failed — keep in survivors so remaining count is accurate
+          survivors.push(remaining[k]);
+        }
+      } else {
+        survivors.push(remaining[k]);
       }
     }
-    remaining = remaining.slice(toDelete);
+    remaining = survivors;
   }
 
   result.remaining = remaining.length;

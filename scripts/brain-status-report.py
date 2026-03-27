@@ -26,12 +26,18 @@ def staleness_label(date_str):
     if not date_str:
         return "unknown"
     try:
-        # Handle ISO dates with or without time component
-        clean = date_str.strip().replace("T", " ").split(".")[0].split("+")[0]
-        if len(clean) == 10:
-            dt = datetime.strptime(clean, "%Y-%m-%d")
+        # Normalize to a form datetime.fromisoformat() accepts (Python 3.7+)
+        # Handles: 2026-03-27, 2026-03-27T12:34:56, 2026-03-27T12:34:56Z,
+        #          2026-03-27T12:34:56+00:00, 2026-03-27T12:34:56.123Z
+        raw = date_str.strip().replace("Z", "+00:00").split(".")[0]
+        if "+" not in raw[10:] and len(raw) > 10:
+            # naive datetime string — parse as-is
+            dt = datetime.fromisoformat(raw)
         else:
-            dt = datetime.strptime(clean, "%Y-%m-%d %H:%M:%S")
+            dt = datetime.fromisoformat(raw)
+            # Strip timezone for naive comparison
+            if dt.tzinfo is not None:
+                dt = dt.replace(tzinfo=None)
         delta = (datetime.now() - dt).days
         if delta <= 7:
             return "healthy"
@@ -97,24 +103,37 @@ def read_project_state(brain_path):
 
 
 def count_consult_log(brain_path):
-    """Parse consult-log.md for consultation counts by mode."""
+    """Parse consult-log.md for consultation counts by mode.
+
+    Format: | timestamp | mode | domain | summary | confidence | thread |
+    One row per consultation. Skips header and separator rows.
+    """
     log_file = Path(brain_path) / "progress" / "consult-log.md"
     stats = {"total": 0, "quick": 0, "research": 0, "consensus": 0}
     try:
         with open(log_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Count entries — each consultation is typically a line or block
-        # Look for mode markers: Quick, Research, Consensus (case-insensitive)
-        lines = content.split("\n")
+            lines = f.readlines()
         for line in lines:
-            lower = line.lower()
-            if "quick" in lower and ("|" in line or "##" in line or "-" in line):
+            stripped = line.strip()
+            if not stripped.startswith("|") or not stripped.endswith("|"):
+                continue
+            cols = [c.strip() for c in stripped.split("|")]
+            # cols[0] is '' (before first |), cols[-1] is '' (after last |)
+            # data cols are cols[1:-1]
+            data = cols[1:-1]
+            if len(data) < 2:
+                continue
+            # Skip header/separator rows
+            mode_col = data[1].lower()
+            if "---" in mode_col or mode_col in ("mode", ""):
+                continue
+            if mode_col == "quick":
                 stats["quick"] += 1
                 stats["total"] += 1
-            elif "research" in lower and ("|" in line or "##" in line or "-" in line):
+            elif mode_col == "research":
                 stats["research"] += 1
                 stats["total"] += 1
-            elif "consensus" in lower and ("|" in line or "##" in line or "-" in line):
+            elif mode_col == "consensus":
                 stats["consensus"] += 1
                 stats["total"] += 1
     except FileNotFoundError:
