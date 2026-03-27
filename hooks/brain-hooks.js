@@ -172,6 +172,127 @@ function configProtection(input) {
 }
 
 /**
+ * Path to brain-project-state.json.
+ */
+function brainProjectStatePath() {
+  return path.join(brainRoot(), 'progress', 'brain-project-state.json');
+}
+
+/**
+ * circuitBreakerCheck — reads brain-project-state.json and checks the
+ * circuit breaker state before allowing tool execution.
+ */
+function circuitBreakerCheck(/* input */) {
+  var projectState = readJSON(brainProjectStatePath());
+  if (!projectState) return ok();
+
+  var cb = projectState.circuit_breaker;
+  if (!cb || !cb.state) return ok();
+
+  if (cb.state === 'closed') return ok();
+
+  if (cb.state === 'open') {
+    var now = new Date().toISOString();
+    if (cb.cooldown_until && now < cb.cooldown_until) {
+      return block(
+        'CIRCUIT BREAKER OPEN: Pipeline blocked until ' + cb.cooldown_until +
+        '. Reason: ' + (cb.failure_count || 0) + ' consecutive failures. ' +
+        'Try a different approach, run /brain-lesson, or wait for cooldown.'
+      );
+    }
+    // Cooldown expired — transition to half-open
+    return ok({
+      additionalContext:
+        'CIRCUIT BREAKER: Cooldown expired. Transitioning to HALF-OPEN. ' +
+        'This execution is a probe — if it succeeds the breaker will close, ' +
+        'if it fails the breaker will re-open with a longer cooldown.',
+    });
+  }
+
+  if (cb.state === 'half-open') {
+    return ok({
+      additionalContext:
+        'CIRCUIT BREAKER HALF-OPEN: This execution is a probe task. ' +
+        'Success will close the breaker; failure will re-open it.',
+    });
+  }
+
+  // Unknown state — never block on unexpected data
+  return ok();
+}
+
+/**
+ * pruneConsultAuditFiles — deletes stale consult-*.json files from the
+ * working-memory directory based on age (TTL) and a maximum file cap.
+ *
+ * Returns { deleted_for_ttl, deleted_for_cap, remaining }.
+ */
+function pruneConsultAuditFiles(wmDir, nowIso, maxAgeDays, maxFiles) {
+  var result = { deleted_for_ttl: 0, deleted_for_cap: 0, remaining: 0 };
+  var entries;
+  try {
+    entries = fs.readdirSync(wmDir);
+  } catch {
+    // Missing directory — no-op
+    return result;
+  }
+
+  var consultFiles = entries.filter(function (f) {
+    return f.startsWith('consult-') && f.endsWith('.json');
+  });
+
+  var nowMs = new Date(nowIso).getTime();
+  var maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+
+  // Gather mtime info
+  var fileInfos = [];
+  for (var i = 0; i < consultFiles.length; i++) {
+    var fullPath = path.join(wmDir, consultFiles[i]);
+    try {
+      var stat = fs.statSync(fullPath);
+      fileInfos.push({ name: consultFiles[i], path: fullPath, mtime: stat.mtimeMs });
+    } catch {
+      // skip files we can't stat
+    }
+  }
+
+  // Phase 1: delete files older than maxAgeDays
+  var remaining = [];
+  for (var j = 0; j < fileInfos.length; j++) {
+    var ageMs = nowMs - fileInfos[j].mtime;
+    if (ageMs > maxAgeMs) {
+      try {
+        fs.unlinkSync(fileInfos[j].path);
+        result.deleted_for_ttl++;
+      } catch {
+        // If delete fails, keep in remaining
+        remaining.push(fileInfos[j]);
+      }
+    } else {
+      remaining.push(fileInfos[j]);
+    }
+  }
+
+  // Phase 2: if remaining > maxFiles, sort by mtime ascending and delete oldest
+  if (remaining.length > maxFiles) {
+    remaining.sort(function (a, b) { return a.mtime - b.mtime; });
+    var toDelete = remaining.length - maxFiles;
+    for (var k = 0; k < toDelete; k++) {
+      try {
+        fs.unlinkSync(remaining[k].path);
+        result.deleted_for_cap++;
+      } catch {
+        // ignore delete failures
+      }
+    }
+    remaining = remaining.slice(toDelete);
+  }
+
+  result.remaining = remaining.length;
+  return result;
+}
+
+/**
  * sessionEnd — writes brain-state.json to disk with current timestamp.
  */
 function sessionEnd(/* input */) {
@@ -194,7 +315,20 @@ function sessionEnd(/* input */) {
   state.ended_at = new Date().toISOString();
 
   writeJSON(brainStatePath(), state);
-  return ok({ reason: 'brain-state.json saved at session end.' });
+
+  // Prune stale consult audit files (failure must never block session end)
+  var pruneResult = { deleted_for_ttl: 0, deleted_for_cap: 0, remaining: 0 };
+  try {
+    var wmDir = path.join(brainRoot(), 'working-memory');
+    pruneResult = pruneConsultAuditFiles(wmDir, state.ended_at, 7, 50);
+  } catch {
+    // Never block session end on cleanup failure
+  }
+
+  return ok({
+    reason: 'brain-state.json saved at session end.',
+    consult_cleanup: pruneResult,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -328,8 +462,9 @@ function activityObserver(input) {
 var HOOKS = {
   stateRestore:      { fn: stateRestore,      tier: 1 },
   hippocampusGuard:  { fn: hippocampusGuard,   tier: 1 },
-  configProtection:  { fn: configProtection,   tier: 1 },
-  sessionEnd:        { fn: sessionEnd,         tier: 1 },
+  configProtection:      { fn: configProtection,      tier: 1 },
+  circuitBreakerCheck:   { fn: circuitBreakerCheck,    tier: 1 },
+  sessionEnd:            { fn: sessionEnd,             tier: 1 },
   strategyRotation:  { fn: strategyRotation,   tier: 2 },
   qualityGate:       { fn: qualityGate,        tier: 2 },
   taskSafetyNet:     { fn: taskSafetyNet,      tier: 2 },
@@ -433,11 +568,13 @@ module.exports = {
   stateRestore: stateRestore,
   hippocampusGuard: hippocampusGuard,
   configProtection: configProtection,
+  circuitBreakerCheck: circuitBreakerCheck,
   sessionEnd: sessionEnd,
   strategyRotation: strategyRotation,
   qualityGate: qualityGate,
   taskSafetyNet: taskSafetyNet,
   activityObserver: activityObserver,
+  pruneConsultAuditFiles: pruneConsultAuditFiles,
   HOOKS: HOOKS,
   PROFILES: PROFILES,
 };
