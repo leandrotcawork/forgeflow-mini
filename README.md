@@ -6,7 +6,7 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
   <img src="https://img.shields.io/badge/Version-0.7.0-blue" alt="Version 0.7.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-16-orange" alt="16 Skills">
-  <img src="https://img.shields.io/badge/Hooks-8-yellow" alt="8 Hooks">
+  <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
@@ -465,6 +465,7 @@ brain-decision scores every task on a 0-100 complexity scale:
 | **Strategy Rotation** | After 2 failures: default -> alternative -> minimal -> escalate -> human |
 | **State Persistence** | brain-state.json (session) + brain-project-state.json (project), survives compaction |
 | **Context Pressure** | Tracks usage: <50% low, 65% moderate, 75% high (skip optional steps), 80% critical |
+| **Script Delegation** | Mechanical operations (state updates, file archival, verification) run as Node.js/Bash/Python scripts. LLM focuses on reasoning. ~3k tokens saved per task. |
 
 ### Hooks (Optional, 3 Tiers)
 
@@ -534,7 +535,7 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-aside` | Interrupt Handler | Pipeline interrupt — saves state, no context loading |
 | `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
-### Hook Architecture (8 Hooks)
+### Hook Architecture (9 Hooks)
 
 All hooks run through `hooks/brain-hooks.js` -- a pure Node.js runner with profile gating.
 
@@ -543,7 +544,8 @@ All hooks run through `hooks/brain-hooks.js` -- a pure Node.js runner with profi
 | stateRestore | SessionStart | 1 | Restore brain state into session |
 | hippocampusGuard | PreToolUse:Write | 1 | Block writes to hippocampus/ |
 | configProtection | PreToolUse:Write | 1 | Block weakening linter/formatter configs |
-| sessionEnd | Stop | 1 | Persist brain-state.json |
+| circuitBreakerCheck | PreToolUse | 1 | Block execution when circuit breaker is open |
+| sessionEnd | Stop | 1 | Persist brain-state.json + prune consult audit files |
 | strategyRotation | PostToolUse:Bash | 2 | Inject rotation advice after failures |
 | qualityGate | PostToolUse:Write | 2 | Check for associated linter command |
 | taskSafetyNet | TaskCompleted | 2 | Verify post-task steps completed |

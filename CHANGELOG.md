@@ -2,6 +2,29 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.8.0] - 2026-03-27
+
+### Added
+- **scripts/brain-post-task.js** -- Handles brain-task Steps 4+5+6.2+6.4+6.5 in one call. Writes task-completion record, appends activity log, archives context files, checks consolidation threshold, updates circuit breaker. Saves ~1,500 tokens and 7-11 tool calls per task.
+- **scripts/brain-verify.sh** -- 6-phase verification (build, types, lint, tests, security, diff) with JSON output. Auto-detects tooling for Node.js, Python, Go, Rust projects. Saves ~1,500 tokens per verification.
+- **scripts/brain-status-report.py** -- Dashboard aggregation from brain.db + state files. Queries sinapse/lesson metrics, circuit breaker state, consultation stats, pending escalations. Saves ~800 tokens per /brain-status.
+- **circuitBreakerCheck hook** (Tier 1, PreToolUse) -- Blocks execution when circuit breaker is open. Replaces inline checks in brain-decision and brain-task. Handles closed/open/half-open transitions with cooldown detection.
+- **sessionEnd consult cleanup** -- Extended sessionEnd hook with consult-*.json TTL pruning (7-day max age + 50 file cap). Cleanup never blocks session end.
+- **29 tests** for brain-post-task.js, **14 tests** for hook extensions.
+
+### Changed
+- **brain-task** -- Steps 4, 5, 6.2, 6.4, 6.5 delegated to brain-post-task.js. LLM still owns brain-document (6.1) and /commit (6.3). Legacy steps preserved in collapsed reference blocks.
+- **brain-verify** -- All 6 phases delegated to brain-verify.sh. LLM only interprets JSON results. Manual fallback preserved.
+- **brain-status** -- Steps 1-3 delegated to brain-status-report.py. LLM shows dashboard + runs visualization.
+- **brain-decision** -- Circuit breaker check replaced by circuitBreakerCheck hook enforcement. Manual check preserved as legacy reference.
+- **brain-consult** -- Consult cleanup primary path is now sessionEnd hook; brain-consolidate is secondary fallback.
+- **Hook count** -- 8 -> 9 hooks (added circuitBreakerCheck).
+
+### Performance
+- ~3,000-4,000 tokens saved per task (post-task + verify combined)
+- ~15,000-20,000 tokens saved per 5-task session
+- Mechanical operations run in 50-200ms instead of 15-25 AI tool calls
+
 ## [0.7.0] - 2026-03-27
 
 ### Added
