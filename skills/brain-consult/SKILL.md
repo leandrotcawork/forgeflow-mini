@@ -482,7 +482,7 @@ Flags:
 
 | Skill | Relationship |
 |---|---|
-| **brain-aside** | Complementary. brain-aside handles pipeline interrupts (state save/restore, no context). brain-consult handles knowledge-based consultation (context loading, answers). When pipeline is active, brain-consult includes pipeline state in context and outputs resume reminder. |
+| **brain-aside** | Absorbed. brain-aside pipeline-check behaviour absorbed into brain-consult Pre-Step as of v0.9.0. brain-aside is deprecated — use brain-consult. |
 | **brain-decision** | Not invoked. brain-consult skips the router entirely. If consultation reveals need for implementation, suggest /brain-task (which goes through brain-decision). |
 | **brain-map** | Not invoked as sub-skill. brain-consult does its own lightweight inline context loading (Tier 1A/1B + FTS5 Tier 2). brain-map's full 3-tier loading with context-packet generation is overkill for consultation. |
 | **brain-task** | Escalation target. When consultation evolves into implementation, suggest /brain-task. |

@@ -333,21 +333,22 @@ Consolidation complete:
   Brain.db: 3 sinapses reweighted (+0.02 freshness boost)
 ```
 
-### Example 9: Quick Pipeline Interrupt (brain-aside)
+### Example 9: Quick Pipeline Interrupt (brain-consult)
 
-Mid-task, you need to ask something unrelated:
+Mid-task, you need to ask something unrelated. Use `/brain-consult` — it handles pipeline interrupts as of v0.9.0 (`/brain-aside` is deprecated):
 
 ```
 [Brain-task running Step 3 for task 2026-03-27-ml-cache...]
 
-> /brain-aside
+> /brain-consult "What's our Redis connection string format?"
 
-You: "What's our Redis connection string format?"
+[Brain] Consult (quick) | Domain: infra | Loading context...
 
-[Brain] It's in .env as REDIS_URL=redis://host:port/db
+It's in .env as REDIS_URL=redis://host:port/db
 
-Brain pipeline was at Step 3 for task 2026-03-27-ml-cache.
-Continue with /brain-task --resume
+---
+⚠️  Brain pipeline active: Task 2026-03-27-ml-cache paused at Step 3.
+Resume when ready: /brain-task --resume
 ```
 
 ### Example 10: Configuring Brain Settings
@@ -383,7 +384,7 @@ You want to...
     |   |                            Research: "why is this error..."
     |   |                            --consensus: "which approach..."
     |   |
-    |   +-- Mid-pipeline? -------> /brain-aside (no context, just interrupt)
+    |   +-- Mid-pipeline? -------> /brain-consult (deprecated: /brain-aside → use /brain-consult)
     |
     +-- Build/fix/implement? ----> /brain-task "description"
     |   |                            Auto-routes by complexity (Haiku/Sonnet/Codex/Opus)

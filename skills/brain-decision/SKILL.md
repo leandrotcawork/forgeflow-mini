@@ -310,7 +310,7 @@ After dispatching, write the classification to `.brain/working-memory/brain-stat
 }
 ```
 
-This enables brain-aside to display pipeline context and brain-task to resume after interruption.
+This enables brain-consult to display pipeline context (absorbed from brain-aside as of v0.9.0) and brain-task to resume after interruption.
 
 ---
 
