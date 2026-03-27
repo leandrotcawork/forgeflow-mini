@@ -72,7 +72,9 @@ If no developer input (autonomous mode), attempt RESUME if context files exist, 
 brain-decision passes: `task_id`, `complexity_score`, `model`, `domain`, `plan_mode`. Use these values directly.
 
 **CASE B: Called directly by user (no flags)**
-Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=false. Log a warning: **'brain-task called without brain-decision routing — using defaults. For optimal results, use /brain-decision first.'** Do NOT invoke brain-decision.
+Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=false. Log a warning: **'brain-task called without brain-dev routing — using defaults. For optimal results, use /brain-dev first.'** Do NOT invoke brain-decision or brain-dev.
+
+**Note for subagent execution:** If brain-task is dispatched as a subagent by brain-dev, it receives task_id, model, domain, score via the dev-context file at `.brain/working-memory/dev-context-{task_id}.md`. Read that file first. CASE B only fires when those values are truly absent (direct user invocation without routing).
 
 **You need these values for every subsequent step. Do not guess them.**
 
@@ -121,6 +123,8 @@ If Sonnet fails after 2 attempts, escalate to Codex. Log the escalation.
 # EXECUTE THESE STEPS NOW
 
 ## Step 1: Load Context — DO THIS FIRST
+
+**Context ownership:** brain-task Step 1 is the ONLY place context is loaded. brain-decision and brain-dev do NOT call brain-map. If a context-packet-{task_id}.md already exists from a previous run, overwrite it — Step 1 always regenerates fresh context.
 
 Do these actions NOW. Do not skip to implementation.
 
