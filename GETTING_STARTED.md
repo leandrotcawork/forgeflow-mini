@@ -21,7 +21,7 @@ This registers the plugin and all 11 skills automatically.
 
 Now when you type `/`, you should see:
 - /brain-init
-- /brain-decision
+- /brain-dev
 - /brain-task
 - /brain-plan
 - /brain-mckinsey

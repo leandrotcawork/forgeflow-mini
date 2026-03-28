@@ -8,7 +8,7 @@ description: ContextMapper — Load 3-tier weighted sinapses for task context
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
+brain-dev → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
                   ↑ you are here
 ```
 
@@ -26,7 +26,7 @@ brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-do
 
 ### Step 1: Parse Task Classification
 
-Input from brain-decision:
+Input from brain-dev (via dev-context file):
 - Task description
 - Domain: `backend | frontend | database | infra | analytics | cross-domain`
 - Risk level: `low | medium | high | critical`
@@ -52,7 +52,7 @@ ORDER BY weight DESC
 LIMIT 3
 
 -- Query 3: Task description (from user input)
-[passed directly from brain-decision]
+[from dev-context file or task description]
 ```
 
 **Tier 1 Output (~4k tokens):**
@@ -168,7 +168,7 @@ Create: `.brain/working-memory/context-packet-{task_id}.md`
 ---
 task_id: YYYY-MM-DD-<slug>
 domain: [backend | frontend | database | infra | cross-domain]
-complexity_score: [0-100 from brain-decision]
+complexity_score: [0-100 from brain-dev]
 sinapses_loaded: [N]
 lessons_loaded: [M]
 tokens_estimated: [4k + 10-15k + optional tier3]
@@ -252,7 +252,7 @@ Output: .brain/working-memory/context-packet-{task_id}.md
 
 ## FTS5 Hybrid Queries (v0.7.0)
 
-When task keywords are available (from brain-decision), Tier 2 can use FTS5 to boost relevance:
+When task keywords are available (from brain-dev via dev-context), Tier 2 can use FTS5 to boost relevance:
 
 ```sql
 -- Hybrid: domain filter + FTS5 keyword boost
@@ -269,7 +269,7 @@ LIMIT 5
 **Fallback:** If FTS5 tables don't exist (pre-v0.7.0 brain) or FTS5 returns < 2 results, use the standard weight-ordered query from Step 3 above.
 
 **When to use FTS5 vs standard:**
-- FTS5 hybrid: when brain-decision provides a task description with searchable keywords
+- FTS5 hybrid: when brain-dev provides a task description with searchable keywords
 - Standard (weight-only): when `--lightweight` flag is passed (Haiku tasks) or no keywords available
 
 ---

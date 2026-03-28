@@ -16,7 +16,7 @@ description: Codex code review agent — validates implementation, finds bugs, c
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task (Steps 1-3) → brain-codex-review (Step 3.5) → brain-task (Steps 4-6) → brain-document → brain-consolidate
+brain-dev → brain-map → brain-task (Steps 1-3) → brain-codex-review (Step 3.5) → brain-task (Steps 4-6) → brain-document → brain-consolidate
                                                         ↑ you are here
                                                         (runs as subagent OR inline)
 ```

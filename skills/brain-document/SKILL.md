@@ -8,7 +8,7 @@ description: Documenter -- Propose sinapse updates after task completion
 ## Pipeline Position
 
 ```
-brain-decision -> brain-map -> brain-task (Steps 1-3) -> brain-codex-review (Codex only) -> brain-document -> brain-consolidate
+brain-dev -> brain-map -> brain-task (Steps 1-3) -> brain-codex-review (Codex only) -> brain-document -> brain-consolidate
                                                                                           ^ you are here
 ```
 

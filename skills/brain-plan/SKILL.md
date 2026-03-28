@@ -9,10 +9,10 @@ metadata:
 
 ## Pipeline Position
 
-brain-plan is invoked during brain-decision Step 4 when plan mode is triggered (complexity >= 50 or `--plan` flag). It runs between brain-map (context loading) and brain-task Step 3 (implementation). Not on the default pipeline path — only activated for complex tasks requiring architectural planning.
+brain-plan is invoked by brain-dev when plan_mode is true (complexity >= 50 or `--plan` flag). It runs between brain-map (context loading) and brain-task Step 3 (implementation). Not on the default pipeline path — only activated for complex tasks requiring architectural planning.
 
 ```
-brain-decision → brain-map → brain-plan → brain-task (Steps 1-6)
+brain-dev → brain-plan → brain-task (brain-map called within brain-task Step 1)
                               ↑ you are here
 ```
 

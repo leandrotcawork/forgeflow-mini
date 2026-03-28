@@ -26,7 +26,7 @@ Define testable success criteria BEFORE implementation begins.
 
 ## Workflow
 
-Step 1: Read task description from brain-decision
+Step 1: Read task description from brain-dev
 Step 2: Propose 2-3 capability evals + 1-2 regression evals
 Step 3: Developer approves or modifies evals
 Step 4: Write evals to .brain/working-memory/evals-{task_id}.md

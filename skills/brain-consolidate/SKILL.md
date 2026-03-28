@@ -8,7 +8,7 @@ description: Consolidation cycle — Batch process completed tasks, propose sina
 ## Pipeline Position
 
 ```
-brain-decision → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
+brain-dev → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
                                                                                     ↑ you are here
 ```
 

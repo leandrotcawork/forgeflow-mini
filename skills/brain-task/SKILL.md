@@ -10,7 +10,7 @@ description: Full task orchestration — circuit breaker check, state persistenc
 ## HARD RULE: No step can be skipped
 
 ```
-GATE 0: brain-decision MUST run first (classifies complexity, selects model)
+GATE 0: brain-dev MUST run first (classifies complexity, selects model)
 GATE 1: context-packet-{task_id}.md MUST exist before Step 2
 GATE 2: [model]-context-{task_id}.md MUST exist before Step 3 (except Haiku — context-packet is sufficient)
 GATE 3: Implementation MUST use the context file as its brief — not your own judgment
@@ -66,13 +66,13 @@ If no developer input (autonomous mode), attempt RESUME if context files exist, 
 
 ---
 
-## Step 0: Route through brain-decision (MANDATORY)
+## Step 0: Route through brain-dev (MANDATORY)
 
-**CASE A: Called via brain-decision (flags present)**
-brain-decision passes: `task_id`, `complexity_score`, `model`, `domain`, `plan_mode`. Use these values directly.
+**CASE A: Called via brain-dev (dev-context file present)**
+brain-dev passes via dev-context file: `task_id`, `score`, `model`, `domain`, `plan_mode`, `keywords`. Use these values directly.
 
 **CASE B: Called directly by user (no flags)**
-Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=false. Log a warning: **'brain-task called without brain-dev routing — using defaults. For optimal results, use /brain-dev first.'** Do NOT invoke brain-decision or brain-dev.
+Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=false. Log a warning: **'brain-task called without brain-dev routing — using defaults. For optimal results, use /brain-dev first.'** Do NOT invoke brain-dev.
 
 **Note for subagent execution:** If brain-task is dispatched as a subagent by brain-dev, it receives task_id, model, domain, score via the dev-context file at `.brain/working-memory/dev-context-{task_id}.md`. Read that file first. CASE B only fires when those values are truly absent (direct user invocation without routing).
 
@@ -89,7 +89,7 @@ Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=fa
   "last_task_id": "{task_id}",
   "current_pipeline_step": 0,
   "active_context_files": [],
-  "snapshot_reason": "brain-decision complete"
+  "snapshot_reason": "brain-dev routing complete"
 }
 ```
 Also write `task_id`, `model`, `domain`, and `complexity_score` as reference fields in state (or use `last_task_id` to correlate).
@@ -107,7 +107,7 @@ Never save task artifacts to `tasks/`, `docs/`, or `.brain/cortex/`. Those are p
 
 ---
 
-## Execution Modes (determined by brain-decision)
+## Execution Modes (determined by brain-dev)
 
 | Model | Context File | Sinapses | Token Budget |
 |-------|-------------|----------|-------------|
@@ -124,7 +124,7 @@ If Sonnet fails after 2 attempts, escalate to Codex. Log the escalation.
 
 ## Step 1: Load Context — DO THIS FIRST
 
-**Context ownership:** brain-task Step 1 is the ONLY place context is loaded. brain-decision and brain-dev do NOT call brain-map. If a context-packet-{task_id}.md already exists from a previous run, overwrite it — Step 1 always regenerates fresh context.
+**Context ownership:** brain-task Step 1 is the ONLY place context is loaded. brain-dev does NOT call brain-map. If a context-packet-{task_id}.md already exists from a previous run, overwrite it — Step 1 always regenerates fresh context.
 
 Do these actions NOW. Do not skip to implementation.
 
@@ -163,7 +163,7 @@ Create: `.brain/working-memory/sonnet-context-{task_id}.md`
 ```markdown
 ---
 task_id: YYYY-MM-DD-<slug>
-complexity_score: [20-39 from brain-decision]
+complexity_score: [20-39 from brain-dev]
 model: sonnet
 domain: [backend | frontend | database | infra | analytics]
 created_at: [ISO8601]
@@ -217,7 +217,7 @@ Create: `.brain/working-memory/codex-context-{task_id}.md`
 ```markdown
 ---
 task_id: YYYY-MM-DD-<slug>
-complexity_score: [0-100 from brain-decision]
+complexity_score: [0-100 from brain-dev]
 model: codex
 domain: [backend | frontend | database | infra | analytics | cross-domain]
 created_at: [ISO8601]
@@ -360,7 +360,7 @@ If task type is `architectural` AND plan mode is active, invoke `/brain-mckinsey
 
 ### Dispatch Decision Tree
 
-The implementation strategy depends on the model tier assigned by brain-decision. Choose the matching path below.
+The implementation strategy depends on the model tier assigned by brain-dev. Choose the matching path below.
 
 ---
 
@@ -991,7 +991,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 ### Flags
 | Flag | Effect |
 |------|--------|
-| `/brain-task [description]` | brain-decision first -> route -> Pre-checks -> Steps 1-3.5 -> Steps 4-6 (all inline) |
+| `/brain-task [description]` | brain-dev first -> route -> Pre-checks -> Steps 1-3.5 -> Steps 4-6 (all inline) |
 | `--sonnet` | Force Sonnet model |
 | `--debug` | Force Opus debugging mode |
 | `--plan` | Force plan mode before Step 1 |
