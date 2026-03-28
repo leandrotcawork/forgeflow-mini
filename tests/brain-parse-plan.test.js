@@ -1,133 +1,94 @@
 'use strict';
 
-const { parsePlan } = require('../scripts/brain-parse-plan.js');
-const assert = require('node:assert/strict');
-const { describe, it } = require('node:test');
+var parsePlan = require('../scripts/brain-parse-plan.js').parsePlan;
+var assert = require('node:assert/strict');
+var test = require('node:test');
 
-describe('parsePlan', function () {
+test.describe('parsePlan', function () {
 
-  it('returns empty array for content with no task headers', function () {
-    const result = parsePlan('# Just a header\n\nSome text.');
+  test.it('returns empty array for content with no task headers', function () {
+    var result = parsePlan('# Just a header\n\nSome text.');
     assert.deepStrictEqual(result, []);
   });
 
-  it('parses a single task with title, files, and steps', function () {
-    const md = `
-### Task 1: Fix Something
-
-**Files:**
-- Create: \`src/foo.js\`
-- Test: \`tests/foo.test.js\`
-
-- [ ] **Step 1: Write the failing test**
-- [ ] **Step 2: Implement the fix**
-- [ ] **Step 3: Commit**
-`;
-    const result = parsePlan(md);
+  test.it('captures fullText for a single task', function () {
+    var md = [
+      '### Task 1: Fix Something',
+      '',
+      '**Files:**',
+      '- Create: `src/foo.js`',
+      '',
+      '- [ ] **Step 1: Write the test**',
+      '- [ ] **Step 2: Implement**',
+      ''
+    ].join('\n');
+    var result = parsePlan(md);
     assert.strictEqual(result.length, 1);
     assert.strictEqual(result[0].task, 1);
     assert.strictEqual(result[0].title, 'Fix Something');
-    assert.strictEqual(result[0].files.length, 2);
-    assert.strictEqual(result[0].files[0].action, 'create');
-    assert.strictEqual(result[0].files[0].path, 'src/foo.js');
-    assert.strictEqual(result[0].files[1].action, 'test');
-    assert.strictEqual(result[0].steps.length, 3);
-    assert.strictEqual(result[0].steps[0], 'Step 1: Write the failing test');
-    assert.strictEqual(result[0].steps[2], 'Step 3: Commit');
+    assert.ok(result[0].fullText.includes('**Files:**'));
+    assert.ok(result[0].fullText.includes('Step 1: Write the test'));
+    assert.ok(result[0].fullText.includes('src/foo.js'));
   });
 
-  it('parses multiple tasks independently', function () {
-    const md = `
-### Task 1: First
-
-**Files:**
-- Create: \`a.js\`
-
-- [ ] **Step 1: Do A**
-
-### Task 2: Second
-
-**Files:**
-- Modify: \`b.js\`
-
-- [ ] **Step 1: Do B**
-- [ ] **Step 2: Commit**
-`;
-    const result = parsePlan(md);
+  test.it('splits multiple tasks without bleeding fullText', function () {
+    var md = [
+      '### Task 1: First',
+      '',
+      'Content of task 1.',
+      '',
+      '### Task 2: Second',
+      '',
+      'Content of task 2.',
+      ''
+    ].join('\n');
+    var result = parsePlan(md);
     assert.strictEqual(result.length, 2);
-    assert.strictEqual(result[0].task, 1);
     assert.strictEqual(result[0].title, 'First');
-    assert.strictEqual(result[0].files[0].action, 'create');
-    assert.strictEqual(result[1].task, 2);
+    assert.ok(result[0].fullText.includes('Content of task 1'));
+    assert.ok(!result[0].fullText.includes('Content of task 2'));
     assert.strictEqual(result[1].title, 'Second');
-    assert.strictEqual(result[1].files[0].action, 'modify');
-    assert.strictEqual(result[1].steps.length, 2);
+    assert.ok(result[1].fullText.includes('Content of task 2'));
+    assert.ok(!result[1].fullText.includes('Content of task 1'));
   });
 
-  it('returns empty files array when no Files section present', function () {
-    const md = `
-### Task 1: No Files
-
-- [ ] **Step 1: Just a step**
-`;
-    const result = parsePlan(md);
+  test.it('parses Micro-Step MN format', function () {
+    var md = [
+      '### Micro-Step M3: Write auth handler',
+      '',
+      '| File | Action |',
+      '| src/auth.js | create |',
+      '',
+      '- [ ] Spec: test auth returns 200',
+      ''
+    ].join('\n');
+    var result = parsePlan(md);
     assert.strictEqual(result.length, 1);
-    assert.deepStrictEqual(result[0].files, []);
-  });
-
-  it('returns empty steps array when no checkbox steps present', function () {
-    const md = `
-### Task 1: No Steps
-
-**Files:**
-- Create: \`x.js\`
-`;
-    const result = parsePlan(md);
-    assert.strictEqual(result.length, 1);
-    assert.deepStrictEqual(result[0].steps, []);
-  });
-
-  it('handles Modify file action correctly', function () {
-    const md = `
-### Task 1: Modifies
-
-**Files:**
-- Modify: \`src/existing.js:10-20\`
-
-- [ ] **Step 1: Edit the file**
-`;
-    const result = parsePlan(md);
-    assert.strictEqual(result[0].files[0].action, 'modify');
-    assert.strictEqual(result[0].files[0].path, 'src/existing.js:10-20');
-  });
-
-  it('task numbers are parsed as integers, not strings', function () {
-    const md = `
-### Task 42: Big Number
-
-- [ ] **Step 1: Do it**
-`;
-    const result = parsePlan(md);
-    assert.strictEqual(typeof result[0].task, 'number');
-    assert.strictEqual(result[0].task, 42);
-  });
-
-  it('parses Micro-Step format (brain-plan output format)', function () {
-    const md = `
-### Micro-Step M1: Write auth handler
-
-**Files:**
-- Create: \`src/auth.js\`
-
-- [ ] **Step 1: Write the failing test**
-- [ ] **Step 2: Implement handler**
-`;
-    const result = parsePlan(md);
-    assert.strictEqual(result.length, 1);
-    assert.strictEqual(result[0].task, 1);
+    assert.strictEqual(result[0].task, 3);
     assert.strictEqual(result[0].title, 'Write auth handler');
-    assert.strictEqual(result[0].files[0].action, 'create');
-    assert.strictEqual(result[0].steps.length, 2);
+    assert.ok(result[0].fullText.includes('| src/auth.js | create |'));
+  });
+
+  test.it('preserves code blocks tables and blank lines in fullText', function () {
+    var md = [
+      '### Task 1: Complex content',
+      '',
+      '```javascript',
+      'function foo() { return 42; }',
+      '```',
+      '',
+      '| Col1 | Col2 |',
+      '|------|------|',
+      '| a    | b    |',
+      '',
+      'Final paragraph.',
+      ''
+    ].join('\n');
+    var result = parsePlan(md);
+    assert.strictEqual(result.length, 1);
+    assert.ok(result[0].fullText.includes('function foo() { return 42; }'));
+    assert.ok(result[0].fullText.includes('| Col1 | Col2 |'));
+    assert.ok(result[0].fullText.includes('Final paragraph.'));
   });
 
 });
