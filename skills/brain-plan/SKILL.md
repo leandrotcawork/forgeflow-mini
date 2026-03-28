@@ -43,10 +43,12 @@ This phase runs when brain-plan is called by brain-dev. It reads the dev-context
 
 Read `.brain/working-memory/dev-context-{task_id}.md` (written by brain-dev Phase 1).
 
-Extract:
+Extract from frontmatter:
 - `intent`, `domain`, `complexity_score`, `model`
-- `concerns` — issues brain-dev flagged (e.g., "conflicts with sinapse-auth-001")
-- `relevant_sinapses` — already loaded by brain-dev (use these, do NOT re-query brain.db for the same sinapses)
+
+Read prose sections:
+- `## Brain Evaluation` section — contains brain-dev's concerns (conflicts, missing deps, alternative patterns)
+- `## Relevant Sinapses` section — sinapses already loaded by brain-dev (do NOT re-query these from brain.db)
 
 If the file does NOT exist (brain-plan called standalone without brain-dev):
 → Load context yourself: query brain.db for domain sinapses (Tier 1, max 5). Continue to Step 0b.
@@ -306,7 +308,7 @@ Per-micro-step estimate based on:
 ```
 Sum all micro-step estimates. If total > 80k, warn:
 "This plan will consume ~{N}k tokens. Consider splitting into multiple sessions
-or using --subagents flag for parallel subagent execution."
+or using --subagents flag for sequential subagent execution."
 ```
 
 ---
@@ -451,7 +453,7 @@ estimated_tokens: [total]k
 ## Next Steps
 
 1. Run Readiness Gate (verify all specs can be created)
-2. If --subagents OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (parallel where independent)
+2. If --subagents OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (sequential — fresh context per step)
 3. If inline (step_count < 5 AND no --subagents): brain-task Path F executes micro-steps sequentially without parallel dispatch
 Note: Expanded plans (plan_type: expanded) ALWAYS route to Path F. Path E handles only legacy standard plans.
 4. Update status after each micro-step
@@ -659,7 +661,7 @@ Cross-reference each micro-step against:
 **Budget warning threshold:** If total > 80k tokens:
 ```
 WARNING: This plan estimates ~{N}k tokens.
-Recommendation: Use --subagents flag for parallel subagent execution,
+Recommendation: Use --subagents flag for sequential subagent execution,
 or split into 2 sessions at micro-step M{breakpoint}.
 ```
 

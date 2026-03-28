@@ -22,16 +22,16 @@ const path = require('path');
 function parsePlan(content) {
   const tasks = [];
 
-  // Split on task headers: ### Task N: Title
+  // Split on task headers: ### Task N: Title or ### Micro-Step MN: Title
   // Use a regex that matches at the start of a line
-  const blocks = content.split(/(?=^### Task \d+:)/m);
+  const blocks = content.split(/(?=^### (?:Task \d+|Micro-Step M\d+):)/m);
 
   for (const block of blocks) {
-    const titleMatch = block.match(/^### Task (\d+): (.+)$/m);
+    const titleMatch = block.match(/^### (?:Task (\d+)|Micro-Step M(\d+)): (.+)$/m);
     if (!titleMatch) continue;
 
-    const taskNum = parseInt(titleMatch[1], 10);
-    const title = titleMatch[2].trim();
+    const taskNum = parseInt(titleMatch[1] || titleMatch[2], 10);
+    const title = (titleMatch[3] || '').trim();
 
     // Extract files block: between **Files:** and the first checkbox or separator
     const files = [];

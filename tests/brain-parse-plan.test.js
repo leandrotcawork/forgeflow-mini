@@ -112,4 +112,22 @@ describe('parsePlan', function () {
     assert.strictEqual(result[0].task, 42);
   });
 
+  it('parses Micro-Step format (brain-plan output format)', function () {
+    const md = `
+### Micro-Step M1: Write auth handler
+
+**Files:**
+- Create: \`src/auth.js\`
+
+- [ ] **Step 1: Write the failing test**
+- [ ] **Step 2: Implement handler**
+`;
+    const result = parsePlan(md);
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].task, 1);
+    assert.strictEqual(result[0].title, 'Write auth handler');
+    assert.strictEqual(result[0].files[0].action, 'create');
+    assert.strictEqual(result[0].steps.length, 2);
+  });
+
 });
