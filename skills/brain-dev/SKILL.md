@@ -1,11 +1,11 @@
 ---
 name: brain-dev
-description: Primary entry point for ALL developer requests — build, fix, debug, review, question, refactor. Classifies intent silently, evaluates against brain knowledge, routes to brain-plan (build/refactor), brain-consult (fix/debug/review/question), or brain-task directly (trivial builds score < 20). Replaces /brain-decision as the developer-facing command.
+description: Primary entry point for ALL developer requests — build, fix, debug, review, question, refactor. Pure classifier (~500-800 tokens, zero DB queries). Extracts retrieval keywords, routes to brain-plan (build/refactor), brain-consult (fix-investigate/debug/review/question), or brain-task directly (trivial builds score < 20, fix-known).
 ---
 
 # brain-dev — Intelligent Entry Point
 
-**Use this for everything.** Build, fix, investigate, question, refactor — start here. brain-dev classifies your request, evaluates it silently against what the brain knows, and routes to the right skill. You don't need to think about which skill to call.
+**Use this for everything.** Build, fix, investigate, question, refactor — start here. brain-dev classifies your request in ~500-800 tokens (zero DB queries), extracts retrieval keywords, and routes to the right skill. You don't need to think about which skill to call.
 
 ---
 
@@ -24,7 +24,8 @@ Example: "implement product recommendations" → 2026-03-27-product-recommendati
 | Intent | Signals | Routes to |
 |--------|---------|-----------|
 | **build** | "implement", "add", "create", "build", "make" | brain-plan → subagents |
-| **fix** | "fix", "broken", "not working", "error", "failing" | brain-consult (investigation) → brain-task if fix confirmed. If cause is already known and fix is clear, treat as build intent instead. |
+| **fix-investigate** | symptom described: "not working", "getting error", "fails silently", "broken" | brain-consult (investigation) → brain-task if fix identified |
+| **fix-known** | specific change described: "fix the null check in auth.js", "change X to Y" | brain-task directly (same path as build) |
 | **debug** | "why is", "investigate", "figure out", "trace", "debug", "isn't working" | brain-consult (research mode, Opus) |
 | **review** | "is this right", "should we", "best approach", "review this" | brain-consult (consensus mode) |
 | **question** | "how does", "explain", "what is", "can we", "what's the best" | brain-consult (quick/research) |
@@ -60,74 +61,37 @@ Score-based (non-debug intents only):
 
 **Plan mode activates when:** score ≥ 50, OR type = architectural, OR risk = critical, OR `--plan` flag passed.
 
-### Step 1e: Silent brain evaluation
+### Step 1e: Extract retrieval keywords
 
-Load sinapses relevant to the classified domain:
+Extract 2-3 keywords from the developer's request. Pure text extraction — no DB query needed.
 
-```sql
-SELECT id, title, content, weight, tags
-FROM sinapses
-WHERE region LIKE '%{domain}%'
-ORDER BY weight DESC
-LIMIT 5
-```
+Rules:
+- Pick nouns and domain terms, not verbs ("fix the auth token refresh" → `["auth", "token", "refresh"]`)
+- Max 3 keywords — more dilutes FTS5 precision
+- If the request is vague ("it's broken"), use the domain as the single keyword (e.g., `["backend"]`)
 
-Evaluate the request against loaded sinapses:
-1. Does this conflict with any documented architectural sinapse?
-2. Are there missing dependencies (other things that must change for this to work)?
-3. Is there a better documented pattern in the sinapses?
-4. What are the consequences on other domains?
+These keywords are passed downstream via dev-context. brain-map uses them for associative retrieval (FTS5 + spreading activation).
 
 ### Step 1f: Write dev-context handoff file
 
 Write `.brain/working-memory/dev-context-{task_id}.md`:
 
-```markdown
+```yaml
 ---
 task_id: {task_id}
-intent: {build|fix|debug|review|question|refactor}
+intent: {build|fix-investigate|fix-known|debug|review|question|refactor}
 domain: {domain}
-complexity_score: {N}
+score: {N}
 model: {haiku|sonnet|codex|opus}
 plan_mode: {true|false}
+keywords: ["{kw1}", "{kw2}", "{kw3}"]
 created_at: {ISO8601}
 ---
 
-## Task
-
 {developer's original request, verbatim — do not paraphrase}
-
-## Classification
-
-- Intent: {intent}
-- Domain: {domain}
-- Risk: {risk}
-- Complexity: {score}/100
-
-## Brain Evaluation
-
-{One of the following:}
-No concerns. Approach appears consistent with existing patterns.
-
-OR
-
-Concern: {description of conflict or missing dependency}. See sinapse [[sinapse-id]].
-
-OR
-
-Better alternative: {description} — see [[sinapse-id]]. Question for brain-plan: {the question brain-plan should ask the developer}.
-
-## Relevant Sinapses (pre-loaded — brain-plan should not re-query these)
-
-- [[sinapse-id]]: {title}
-- [[sinapse-id]]: {title}
-
-## Model Selection
-
-- Model: {model}
-- Plan mode: {true|false}
-- Reason: {one-sentence reason}
 ```
+
+No sinapses. No concerns. No brain evaluation. Just classification metadata + keywords. Context loading is owned by brain-map (called from brain-task Step 1).
 
 ---
 
@@ -148,7 +112,8 @@ Then route:
 |-----------|-------|
 | build or refactor AND score < 20 | Invoke `/brain-task` directly (Haiku, no plan) with task_id from dev-context |
 | build or refactor AND score ≥ 20 | Invoke `/brain-plan` — passes task_id so brain-plan reads dev-context |
-| fix (investigation needed), debug, review, or question | Invoke `/brain-consult` with task description |
+| fix-investigate / debug / review / question | Invoke `/brain-consult` with task description |
+| fix-known | Invoke `/brain-task` directly (same as build < 20) |
 
 ---
 
@@ -225,11 +190,9 @@ Agent(
   prompt: """
 Review the implementation of Task {N}: {title} for spec compliance.
 
-## Task Spec
-
-{paste FULL task text from plan}
-
 ## What to check
+
+Run `git diff HEAD~1` to see exactly what changed. Then verify against the task requirements:
 
 1. Was EVERYTHING in the spec implemented? List any gaps.
 2. Was ANYTHING added that was NOT in the spec? List extras.
@@ -260,8 +223,8 @@ Agent(
   prompt: """
 Review Task {N}: {title} for code quality.
 
-First run: `git log --oneline -3` to see recent commits.
-Read only the files listed as changed in those commits.
+Run `git diff HEAD~1` to see exactly what changed.
+Read only the changed files.
 
 ## Check for
 
@@ -311,4 +274,4 @@ After all tasks complete:
 
 ---
 
-**Created:** 2026-03-27 | **Replaces:** brain-decision (developer-facing), brain-aside (absorbed into brain-consult) | **Version:** v0.9.0
+**Created:** 2026-03-27 | **Updated:** 2026-03-28 | **Replaces:** brain-decision (deleted), brain-aside (deleted) | **Version:** v0.9.1
