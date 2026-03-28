@@ -2,6 +2,33 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.9.1] — 2026-03-28
+
+### Added
+- **Associative retrieval in brain-map** — FTS5 + spreading activation (tag expansion). Two-step SQL query (~5ms, zero LLM) replaces weight-only ranking. Loads 3-4 relevant sinapses instead of 5 generic heavy ones. Brain-inspired: direct activation (keyword match) then spreading activation (related tags surface connected sinapses).
+- **Keyword extraction in brain-dev** — 2-3 retrieval keywords extracted during classification and passed downstream via dev-context file. Enables associative retrieval without extra LLM cost.
+- **Mermaid architecture diagram in README** — full visual flow from developer input through classification, routing, planning, and subagent dispatch.
+
+### Removed
+- **brain-decision** — fully absorbed into brain-dev. File deleted. All cross-references updated across 10+ skill files.
+- **brain-aside** — fully deleted (was deprecated stub since v0.9.0). Pipeline check lives in brain-consult Pre-Step.
+- **codex-invoke.js** — stub script deleted. Codex invocation handled inline in brain-task.
+- **brain-task Step 2** — LLM context reformatting pass removed. Context packet from brain-map used directly by the LLM.
+- **brain-dev Phase 1e** — sinapse loading removed from brain-dev. brain-dev is now a pure classifier (zero DB queries, ~500-800 tokens).
+
+### Changed
+- **brain-dev** — pure classifier: classify intent (7 intents including fix-investigate/fix-known split), calculate score, select model, extract keywords, write slim dev-context, route. No brain.db queries.
+- **brain-task** — simplified to 3 steps: Load Context (brain-map) → Implement + Verify → Post-task. CASE handling updated for brain-dev.
+- **brain-parse-plan.js** — simplified to extract task + title + fullText only. Removed broken files/steps parsing. 5 tests.
+- **brain-plan** — Phase 0 reads slim dev-context (keywords + classification only). Removed brain-decision references. Fixed phantom `type == critical` condition.
+- **brain-consult** — updated relationship table: brain-decision removed, brain-aside marked deleted, brain-task suggests brain-dev.
+
+### Performance
+- **Context loading:** ~6-9k tokens (3-4 relevant sinapses) instead of ~10-15k (5 generic ones)
+- **brain-dev classification:** ~500-800 tokens (was ~2-3k with sinapse loading)
+- **brain-task:** one fewer LLM pass per task (Step 2 removed)
+- **Reviewer subagents:** read git diff instead of re-pasted spec (saves ~2-8k tokens per review)
+
 ## [0.9.0] — 2026-03-27
 
 ### Added

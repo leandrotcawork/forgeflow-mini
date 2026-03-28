@@ -3,16 +3,16 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.9.0-blue" alt="Version 0.9.0">
+  <img src="https://img.shields.io/badge/Version-0.9.1-blue" alt="Version 0.9.1">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
-  <img src="https://img.shields.io/badge/Skills-16-orange" alt="16 Skills">
+  <img src="https://img.shields.io/badge/Skills-15-orange" alt="15 Skills">
   <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
 **Every task builds the brain.** ForgeFlow maintains a persistent knowledge system that remembers architecture patterns, learns from failures, and routes tasks to the right model. Knowledge compounds across sessions -- the 50th task runs smarter than the first.
 
-**Intelligent routing with subagent dispatch.** Describe what you need. brain-decision classifies complexity (0-100), selects the optimal model (Haiku/Sonnet/Codex/Opus), and dispatches to subagents for speed and token efficiency. Sonnet tasks run as isolated subagents (76% main context savings). Complex tasks run inline with full context.
+**Intelligent routing with subagent dispatch.** Describe what you need. brain-dev classifies complexity (0-100), selects the optimal model (Haiku/Sonnet/Codex/Opus), and dispatches to subagents for speed and token efficiency. Sonnet tasks run as isolated subagents (76% main context savings). Complex tasks run inline with full context.
 
 **Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Eight optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
 
@@ -62,7 +62,6 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Record a failure | `/brain-lesson "what failed"` | Captures lesson with confidence scoring |
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses/lessons, optionally researches docs or gets Codex opinion |
-| Quick side question | `/brain-aside` | Pipeline interrupt -- saves state, answers without context loading **(deprecated — use brain-consult)** |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
 | Upgrade from older version | `/brain-init --upgrade` | Adds v0.7.0 features (FTS5, consult-log) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
@@ -384,7 +383,7 @@ You want to...
     |   |                            Research: "why is this error..."
     |   |                            --consensus: "which approach..."
     |   |
-    |   +-- Mid-pipeline? -------> /brain-consult (deprecated: /brain-aside → use /brain-consult)
+    |   +-- Mid-pipeline? -------> /brain-consult
     |
     +-- Build/fix/implement? ----> /brain-task "description"
     |   |                            Auto-routes by complexity (Haiku/Sonnet/Codex/Opus)
@@ -416,21 +415,66 @@ You want to...
 
 Every task flows through a self-contained pipeline. No hooks required -- hooks enhance when present.
 
-```
-Developer invokes: /brain-dev [anything]
-  → brain-dev classifies + evaluates silently
-  → routes to brain-plan (build/refactor) or brain-consult (fix/debug/question)
-  → brain-plan: Q&A (1–3 questions) → approach proposals → TDD plan
-  → brain-dev dispatches brain-task as fresh subagent per step
+```mermaid
+flowchart TB
+    USER["Developer: /brain-dev 'anything'"]
 
-brain-decision -> brain-task (Steps 1-6, all inline or subagent) -> brain-document -> brain-consolidate
-   classify       Step 1: Load context (brain-map)
-   route          Step 2: Generate execution context
-   model select   Step 3: Implement (inline OR subagent dispatch)
-                  Step 3.5: Verify (brain-verify + brain-codex-review)
-                  Step 4: Task-completion record
-                  Step 5: Activity log
-                  Step 6: Archive + brain-document + commit
+    subgraph BRAINDEV["brain-dev (classifier, ~500 tokens, 0 DB queries)"]
+        CL["Classify intent<br/>build | fix-investigate | fix-known<br/>debug | review | question | refactor"]
+        SC["Score complexity + select model"]
+        KW["Extract 2-3 retrieval keywords"]
+        DC["Write dev-context<br/>(intent, domain, score, model, keywords)"]
+    end
+
+    subgraph PLAN_PATH["Build / Refactor (score ≥ 20)"]
+        BP0["brain-plan Phase 0<br/>Read dev-context<br/>Q&A: 1-3 questions<br/>2 approach proposals<br/>Developer approval gate"]
+        BP1["brain-plan Stage 1-5<br/>Context loaded via brain-map<br/>Generate TDD micro-steps"]
+        PLAN["Plan file written"]
+    end
+
+    subgraph DISPATCH["brain-dev Phase 3: Subagent Loop"]
+        PARSE["brain-parse-plan.js<br/>Extract task + title + fullText<br/>(zero LLM, ~5ms)"]
+
+        subgraph PERTASK["Per Task (sequential)"]
+            IMPL["Implementer subagent<br/>(brain-task worker)"]
+            SPECR["Spec reviewer<br/>(Haiku, reads git diff)"]
+            QUALR["Quality reviewer<br/>(Haiku, reads git diff)"]
+        end
+    end
+
+    subgraph CONSULT_PATH["Fix-investigate / Debug / Review / Question"]
+        BC["brain-consult<br/>FTS5 keyword retrieval<br/>Pipeline check (single)<br/>Quick | Research | Consensus"]
+    end
+
+    subgraph TASK_DIRECT["Fix-known / Build (score < 20)"]
+        BT["brain-task<br/>Step 1: brain-map (FTS5 + spreading activation)<br/>Step 2: Implement + verify<br/>Step 3: Post-task"]
+    end
+
+    subgraph BRAINMAP["brain-map: Associative Retrieval (~5ms)"]
+        FTS["Step 1: FTS5 keyword match<br/>2 sinapses (direct activation)"]
+        SPREAD["Step 2: Tag expansion<br/>2 sinapses (spreading activation)"]
+        CTX["context-packet<br/>3-4 relevant sinapses<br/>~6-9k tokens"]
+    end
+
+    USER --> CL --> SC --> KW --> DC
+
+    DC -->|"build/refactor ≥ 20"| BP0
+    DC -->|"fix-known / build < 20"| BT
+    DC -->|"fix-investigate / debug<br/>review / question"| BC
+
+    BP0 --> BP1 --> PLAN --> PARSE --> IMPL
+    IMPL --> SPECR --> QUALR
+
+    BC -->|"fix identified"| BT
+
+    BT --> FTS
+    FTS --> SPREAD --> CTX
+    CTX --> BT
+
+    style BRAINDEV fill:#51cf66,color:#000
+    style BRAINMAP fill:#339af0,color:#fff
+    style PARSE fill:#51cf66,color:#000
+    style BC fill:#339af0,color:#fff
 ```
 
 ### Subagent Dispatch
@@ -449,7 +493,7 @@ Subagents get full context inlined in their prompt (not file references). Every 
 
 ### Intelligent Routing
 
-brain-decision scores every task on a 0-100 complexity scale:
+brain-dev scores every task on a 0-100 complexity scale:
 
 - **Domain**: cross-domain +30, backend +10
 - **Risk**: critical +35, high +20, medium +5
@@ -522,12 +566,11 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 +-- brain.db               SQLite index (sinapses + lessons + links + state + FTS5)
 ```
 
-### Skill Map (16 Skills)
+### Skill Map (15 Skills)
 
 | Skill | Type | Purpose |
 |---|---|---|
-| `brain-dev` | Router | Primary entry point — classifies ANY request, evaluates against brain knowledge, routes to brain-plan/brain-consult/brain-task. Replaces brain-decision as the developer-facing command. |
-| `brain-decision` | Router | Classifies, scores, routes, circuit breaker check |
+| `brain-dev` | Router | Primary entry point — classifies ANY request (~500 tokens, 0 DB), extracts retrieval keywords, routes to brain-plan/brain-consult/brain-task. |
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
 | `brain-task` | Orchestrator | Dispatches subagents or implements inline, manages pipeline |
 | `brain-plan` | Planner | Cortex-Linked TDD planner — micro-steps, sinapse linking, file design, self-review gates |
@@ -541,7 +584,6 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
 | `brain-eval` | Evaluator | Define success criteria before implementation |
 | `brain-consult` | Consultant | Brain-informed Q&A — 3 modes (Quick/Research/Consensus), FTS5 retrieval, threading |
-| `brain-aside` | Interrupt Handler | Pipeline interrupt — saves state, no context loading **(deprecated — use brain-consult)** |
 | `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
 ### Hook Architecture (9 Hooks)
