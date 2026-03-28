@@ -46,10 +46,10 @@
 In `scripts/brain-post-task.js`, find the line:
 
 ```
-// Circuit breaker state computation
+// Step 6.5: Circuit breaker state computation
 ```
 
-(This is approximately line 439, before `computeCircuitBreakerNextState`.)
+(This is line 440, before `computeCircuitBreakerNextState`.)
 
 Insert BEFORE that line:
 
@@ -58,12 +58,15 @@ Insert BEFORE that line:
 // Lesson trigger computation
 // ---------------------------------------------------------------------------
 
-function computeLessonTrigger(status, brainState) {
+function computeLessonTrigger(status, brainState, taskId) {
   var attempts = 0;
   if (brainState && brainState.strategy_rotation && brainState.strategy_rotation.attempts) {
-    attempts = brainState.strategy_rotation.attempts.length || 0;
+    // Only count attempts for the CURRENT task — stale attempts from a previous task must not trigger
+    if (brainState.strategy_rotation.task_id === taskId) {
+      attempts = brainState.strategy_rotation.attempts.length || 0;
+    }
   }
-  if (attempts >= 2) return 'full';    // struggled — rich context available
+  if (attempts >= 2) return 'full';    // struggled (success or failure) — rich context available
   if (status === 'failure') return 'draft';  // simple failure — raw data only
   return null;                               // clean success — no episode
 }
@@ -72,19 +75,20 @@ function computeLessonTrigger(status, brainState) {
 
 - [ ] **Step 2: Call the function in main() and add to output**
 
-In the `main()` function, find the output object assembly. It starts with:
+In the `main()` function, find the line that says:
 
 ```javascript
-    var output = {
-      task_completion_file: taskCompletionFile,
+    // Update state files
+    diag('Updating brain-state.json...');
+    updateBrainState(brainPath, args);
 ```
 
-Insert these lines BEFORE that `var output = {` line:
+Insert these lines BEFORE `// Update state files` (so the brain state is read BEFORE it gets modified):
 
 ```javascript
-    // Lesson trigger — read brain state before it gets updated
+    // Lesson trigger — read brain state BEFORE updateBrainState() modifies it
     var brainStateForLesson = readJSON(path.join(brainPath, 'working-memory', 'brain-state.json')) || {};
-    var lessonTrigger = computeLessonTrigger(args.status, brainStateForLesson);
+    var lessonTrigger = computeLessonTrigger(args.status, brainStateForLesson, args.taskId);
     var lessonContext = null;
     if (lessonTrigger) {
       var attempts = (brainStateForLesson.strategy_rotation && brainStateForLesson.strategy_rotation.attempts) || [];
@@ -97,11 +101,12 @@ Insert these lines BEFORE that `var output = {` line:
 
 ```
 
-Then add two fields to the output object, after `circuit_breaker_state`:
+Then add two fields to the output object. Find `var output = {` (line ~646) and add after `circuit_breaker_state: cbResult.state`:
 
 Find:
 ```javascript
       circuit_breaker_state: cbResult.state
+    };
 ```
 
 Replace with:
@@ -109,6 +114,7 @@ Replace with:
       circuit_breaker_state: cbResult.state,
       lesson_trigger: lessonTrigger,
       lesson_context: lessonContext
+    };
 ```
 
 - [ ] **Step 3: Export the function**
@@ -153,50 +159,53 @@ Read `tests/brain-post-task.test.js` to understand the current structure.
 
 - [ ] **Step 2: Add 3 test cases for computeLessonTrigger**
 
-At the end of the test file (before the final closing brace or after the last `describe` block), add:
+The test file uses a custom harness (`test()`, `assert()`, `assertEqual()`), NOT `node:test`. Find `runTests();` at the end of the file. Insert BEFORE that line:
 
 ```javascript
-describe('computeLessonTrigger', function () {
+// ---------------------------------------------------------------------------
+// computeLessonTrigger tests
+// ---------------------------------------------------------------------------
 
-  it('returns full when strategy_rotation has 2+ attempts', function () {
-    var result = computeLessonTrigger('success', {
-      strategy_rotation: { attempts: [{ strategy: 'retry' }, { strategy: 'different' }] }
-    });
-    assert.strictEqual(result, 'full');
-  });
+test('computeLessonTrigger returns full when strategy_rotation has 2+ attempts for current task', function () {
+  var result = mod.computeLessonTrigger('success', {
+    strategy_rotation: { task_id: 'task-123', attempts: [{ strategy: 'retry' }, { strategy: 'different' }] }
+  }, 'task-123');
+  assertEqual(result, 'full');
+});
 
-  it('returns draft when status is failure and no strategy rotation', function () {
-    var result = computeLessonTrigger('failure', {});
-    assert.strictEqual(result, 'draft');
-  });
+test('computeLessonTrigger returns null when attempts are from a different task', function () {
+  var result = mod.computeLessonTrigger('success', {
+    strategy_rotation: { task_id: 'task-old', attempts: [{ strategy: 'retry' }, { strategy: 'different' }] }
+  }, 'task-123');
+  assertEqual(result, null);
+});
 
-  it('returns null when status is success and no attempts', function () {
-    var result = computeLessonTrigger('success', {});
-    assert.strictEqual(result, null);
-  });
+test('computeLessonTrigger returns draft when status is failure and no strategy rotation', function () {
+  var result = mod.computeLessonTrigger('failure', {}, 'task-123');
+  assertEqual(result, 'draft');
+});
 
+test('computeLessonTrigger returns null when status is success and no attempts', function () {
+  var result = mod.computeLessonTrigger('success', {}, 'task-123');
+  assertEqual(result, null);
 });
 ```
 
-Make sure `computeLessonTrigger` is imported from the script at the top of the test file:
-
-```javascript
-var { computeLessonTrigger } = require('../scripts/brain-post-task.js');
-```
+Note: `mod` is already imported at the top of the file as `var mod = require('../scripts/brain-post-task.js');`. No additional import needed.
 
 - [ ] **Step 3: Run tests**
 
 ```bash
-node --test tests/brain-post-task.test.js
+node tests/brain-post-task.test.js
 ```
 
-Expected: all tests passing (existing + 3 new).
+Expected: all tests passing (existing + 4 new). Note: this file uses `node tests/...` NOT `node --test`.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add -f tests/brain-post-task.test.js
-git commit -m "test(brain-post-task): add 3 tests for computeLessonTrigger"
+git commit -m "test(brain-post-task): add 4 tests for computeLessonTrigger (task_id check, draft, null)"
 ```
 
 ---
@@ -451,7 +460,17 @@ created_at: {ISO8601}
 brain-consolidate will process this episode and propose a sinapse update during the next consolidation cycle.
 ```
 
-- [ ] **Step 3: Update anti-patterns table**
+- [ ] **Step 3: Clean lesson references from output templates and other sections**
+
+Search the entire file for remaining lesson references and update:
+
+- Find any `[[lesson-XXXX]]` notation in output templates (Quick/Research/Consensus mode output sections) → replace with `(lessons are now embedded in sinapse content)` or remove the line
+- Find `{M} lessons` in brain context footer lines → remove or replace with sinapse count only
+- Find `"lesson_ids": ["{loaded lesson IDs}"]` in the audit JSON template → remove this field
+- Find `hippocampus + lessons only` in Failure Scenarios table → replace with `hippocampus + sinapses only`
+- Find the top description mentioning `lessons` (e.g., "sinapses, conventions, lessons") → update to "sinapses, conventions"
+
+- [ ] **Step 4: Update anti-patterns table**
 
 Find:
 ```
@@ -463,7 +482,7 @@ Replace with:
 | Skipping episode capture on corrections | Loses learning opportunity | Always write episode file when a correction is identified |
 ```
 
-- [ ] **Step 4: Update relationship table**
+- [ ] **Step 5: Update relationship table**
 
 Find the brain-lesson row:
 ```
@@ -475,12 +494,12 @@ Replace with:
 | **brain-lesson** | Deleted. brain-consult writes episode files directly to working-memory. brain-consolidate processes them into sinapse updates. |
 ```
 
-- [ ] **Step 5: Update skill count footer**
+- [ ] **Step 6: Update skill count footer**
 
 Find: `Skill Count: 15 -> 16` (or whatever the current count says)
 Replace with: `Skill Count: 14`
 
-- [ ] **Step 6: Verify**
+- [ ] **Step 7: Verify**
 
 ```bash
 node -e "
@@ -497,7 +516,7 @@ if (!checks.every(function(c) { return c[1]; })) process.exit(1);
 "
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add skills/brain-consult/SKILL.md
@@ -546,6 +565,9 @@ Replace with: `| Writing lesson files directly | Lessons are now episode-based |
 
 Find: `| Mixing patterns with failure stories | Confuses architectural advice with debugging notes | Keep sinapses (patterns) and lessons (failures) separate |`
 Replace with: `| Ignoring anti-patterns | Loses failure knowledge | Capture as episode, brain-consolidate merges into sinapse ## Lessons Learned |`
+
+Also find: `- Anti-pattern discoveries flagged for `/brain-lesson` routing`
+Replace with: `- Anti-pattern discoveries captured as episode files in working-memory`
 
 - [ ] **Step 2: Update brain-dev Phase 3c**
 
@@ -602,7 +624,7 @@ In `hooks/brain-hooks.js`, find the sessionEnd function's cleanup section. After
     for (var i = 0; i < episodeFiles.length; i++) {
       var epPath = path.join(wmDir, episodeFiles[i]);
       var stat = fs.statSync(epPath);
-      if (now - stat.mtimeMs > thirtyDaysMs) {
+      if (Date.now() - stat.mtimeMs > thirtyDaysMs) {
         fs.unlinkSync(epPath);
         episodesSwept++;
       }
@@ -929,11 +951,11 @@ function main() {
     }
 
     // Extract the Rule section
-    var ruleMatch = content.match(/## Rule\n([\s\S]*?)(?=\n## |\n---|\Z)/);
+    var ruleMatch = content.match(/## Rule\n([\s\S]*?)(?=\n## |\n---|$)/);
     var rule = ruleMatch ? ruleMatch[1].trim() : null;
     if (!rule) {
       // Try to extract from ## Correct as fallback
-      var correctMatch = content.match(/## Correct\n([\s\S]*?)(?=\n## |\n---|\Z)/);
+      var correctMatch = content.match(/## Correct\n([\s\S]*?)(?=\n## |\n---|$)/);
       rule = correctMatch ? correctMatch[1].trim() : null;
     }
 
@@ -961,6 +983,7 @@ function main() {
       // Search for sinapse file by ID
       var sinapseFiles = [];
       findFiles(path.join(absPath, 'cortex'), sinapseFiles);
+      findFiles(path.join(absPath, 'sinapses'), sinapseFiles);
       for (var s = 0; s < sinapseFiles.length; s++) {
         var sc = fs.readFileSync(sinapseFiles[s], 'utf-8');
         if (sc.includes('id: ' + parentSinapse) || sc.includes('id: "' + parentSinapse + '"')) {
@@ -1104,11 +1127,15 @@ Find the directory structure section and remove the `lessons/` line:
 
 Find Example 5 (the `/brain-lesson "ML API pagination breaks..."` example) and remove the entire example block.
 
-- [ ] **Step 8: Update Learning Loop section**
+- [ ] **Step 8: Update Example 7 brain-status output table**
+
+If the README has an example showing brain-status output with a `Lessons` column header and lesson counts, remove the `Lessons` column from that table.
+
+- [ ] **Step 9: Update Learning Loop section**
 
 Find references to `brain-lesson captures it (confidence 0.3)` and rewrite for auto-episode model.
 
-- [ ] **Step 9: Add v0.10.0 CHANGELOG entry**
+- [ ] **Step 10: Add v0.10.0 CHANGELOG entry**
 
 In `CHANGELOG.md`, insert before the `## [0.9.1]` line:
 
@@ -1147,7 +1174,7 @@ In `CHANGELOG.md`, insert before the `## [0.9.1]` line:
 
 ```
 
-- [ ] **Step 10: Verify**
+- [ ] **Step 11: Verify**
 
 ```bash
 node -e "
@@ -1167,7 +1194,7 @@ if (!checks.every(function(c) { return c[1]; })) process.exit(1);
 "
 ```
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add README.md CHANGELOG.md
