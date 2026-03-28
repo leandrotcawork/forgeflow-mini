@@ -140,7 +140,6 @@ Use the score from Step 2 to pick the model:
 Complexity | Type | Model | When | Token Budget | Use Case
 -----------|------|-------|------|--------------|----------
 **ANY** | **debugging** | **Opus** | **PRIORITY OVERRIDE — always wins, regardless of score** | 120-200k | Any "why", "investigate", "broken", "debug"
-any | debugging | Opus | Any debugging task | 120-200k | "Bug", "Stuck", "Why is this failing"
 any | debugging + critical risk | Opus (+ plan) | Critical debugging or security | 150-200k | "Data leak", "Integrity error"
 0-19 | non-debugging | Haiku | Trivial, simple fixes | 8-15k | "Fix typo", "Change color"
 20-39 | non-debugging | Sonnet | Standard single-domain implementation | 30-60k | "Add filter", "New component"
@@ -228,7 +227,7 @@ Trigger Plan Mode If:
 5. ON APPROVAL: ExitPlanMode → Step 5 (dispatch with --plan flag)
    brain-task will detect plan_type: expanded and route to Path F (dispatcher mode),
    which executes one subagent per micro-step with spec reviews.
-   If --dispatch flag is also passed, parallel dispatch is preferred for independent steps.
+   If --subagents flag is also passed, sequential subagent dispatch is used for independent steps.
 6. ON REJECTION: Preserve plan, end session
 ```
 
@@ -255,7 +254,7 @@ Sonnet:  /brain-task --sonnet --task "[description]" --task-id "[id]" --domain "
 Codex:   /brain-task --task "[description]" --task-id "[id]" --domain "[domain]" --score [N]
 Opus:    /brain-task --debug --task "[description]" --task-id "[id]" --domain "[domain]" --score [N]
 +Plan:   Add --plan flag to any of the above
-+Dispatch: Add --dispatch flag to prefer parallel subagent execution (Path F) for expanded plans
++Subagents: Add --subagents flag to use sequential subagent execution (Path F) for expanded plans
 ```
 
 **What brain-task will do after dispatch** (not your job — just for reference):

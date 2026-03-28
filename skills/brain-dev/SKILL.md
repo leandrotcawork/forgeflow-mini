@@ -24,7 +24,7 @@ Example: "implement product recommendations" → 2026-03-27-product-recommendati
 | Intent | Signals | Routes to |
 |--------|---------|-----------|
 | **build** | "implement", "add", "create", "build", "make" | brain-plan → subagents |
-| **fix** | "fix", "broken", "not working", "error", "failing" | brain-consult → brain-task if fix confirmed |
+| **fix** | "fix", "broken", "not working", "error", "failing" | brain-consult (investigation) → brain-task if fix confirmed. If cause is already known and fix is clear, treat as build intent instead. |
 | **debug** | "why is", "investigate", "figure out", "trace", "debug", "isn't working" | brain-consult (research mode, Opus) |
 | **review** | "is this right", "should we", "best approach", "review this" | brain-consult (consensus mode) |
 | **question** | "how does", "explain", "what is", "can we", "what's the best" | brain-consult (quick/research) |
@@ -148,7 +148,7 @@ Then route:
 |-----------|-------|
 | build or refactor AND score < 20 | Invoke `/brain-task` directly (Haiku, no plan) with task_id from dev-context |
 | build or refactor AND score ≥ 20 | Invoke `/brain-plan` — passes task_id so brain-plan reads dev-context |
-| fix, debug, review, or question | Invoke `/brain-consult` with task description |
+| fix (investigation needed), debug, review, or question | Invoke `/brain-consult` with task description |
 
 ---
 

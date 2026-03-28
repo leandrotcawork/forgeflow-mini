@@ -57,9 +57,7 @@ This replaces `/brain-aside`. If you previously used brain-aside to pause during
 
 **1a: Check active pipeline**
 
-Read `.brain/working-memory/brain-state.json`:
-- If `current_pipeline_step > 0`: Note the active task. Use its domain and context to inform the consultation. After answering, output the resume reminder.
-- If no active pipeline: proceed normally.
+- Pipeline state already read in Pre-Step — use its result. If pipeline is active, the resume reminder will be appended at the end of the response (Step 6e).
 
 **1b: Check conversation thread**
 

@@ -517,9 +517,9 @@ IF plan_type == "standard" OR plan_type is missing:
 
 **When:** `plan_type: expanded` in the implementation plan AND (
         (`dispatch_ready: true` AND (`step_count >= 5` OR `estimated_tokens >= 40000`))
-        OR `--dispatch` flag is explicitly set
+        OR `--subagents` flag is explicitly set
       )
-Note: If `dispatch_ready: true` but `step_count < 5` and `tokens < 40k` and `--dispatch` not set,
+Note: If `dispatch_ready: true` but `step_count < 5` and `tokens < 40k` and `--subagents` not set,
       execute micro-steps sequentially within Path F (no parallel subagents).
 
 This path is the execution engine for Cortex-Linked TDD plans produced by the upgraded brain-plan skill.
@@ -998,7 +998,7 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 | `--lightweight` | Haiku mode: Tier 1 only |
 | `--resume` | Resume interrupted task from last checkpoint |
 | `--no-subagent` | Force all execution inline, skip subagent dispatch |
-| `--dispatch` | Force Path F dispatcher mode for expanded plans |
+| `--subagents` | Force Path F dispatcher mode for expanded plans |
 
 ### Files Created
 
