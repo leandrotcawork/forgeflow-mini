@@ -480,10 +480,10 @@ Flags:
 
 | Skill | Relationship |
 |---|---|
-| **brain-aside** | Absorbed. brain-aside pipeline-check behaviour absorbed into brain-consult Pre-Step as of v0.9.0. brain-aside is deprecated — use brain-consult. |
+| **brain-aside** | Deleted. brain-aside was absorbed into brain-consult Pre-Step in v0.9.0 and fully removed in v0.9.1. Pipeline check lives in brain-consult Pre-Step. |
 | **brain-dev** | Not invoked. brain-consult skips the router entirely. If consultation reveals need for implementation, suggest /brain-task (which goes through brain-dev). |
 | **brain-map** | Not invoked as sub-skill. brain-consult does its own lightweight inline context loading (Tier 1A/1B + FTS5 Tier 2). brain-map's full 3-tier loading with context-packet generation is overkill for consultation. |
-| **brain-task** | Escalation target. When consultation evolves into implementation, suggest /brain-task. |
+| **brain-task** | Escalation target. When consultation evolves into implementation, suggest /brain-dev for full routing. |
 | **brain-lesson** | Suggestion target. When consultation reveals a learning, suggest /brain-lesson. brain-consult never creates lesson files. |
 | **brain-mckinsey** | Escalation target for high-stakes architectural decisions. If question is "should we adopt X for our entire stack?", suggest /brain-mckinsey. |
 | **brain-consolidate** | Secondary cleanup path for consult-*.json files. Primary cleanup is automatic via sessionEnd hook (7-day TTL + 50 max cap). brain-consolidate remains a fallback for missed cleanups. |
