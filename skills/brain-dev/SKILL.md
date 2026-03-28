@@ -155,7 +155,7 @@ Previous task completed: {title of previous task, or "none — this is the first
 
 ## Brain Context
 
-Read `.brain/working-memory/dev-context-{task_id}.md` for the brain evaluation and relevant sinapses.
+Read `.brain/working-memory/context-packet-{task_id}.md` for the loaded sinapses and brain context (created by brain-map at Step 1).
 
 ## Your Job
 

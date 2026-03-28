@@ -8,7 +8,7 @@ description: ContextMapper — Load 3-tier weighted sinapses for task context
 ## Pipeline Position
 
 ```
-brain-dev → brain-map → brain-task (Steps 1-6, all inline) → brain-document → brain-consolidate
+brain-dev → brain-map → brain-task (Steps 1-3) → brain-document → brain-consolidate
                   ↑ you are here
 ```
 

@@ -14,7 +14,7 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
 
 **Intelligent routing with subagent dispatch.** Describe what you need. brain-dev classifies complexity (0-100), selects the optimal model (Haiku/Sonnet/Codex/Opus), and dispatches to subagents for speed and token efficiency. Sonnet tasks run as isolated subagents (76% main context savings). Complex tasks run inline with full context.
 
-**Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Eight optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
+**Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Nine optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
 
 **Failure becomes knowledge with confidence scoring.** When something breaks, brain-lesson captures it at confidence 0.3. Evidence accumulates. At 0.7+ with 3 occurrences, brain-consolidate proposes it as a convention. Mistakes stop repeating.
 

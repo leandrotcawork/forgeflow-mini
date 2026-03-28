@@ -63,7 +63,7 @@ Rules:
 - **Prioritise ambiguity** in the task description: if the intent or scope is unclear, ask about it first.
 
 Question priority order:
-1. Any concern from dev-context (e.g., "brain-dev flagged a potential conflict with the auth sinapse — is this change meant to replace or extend the current auth flow?")
+1. Ambiguity in intent or scope (e.g., "You mentioned changing the auth flow — is this replacing the current implementation or extending it?")
 2. Implementation approach (if multiple valid approaches exist): "Should this be event-driven or synchronous?"
 3. Constraints: "Does this need to be backwards compatible?" / "Is zero-downtime deployment required?"
 
