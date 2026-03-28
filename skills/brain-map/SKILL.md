@@ -32,6 +32,11 @@ Input from brain-dev (via dev-context file):
 - Risk level: `low | medium | high | critical`
 - Task type: `feature | bugfix | refactor | debugging | architectural | unknown_pattern`
 
+### Keyword Source
+
+- **Via brain-dev path:** Read `keywords` field from `.brain/working-memory/dev-context-{task_id}.md`
+- **Direct invocation (no dev-context):** Extract 2-3 keywords from the task description inline (simple text extraction — pick nouns and domain terms)
+
 ---
 
 ### Step 2: Load Tier 1 Context (~4k tokens)
@@ -88,27 +93,41 @@ LIMIT 3
 **Domain-specific sinapses, weighted by relevance:**
 
 ```sql
--- Query 1: Domain sinapses (top 5 by weight)
-SELECT id, title, region, tags, links, weight
-FROM sinapses
-WHERE region LIKE '%{domain}%'
--- Note: For cross-domain tasks, this query expands to:
--- WHERE region LIKE 'cortex/%'
--- This loads sinapses from ALL cortex regions (backend, frontend, database, infra)
--- The ContextMapper must detect domain='cross-domain' and expand the query accordingly
-ORDER BY weight DESC
-LIMIT 5
-
--- Query 2: Cross-cutting sinapses (top 2)
-SELECT id, title, region, tags, links, weight
-FROM sinapses
-WHERE region LIKE 'sinapses/%'
-ORDER BY weight DESC
+-- Step 1: Direct activation (FTS5 keyword match, ~2ms)
+-- Keywords come from dev-context file (brain-dev) or task description (direct invocation)
+SELECT id, title, content, tags, weight,
+       rank AS fts_rank
+FROM sinapses_fts
+JOIN sinapses s ON s.rowid = sinapses_fts.rowid
+WHERE sinapses_fts MATCH '{keywords}'
+ORDER BY (s.weight * 0.6) + (rank * -0.4) DESC
 LIMIT 2
 
--- Query 3: Fetch backlinks for Tier 2 sinapses
-SELECT source_id, target_id FROM sinapse_links
-WHERE source_id IN (...)
+-- Step 2: Spreading activation (tag expansion, ~3ms)
+-- Collect tags from Step 1 results, query for sinapses sharing those tags
+SELECT id, title, content, tags, weight
+FROM sinapses
+WHERE id NOT IN ({step1_ids})
+  AND (tags LIKE '%{tag1}%' OR tags LIKE '%{tag2}%' OR tags LIKE '%{tag3}%')
+  AND region LIKE '%{domain}%'
+ORDER BY weight DESC
+LIMIT 2
+```
+
+**Associative retrieval (brain-inspired):**
+- Step 1 = direct activation: keywords from the task trigger matching sinapses via FTS5
+- Step 2 = spreading activation: tags from Step 1 results surface connected sinapses (like neurons firing along synaptic connections)
+- Total: 3-4 sinapses, all relevant to the actual task
+- Zero LLM cost — pure SQL (~5ms total)
+
+**Fallback:** If FTS5 returns < 2 results (sparse brain, new project), fall back to weight-based query:
+
+```sql
+SELECT id, title, content, tags, weight
+FROM sinapses
+WHERE region LIKE '%{domain}%'
+ORDER BY weight DESC
+LIMIT 5
 ```
 
 **Tier 2 Output (~10-15k tokens):**
@@ -208,13 +227,7 @@ generated_at: [ISO8601]
 
 ## Next: brain-task Step 2
 
-This packet will be used by brain-task to generate the model-specific context file:
-- `sonnet-context-{task_id}.md` (for Sonnet — score 20-39)
-- `codex-context-{task_id}.md` (for Codex — score 40+)
-- `opus-debug-context-{task_id}.md` (for Opus — debugging)
-- For Haiku (score < 20): no additional context file — this packet is sufficient.
-
-All model-specific files add real code examples from the codebase.
+This context packet is read directly by brain-task for implementation. No reformatting pass — the LLM reads the packet as-is.
 ```
 
 ---
@@ -282,13 +295,11 @@ Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If
 
 ## Token Budget Per Tier
 
-| Tier | Tokens | Content | When Loaded |
-|------|--------|---------|-------------|
-| Tier 1 | ~4k | Hippocampus (condensed) + top 3 lessons + task | Always |
-| Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting (top 2) + backlinks | Standard + Codex + Opus |
-| Tier 3 | ~5k | Additional linked sinapses | Only if complexity >= 75 or critical |
-| **Lightweight** | **~4k** | **Tier 1 only** | **Haiku tasks (complexity < 20)** |
-| **Typical total** | **~16-20k** | Tier 1 + 2 | Per task |
+| Tier | Model | Retrieval | Sinapse Count |
+|------|-------|-----------|---------------|
+| Tier 1 | Haiku | FTS5 only (no spreading) | 2 |
+| Tier 1+2 | Sonnet/Codex | FTS5 + spreading activation | 2 + 2 = 4 |
+| Tier 1+2+3 | Architectural | FTS5 + spreading + on-demand deep | 4 + N |
 
 ---
 
@@ -326,10 +337,8 @@ brain-map is working when:
 
 1. brain-task Step 1 calls brain-map
 2. brain-map outputs context-packet-{task_id}.md
-3. brain-task Step 2 reads context-packet-{task_id}.md
-4. brain-task generates model-specific context file from it (sonnet-context, codex-context, or opus-debug-context)
-5. Model implements using its context file (Codex via MCP, Sonnet/Opus via Claude)
-6. At completion: all context files archived by brain-task Step 6 (inline)
+3. brain-task reads context-packet-{task_id}.md directly for implementation
+4. At completion: context files archived by brain-task post-task step
 
 ---
 
