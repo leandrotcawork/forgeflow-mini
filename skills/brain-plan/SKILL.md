@@ -60,7 +60,7 @@ Rules:
 - **One question per message.** Wait for the answer before asking the next.
 - **Maximum 3 questions.** Stop after 3 even if more would be useful.
 - **Skip questions** whose answers are obvious from the task description.
-- **Prioritise concerns** from brain-dev: if a concern was flagged, ask about it first.
+- **Prioritise ambiguity** in the task description: if the intent or scope is unclear, ask about it first.
 
 Question priority order:
 1. Any concern from dev-context (e.g., "brain-dev flagged a potential conflict with the auth sinapse — is this change meant to replace or extend the current auth flow?")
@@ -99,7 +99,7 @@ Wait for developer's choice before proceeding to Stage 1.
 After developer selects or approves an approach:
 - Note the chosen approach
 - Proceed to Stage 1 (Analyse Context Packet) — all micro-steps must reflect the chosen approach
-- If dev-context was present: skip re-loading sinapses already listed in dev-context.relevant_sinapses
+- If dev-context was present: use the keywords from dev-context to inform your understanding of the task scope
 
 ---
 

@@ -51,7 +51,7 @@ Resume when ready: /brain-task --resume
 
 - If `current_pipeline_step == 0` or file doesn't exist: no note needed. Proceed normally.
 
-This replaces `/brain-aside`. If you previously used brain-aside to pause during a pipeline, use brain-consult instead.
+This pipeline check is built into brain-consult. Use brain-consult for any question during an active pipeline.
 
 ### Step 1: Pipeline Check + Question Analysis
 
@@ -449,7 +449,7 @@ Flags:
 | Creating context-packet files | brain-consult is ephemeral | Context in-memory; only two post-response artifacts persist: audit JSON and consult-log entry |
 | Invoking brain-map as sub-skill | Too heavy, loads 5+2 sinapses | Inline Tier 1A/1B + FTS5 Tier 2 (max 3) |
 | Invoking brain-dev for simple questions | Overkill for consultation | Direct execution — brain-consult is self-contained |
-| Answering without brain context | Same failure as brain-aside | Always load Tier 1A minimum |
+| Answering without brain context | Defeats the purpose of brain-informed consultation | Always load Tier 1A minimum |
 | More than 3 MCP calls in Research | Diminishing returns | Stop at clarity after first authoritative answer |
 | Forcing Codex when unavailable | Blocks response | Fall back Claude-only with note |
 | Creating lesson files directly | Violates brain-lesson ownership | Suggest `/brain-lesson`, never create |

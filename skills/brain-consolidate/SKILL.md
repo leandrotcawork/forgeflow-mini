@@ -278,7 +278,7 @@ This catches related lessons that brain-lesson flagged independently but share t
 
 **Note:** Per-task archival is owned by brain-task Step 6 (runs inline after each task). By the time brain-consolidate runs, context files should already be in `.brain/progress/completed-contexts/`.
 
-If any context files remain in `.brain/working-memory/` that should have been archived (check for `sonnet-context-*.md`, `codex-context-*.md`, `opus-debug-context-*.md`, `context-packet-*.md`):
+If any context files remain in `.brain/working-memory/` that should have been archived (check for `context-packet-*.md`, `dev-context-*.md`, `implementation-plan-*.md`):
 - Move them to `.brain/progress/completed-contexts/[task-id]-[original-name].md`
 - Flag: "brain-task Step 6 may not have completed for task [task-id] — archival recovered by consolidation"
 

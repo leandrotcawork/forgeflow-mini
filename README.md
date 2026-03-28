@@ -334,7 +334,7 @@ Consolidation complete:
 
 ### Example 9: Quick Pipeline Interrupt (brain-consult)
 
-Mid-task, you need to ask something unrelated. Use `/brain-consult` — it handles pipeline interrupts as of v0.9.0 (`/brain-aside` is deprecated):
+Mid-task, you need to ask something unrelated. Use `/brain-consult` — it automatically detects active pipelines and appends a resume reminder:
 
 ```
 [Brain-task running Step 3 for task 2026-03-27-ml-cache...]

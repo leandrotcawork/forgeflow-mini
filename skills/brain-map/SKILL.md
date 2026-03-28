@@ -256,7 +256,7 @@ Tier 3 (on-demand):
   - Available: 2 additional sinapses if needed (--deep flag)
 
 Tokens: ~4k (Tier 1) + ~12k (Tier 2) = ~16k used
-Ready for: brain-task Step 2 (generate codex-context.md)
+Ready for: brain-task Step 2 (implement + verify)
 
 Output: .brain/working-memory/context-packet-{task_id}.md
 ```

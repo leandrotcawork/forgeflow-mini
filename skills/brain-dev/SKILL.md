@@ -268,7 +268,7 @@ After all tasks complete:
 | Asking questions before classifying | Classification is always first | Classify silently, only ask if intent is truly unclassifiable |
 | Routing trivial tasks (score < 20) to brain-plan | Overkill for Haiku-level work | Route directly to brain-task |
 | Dispatching parallel subagents | Git conflicts, hard to review | Always sequential — fresh context is the speed gain |
-| Re-loading sinapses that brain-plan will load | Double loading wastes tokens | brain-plan reads dev-context.relevant_sinapses |
+| Re-loading sinapses in brain-dev | brain-dev is a pure classifier, not a context loader | Context loading is owned by brain-map via brain-task Step 1 |
 | Starting execution before plan is approved | Developer loses control | brain-plan presents plan → approval required → then dispatch |
 | Implementing anything itself | brain-dev is a router, not a worker | All implementation goes through brain-task |
 
