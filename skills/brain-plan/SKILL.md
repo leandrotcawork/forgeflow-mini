@@ -44,14 +44,15 @@ This phase runs when brain-plan is called by brain-dev. It reads the dev-context
 Read `.brain/working-memory/dev-context-{task_id}.md` (written by brain-dev Phase 1).
 
 Extract from frontmatter:
-- `intent`, `domain`, `complexity_score`, `model`
+- `intent`, `domain`, `score`, `model`, `plan_mode`, `keywords`
+- Read the original request (body text after frontmatter)
 
-Read prose sections:
-- `## Brain Evaluation` section — contains brain-dev's concerns (conflicts, missing deps, alternative patterns)
-- `## Relevant Sinapses` section — sinapses already loaded by brain-dev (do NOT re-query these from brain.db)
+Use `keywords` to inform your Q&A questions in Step 0b.
+
+brain-plan does NOT load sinapses or query brain.db. Context loading happens when brain-task runs (brain-map is called at brain-task Step 1, after the plan is approved and brain-dev dispatches implementer subagents).
 
 If the file does NOT exist (brain-plan called standalone without brain-dev):
-→ Load context yourself: query brain.db for domain sinapses (Tier 1, max 5). Continue to Step 0b.
+→ Ask the developer for intent/domain context directly. Proceed to Step 0b.
 
 ### Step 0b: Ask clarifying questions (1–3, one at a time)
 
