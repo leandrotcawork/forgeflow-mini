@@ -2,8 +2,8 @@
 /**
  * brain-migrate-lessons.js — One-time migration: lessons → sinapse ## Lessons Learned
  *
- * Reads lesson files and brain.db lessons table, merges lesson content
- * into the target sinapse's ## Lessons Learned section.
+ * Reads lesson markdown files from cortex/<domain>/lessons/ and lessons/,
+ * merges their Rule content into the target sinapse's ## Lessons Learned section.
  *
  * Usage: node scripts/brain-migrate-lessons.js --brain-path .brain/
  * Exit:  0=success, 1=error, 2=no lessons to migrate
