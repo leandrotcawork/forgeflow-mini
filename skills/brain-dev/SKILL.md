@@ -33,6 +33,34 @@ Example: "implement product recommendations" → 2026-03-27-product-recommendati
 
 **If intent cannot be classified after reading the request twice:** ask ONE clarifying question maximum. Example: *"I can see you want to change the checkout flow — is this a bug fix or a new feature?"* Then proceed.
 
+### Step 1a.5: Check recent work context
+
+**Always (~50 tokens):**
+
+Read `.brain/working-memory/brain-state.json` → extract `last_task_id`.
+If `last_task_id` exists AND `tasks_completed_this_session > 0`:
+→ Set `recent_task = last_task_id`
+Otherwise: `recent_task = null` (new session, no previous work).
+
+**Fallbacks:**
+- If brain-state.json doesn't exist (new project, first task): `recent_task = null`. Skip.
+- If task-completion-{recent_task}.md doesn't exist (was archived by brain-consolidate): skip `## Previous Task` section. `recent_task` is still set in dev-context but no previous task details are loaded.
+
+**On debug/fix-investigate intent only (+~100 tokens):**
+
+If `recent_task` is set AND intent is `fix-investigate` or `debug`:
+1. Read `.brain/working-memory/task-completion-{recent_task}.md`
+2. Extract:
+   - `previous_description`: what was requested (~50 tokens)
+   - `previous_files`: list of files changed
+   - `previous_tests`: test summary (pass/fail/skip counts)
+3. Add to dev-context as `## Previous Task` section (see Step 1f)
+
+For all other intents (build, refactor, question, review, fix-known):
+→ `recent_task` is stored in dev-context but no extra reads are done.
+
+---
+
 ### Step 1c: Calculate complexity score
 
 ```
@@ -85,6 +113,7 @@ score: {N}
 model: {haiku|sonnet|codex|opus}
 plan_mode: {true|false}
 keywords: ["{kw1}", "{kw2}", "{kw3}"]
+recent_task: {last_task_id or null}
 created_at: {ISO8601}
 ---
 
@@ -92,6 +121,13 @@ created_at: {ISO8601}
 ```
 
 No sinapses. No concerns. No brain evaluation. Just classification metadata + keywords. Context loading is owned by brain-map (called from brain-task Step 1).
+
+**If intent is fix-investigate or debug AND recent_task is set**, append after the request:
+
+## Previous Task
+Description: {previous_description}
+Files changed: {previous_files}
+Tests: {previous_tests}
 
 ---
 
@@ -112,7 +148,7 @@ Then route:
 |-----------|-------|
 | build or refactor AND score < 20 | Invoke `/brain-task` directly (Haiku, no plan) with task_id from dev-context |
 | build or refactor AND score ≥ 20 | Invoke `/brain-plan` — passes task_id so brain-plan reads dev-context |
-| fix-investigate / debug / review / question | Invoke `/brain-consult` with task description |
+| fix-investigate / debug / review / question | Invoke `/brain-consult` — pass task_id so brain-consult reads dev-context-{task_id}.md (includes ## Previous Task on debug/fix-investigate) |
 | fix-known | Invoke `/brain-task` directly (same as build < 20) |
 
 ---
@@ -175,11 +211,27 @@ Never silently produce work you are unsure about. DONE_WITH_CONCERNS is always b
 )
 ```
 
-**2. Handle implementer status:**
-- `DONE`: proceed to spec review
+**2. Handle implementer status and confidence:**
+
+**Confidence display (shown to user):**
+- `confidence: high` → show clean: `🧠 Task {N}: {title} — DONE ✓`
+- `confidence: medium` → show warnings: `🧠 Task {N}: {title} — DONE (confidence: medium)` followed by each ⚠ warning
+- `confidence: low` → show warnings + ask: `Should I address these before moving to the next task?`
+
+Note: On low confidence, the user's decision to fix takes priority over automated spec/quality review. If the user says "fix it", the fix is dispatched. If the user says "continue", spec review proceeds normally.
+
+**Status handling:**
+- `DONE` with `confidence: high` → proceed to spec review
+- `DONE` with `confidence: medium` → show warnings, proceed to spec review (user can interrupt with "fix it")
+- `DONE` with `confidence: low` → show warnings, ask user before proceeding
 - `DONE_WITH_CONCERNS`: read concerns, decide if they need addressing before review
 - `NEEDS_CONTEXT`: provide missing context, re-dispatch same task
 - `BLOCKED`: provide more context or re-dispatch with a more capable model; if task is too large, break it down
+
+**The "fix it" loop:** If user says "fix it" after seeing warnings:
+1. Create a new dev-context with `intent: fix-known` and the specific warnings as the fix specification
+2. Dispatch brain-task to fix the specific issues
+3. Review again after fix
 
 **3. Dispatch spec-compliance reviewer:**
 
@@ -274,4 +326,4 @@ After all tasks complete:
 
 ---
 
-**Created:** 2026-03-27 | **Updated:** 2026-03-28 | **Replaces:** brain-decision (deleted), brain-aside (deleted) | **Version:** v0.9.1
+**Created:** 2026-03-27 | **Updated:** 2026-03-28 | **Replaces:** brain-decision (deleted), brain-aside (deleted) | **Version:** v1.1.0
