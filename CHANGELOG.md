@@ -2,6 +2,38 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [0.10.0] — 2026-03-28
+
+### Added
+- **Auto-episode capture in brain-task** — failures and struggled tasks automatically generate episode files in working-memory. Struggled tasks (2+ strategy rotation attempts) get full episodes with "What Happened" + "What Worked". Simple failures get lightweight drafts. Zero manual intervention.
+- **brain-consolidate Step 0: Episode Processing** — reads episode files, cross-references task-completion records, generates approval-gated lesson-update proposals for sinapse `## Lessons Learned` sections. Developer approves before any sinapse is modified.
+- **brain-consult episode capture** — consultations that reveal corrections or failure patterns automatically write episode files.
+- **brain-document episode capture** — anti-pattern discoveries write episode files instead of routing to /brain-lesson.
+- **Episode 30-day TTL sweep** — sessionEnd hook cleans up stale episode files.
+- **`scripts/brain-migrate-lessons.js`** — one-time migration script converts existing lesson files into sinapse `## Lessons Learned` sections.
+- **`computeLessonTrigger` in brain-post-task.js** — detects struggled (2+ attempts) vs simple failure vs clean success. 3 unit tests.
+
+### Removed
+- **brain-lesson** — entire skill deleted. Auto-episode capture + brain-consolidate replaces manual lesson invocation.
+- **`lessons` table in brain.db** — dropped (after migration). Knowledge now lives in sinapse content.
+- **`lessons_fts` FTS5 table** — dropped. Lesson text is searchable via `sinapses_fts` (embedded in sinapse content).
+- **Lesson directories** — `.brain/cortex/<domain>/lessons/`, `.brain/lessons/inbox/`, `.brain/lessons/cross-domain/`, `.brain/lessons/archived/` all removed.
+- **All "suggest /brain-lesson" text** — removed from brain-dev, brain-consult, brain-document, hooks.
+
+### Changed
+- **brain-consolidate** — modernized 6-step flow: Step 0 (episode proposals) → Step 1 (approval gate) → Step 2 (escalation check via Lessons Learned bullets) → Step 3 (health) → Step 4 (weights + cleanup) → Step 5 (clear). Trust model preserved: all sinapse mutations require developer approval.
+- **brain-consult** — writes episode files directly on corrections instead of suggesting /brain-lesson. Lesson queries removed (knowledge embedded in sinapse content).
+- **brain-map** — lesson metadata query removed from Tier 1. Lessons load naturally via sinapse content.
+- **brain-task** — auto-episode capture as final step before returning status.
+- **brain-status** — lesson density metrics removed, episode count added.
+- **brain-init** — lesson directories removed from scaffold, migration added to --upgrade.
+
+### Performance
+- **Clean success:** -200 tokens (no lesson metadata query)
+- **Failures:** +100-500 tokens (episode capture) but lessons ACTUALLY get captured (previously lost)
+- **Struggled tasks:** -3.7k tokens vs manual /brain-lesson + lessons are higher quality (captured with fresh context)
+- **Consolidation:** ~1-2k per episode (proposal generation), creates real value
+
 ## [0.9.1] — 2026-03-28
 
 ### Added

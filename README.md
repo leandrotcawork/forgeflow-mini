@@ -5,7 +5,7 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
 <p align="center">
   <img src="https://img.shields.io/badge/Version-0.9.1-blue" alt="Version 0.9.1">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
-  <img src="https://img.shields.io/badge/Skills-15-orange" alt="15 Skills">
+  <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
   <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
@@ -16,7 +16,7 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
 
 **Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Nine optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
 
-**Failure becomes knowledge with confidence scoring.** When something breaks, brain-lesson captures it at confidence 0.3. Evidence accumulates. At 0.7+ with 3 occurrences, brain-consolidate proposes it as a convention. Mistakes stop repeating.
+**Failure becomes knowledge automatically.** When something breaks, brain-task captures an episode. brain-consolidate processes episodes into sinapse updates (developer-approved). Recurring patterns (3+ occurrences) get proposed as conventions. The brain learns from mistakes without manual intervention.
 
 ---
 
@@ -59,7 +59,6 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Define success criteria | `/brain-eval` | Write capability + regression evals before coding |
 | Check brain health | `/brain-status` | Staleness, coverage gaps, circuit breaker, subagent stats |
 | Review completed work | `/brain-consolidate` | Batch-review sinapses, surface escalations, update weights |
-| Record a failure | `/brain-lesson "what failed"` | Captures lesson with confidence scoring |
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses/lessons, optionally researches docs or gets Codex opinion |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
@@ -227,24 +226,7 @@ Brain context: Tier 1+2 (3 sinapses, 1 lesson) | Consensus: aligned with nuance
 [Brain] Lesson captured: lesson-00043 "ML API response nesting" (confidence 0.3)
 ```
 
-### Example 5: Recording a Failure
-
-When something breaks and you want the brain to remember:
-
-```
-> /brain-lesson "ML API pagination breaks when offset exceeds total count -- returns 500 instead of empty array"
-
-[Brain] Lesson captured:
-  ID: lesson-00044
-  Domain: backend
-  Severity: medium
-  Confidence: 0.3 (initial)
-  Rule: Always guard ML API pagination with offset < total check
-
-  Stored: .brain/cortex/backend/lessons/lesson-00044.md
-```
-
-### Example 6: Strategic Architecture Decision
+### Example 5: Strategic Architecture Decision
 
 ```
 > /brain-mckinsey "Should we cache ML product data locally or always fetch live?"
@@ -272,20 +254,20 @@ Recommendation: Option A. Redis TTL cache with ML webhooks for
 real-time price/stock invalidation. 15-min TTL for catalog data.
 ```
 
-### Example 7: Checking Brain Health
+### Example 6: Checking Brain Health
 
 ```
 > /brain-status
 
 Brain Status -- my-ecommerce-app
 
-Region           | Sinapses | Lessons | Avg Weight | Last Updated | Status
------------------+----------+---------+------------+--------------+-----------
-hippocampus      | 5        | 0       | 0.87       | 2026-03-27   | healthy
-cortex/backend   | 6        | 8       | 0.78       | 2026-03-27   | healthy
-cortex/frontend  | 3        | 2       | 0.71       | 2026-03-25   | healthy
-cortex/database  | 2        | 1       | 0.62       | 2026-03-22   | stale (5d)
-cortex/infra     | 1        | 0       | 0.45       | 2026-02-10   | very stale (45d)
+Region           | Sinapses | Avg Weight | Last Updated | Status
+-----------------+----------+------------+--------------+-----------
+hippocampus      | 5        | 0.87       | 2026-03-27   | healthy
+cortex/backend   | 6        | 0.78       | 2026-03-27   | healthy
+cortex/frontend  | 3        | 0.71       | 2026-03-25   | healthy
+cortex/database  | 2        | 0.62       | 2026-03-22   | stale (5d)
+cortex/infra     | 1        | 0.45       | 2026-02-10   | very stale (45d)
 
 Circuit Breaker: closed (normal)
 Subagent Usage: Haiku 12/12 success, Sonnet 5/6 (1 fallback)
@@ -297,7 +279,7 @@ Consultation Activity:
 Pending: 1 escalation proposal, 2 stale regions need attention
 ```
 
-### Example 8: Consolidation Cycle
+### Example 7: Consolidation Cycle
 
 After completing several tasks, review and promote knowledge:
 
@@ -332,7 +314,7 @@ Consolidation complete:
   Brain.db: 3 sinapses reweighted (+0.02 freshness boost)
 ```
 
-### Example 9: Quick Pipeline Interrupt (brain-consult)
+### Example 8: Quick Pipeline Interrupt (brain-consult)
 
 Mid-task, you need to ask something unrelated. Use `/brain-consult` — it automatically detects active pipelines and appends a resume reminder:
 
@@ -350,7 +332,7 @@ It's in .env as REDIS_URL=redis://host:port/db
 Resume when ready: /brain-task --resume
 ```
 
-### Example 10: Configuring Brain Settings
+### Example 9: Configuring Brain Settings
 
 ```
 > /brain-setup hooks
@@ -393,9 +375,6 @@ You want to...
     |
     +-- Strategic decision? -----> /brain-mckinsey "decision"
     |                               Parallel research + scoring framework
-    |
-    +-- Something broke? --------> /brain-lesson "what failed"
-    |                               Captures with confidence scoring
     |
     +-- Review brain state? -----> /brain-status (health dashboard)
     |                               /brain-consolidate (batch review + promote)
@@ -534,15 +513,13 @@ Set via `BRAIN_HOOK_PROFILE` env var or `brain.config.json`. Disable individual 
 ### Learning Loop
 
 ```
-Task fails -> brain-lesson captures it (confidence 0.3)
+Task fails -> brain-task auto-captures episode -> brain-consolidate proposes sinapse update -> developer approves -> knowledge persists in sinapse
                     |
-              Same pattern seen again -> confidence grows (+0.1 per occurrence)
-                    |
-              Confidence 0.7+ with 3+ occurrences
+              Same pattern seen again (3+ occurrences)
                     |
               brain-consolidate generates escalation proposal
                     |
-              Developer approves -> hippocampus/conventions.md (confidence 1.0)
+              Developer approves -> hippocampus/conventions.md
 ```
 
 ---
@@ -560,13 +537,12 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 |   +-- database/
 |   +-- infra/
 +-- sinapses/              Cross-cutting knowledge flows
-+-- lessons/               cross-domain/ + inbox/ + archived/
 +-- working-memory/        Ephemeral task artifacts + brain-state.json + consult-*.json
 +-- progress/              activity.md + consult-log.md + brain-health.md + brain-project-state.json
 +-- brain.db               SQLite index (sinapses + lessons + links + state + FTS5)
 ```
 
-### Skill Map (15 Skills)
+### Skill Map (14 Skills)
 
 | Skill | Type | Purpose |
 |---|---|---|
@@ -576,7 +552,6 @@ Task fails -> brain-lesson captures it (confidence 0.3)
 | `brain-plan` | Planner | Cortex-Linked TDD planner — micro-steps, sinapse linking, file design, self-review gates |
 | `brain-codex-review` | Reviewer | Quality gate (runs as Sonnet subagent for Codex tasks) |
 | `brain-document` | Documenter | Proposes sinapse updates (Haiku subagent for simple tasks) |
-| `brain-lesson` | Learner | Captures failures with confidence scoring |
 | `brain-consolidate` | Curator | Batch review, escalation proposals, weight updates |
 | `brain-mckinsey` | Strategist | Parallel research subagents + scoring framework |
 | `brain-status` | Dashboard | Health metrics (runs as Haiku subagent) |
