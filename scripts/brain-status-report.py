@@ -69,14 +69,17 @@ def query_sinapses(conn):
     ]
 
 
-def query_lessons(conn):
-    """Active lessons per domain from brain.db."""
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT domain, COUNT(*) FROM lessons "
-        "WHERE status NOT IN ('archived','superseded') GROUP BY domain"
-    )
-    return {r[0]: r[1] for r in cursor.fetchall()}
+def count_episodes(brain_path):
+    """Count episode files in working-memory (pending consolidation)."""
+    wm_dir = Path(brain_path) / "working-memory"
+    count = 0
+    try:
+        if wm_dir.exists():
+            for f in wm_dir.glob("episode-*.md"):
+                count += 1
+    except OSError:
+        pass
+    return count
 
 
 def read_project_state(brain_path):
@@ -163,7 +166,7 @@ def count_active_threads(brain_path):
 
 def count_pending_escalations(brain_path):
     """Count pending escalation proposals."""
-    inbox_dir = Path(brain_path) / "lessons" / "inbox"
+    inbox_dir = Path(brain_path) / "working-memory"
     count = 0
     try:
         if inbox_dir.exists():
@@ -200,8 +203,8 @@ def build_report(brain_path):
         sys.exit(3)
 
     sinapses = query_sinapses(conn)
-    lessons_by_domain = query_lessons(conn)
     conn.close()
+    episode_count = count_episodes(brain_path)
 
     state = read_project_state(brain_path)
     consult_stats = count_consult_log(brain_path)
@@ -212,7 +215,7 @@ def build_report(brain_path):
     return {
         "project_name": project_name,
         "regions": sinapses,
-        "lessons": lessons_by_domain,
+        "episodes_pending": episode_count,
         "circuit_breaker": state["circuit_breaker"],
         "subagent_usage": state["subagent_usage"],
         "consult_stats": consult_stats,
@@ -231,19 +234,17 @@ def format_text(report):
 
     # Header
     header = (
-        f"{'Region':<20}| {'Sinapses':>8} | {'Lessons':>7} | "
+        f"{'Region':<20}| {'Sinapses':>8} | "
         f"{'Avg Weight':>10} | {'Last Updated':>12} | Status"
     )
     lines.append(header)
     lines.append("-" * len(header))
 
-    lessons = report["lessons"]
     for r in sorted(report["regions"], key=lambda x: x["region"]):
         region = r["region"]
-        lesson_count = lessons.get(region, 0)
         updated = (r["last_updated"] or "")[:10]
         row = (
-            f"{region:<20}| {r['count']:>8} | {lesson_count:>7} | "
+            f"{region:<20}| {r['count']:>8} | "
             f"{r['avg_weight']:>10} | {updated:>12} | {r['status']}"
         )
         lines.append(row)
@@ -267,6 +268,7 @@ def format_text(report):
         f"Consensus: {cs['consensus']})"
     )
 
+    lines.append(f"Episodes pending consolidation: {report['episodes_pending']}")
     lines.append(f"Pending escalations: {report['escalations']}")
 
     if report["active_threads"] > 0:
