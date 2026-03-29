@@ -50,13 +50,11 @@ WHERE region = 'hippocampus'
   AND id IN ('hippocampus-architecture', 'hippocampus-conventions')
 ORDER BY weight DESC
 
--- Query 2: Top lessons for task domain
-SELECT id, title, severity, tags FROM lessons
-WHERE domain = ?
-ORDER BY weight DESC
-LIMIT 3
+-- Note: Lessons are now embedded in sinapse content (## Lessons Learned sections).
+-- They are loaded naturally when sinapses are retrieved via FTS5 + spreading activation.
+-- No separate lesson query needed.
 
--- Query 3: Task description (from user input)
+-- Query 2: Task description (from user input)
 [from dev-context file or task description]
 ```
 
@@ -70,16 +68,6 @@ LIMIT 3
   - Naming rules
   - Absolute rules for this language
   - Process rules
-
-### Recent Lessons (Top 3)
-
-- [[lesson-XXXX]] **[Title]** (domain: backend)
-  - [Mistake found]: [Description]
-  - [Severity]: critical
-
-- [[lesson-YYYY]] **[Title]** (domain: cross-domain)
-  - [Pattern]: [Description]
-  - [Severity]: high
 
 ### Task Summary
 
@@ -189,7 +177,6 @@ task_id: YYYY-MM-DD-<slug>
 domain: [backend | frontend | database | infra | cross-domain]
 complexity_score: [0-100 from brain-dev]
 sinapses_loaded: [N]
-lessons_loaded: [M]
 tokens_estimated: [4k + 10-15k + optional tier3]
 generated_at: [ISO8601]
 ---
@@ -199,7 +186,6 @@ generated_at: [ISO8601]
 ## Tier 1: Foundational (~4k tokens)
 
 [Condensed hippocampus content]
-[Top 3 lessons matching domain]
 [Task summary]
 
 ## Tier 2: Domain-Specific (~10-15k tokens)
@@ -244,7 +230,6 @@ Risk: high
 Tier 1 (always):
   - .brain/hippocampus/architecture.md (condensed)
   - .brain/hippocampus/conventions.md (condensed)
-  - 3 lessons matching domain
 
 Tier 2 (domain-specific):
   - 5 sinapses from cortex/backend (avg weight: 0.82)
@@ -289,7 +274,7 @@ LIMIT 5
 
 ## Lessons Integration
 
-Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If promotion candidates are detected (3+ same domain+tag), flag in context packet: "⚠ 3+ lessons suggest: [pattern]".
+Lessons are embedded in sinapse `## Lessons Learned` sections and loaded naturally when sinapses are retrieved via FTS5 + spreading activation. No separate lesson query is needed.
 
 ---
 
@@ -310,7 +295,6 @@ Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If
 | Load all sinapses (no tiers) | Wastes tokens, dilutes context | Always use 3-tier loading |
 | Skip Tier 3 for architectural tasks | Miss critical dependencies | Load Tier 3 if complexity >= 75 |
 | Don't include backlinks | Sinapses appear isolated | Always query and include sinapse_links |
-| Ignore lessons (only use sinapses) | Miss failure patterns | Always load top 3 lessons for domain |
 | Load Tier 2 without checking weight | Wrong sinapses loaded | Always ORDER BY weight DESC |
 | Skip condensing hippocampus | Context bloat, token waste | Always condense to ~500 chars per file |
 
@@ -321,7 +305,7 @@ Lessons are loaded as part of Tier 1 (top 3 by severity for the task domain). If
 brain-map is working when:
 
 - [ ] Task domain correctly identified (backend/frontend/database/infra/cross-domain)
-- [ ] Tier 1 includes: architecture + conventions (condensed) + 3 lessons
+- [ ] Tier 1 includes: architecture + conventions (condensed)
 - [ ] Tier 2 includes: 5 domain sinapses + 2 cross-cutting sinapses
 - [ ] Sinapses sorted by weight (highest first)
 - [ ] Backlinks included in output
