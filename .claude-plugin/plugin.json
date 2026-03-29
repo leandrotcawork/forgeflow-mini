@@ -1,6 +1,6 @@
 {
   "name": "forgeflow-mini",
-  "description": "Brain-driven development plugin — 16 skills, FTS5 search, brain-consult (3-mode Q&A), subagent dispatch, TDD micro-step planning, 8 hooks, circuit breaker, confidence-scored learning",
+  "description": "Brain-driven development plugin — 14 skills, FTS5 + spreading activation, auto-episode capture, brain-consult (3-mode Q&A), subagent dispatch, TDD micro-step planning, 9 hooks, circuit breaker",
   "version": "0.7.0",
   "author": {
     "name": "ForgeFlow contributors"
@@ -21,28 +21,28 @@
   "claude_code": {
     "skills": [
       {
+        "name": "brain-dev",
+        "description": "Primary entry point — classifies ANY request (~500 tokens, 0 DB), extracts retrieval keywords, routes to brain-plan/brain-consult/brain-task",
+        "trigger": "/brain-dev \"anything\""
+      },
+      {
         "name": "brain-init",
         "description": "Initialize Brain for any project (scan > generate > review > persist > hooks > index > state > env-check)",
         "trigger": "/brain-init [project-path]"
       },
       {
-        "name": "brain-decision",
-        "description": "MANDATORY entry point — classifies complexity, loads context, selects model, dispatches to brain-task",
-        "trigger": "/brain-decision \"task description\""
-      },
-      {
         "name": "brain-task",
-        "description": "Full task orchestration — circuit breaker, state persistence, inline or subagent dispatch, verification, archival",
+        "description": "Full task orchestration — circuit breaker, context assembly, implementation, verification, auto-episode capture, archival",
         "trigger": "/brain-task \"task description\""
       },
       {
         "name": "brain-map",
-        "description": "ContextMapper — load 3-tier weighted sinapses for task context",
+        "description": "ContextMapper — FTS5 + spreading activation for associative sinapse retrieval",
         "trigger": "/brain-map"
       },
       {
         "name": "brain-plan",
-        "description": "Planner — Cortex-Linked TDD plans with micro-steps, file structure design, sinapse linking, and self-review gates",
+        "description": "Planner — Phase 0 Q&A + Cortex-Linked TDD plans with micro-steps, file structure design, sinapse linking, and self-review gates",
         "trigger": "/brain-plan"
       },
       {
@@ -57,13 +57,8 @@
       },
       {
         "name": "brain-consult",
-        "description": "Brain-informed consultation — answers questions using brain context (sinapses, conventions, lessons) without full task orchestration. 3 modes: Quick, Research (+docs), Consensus (+Codex). The default for non-implementation questions.",
+        "description": "Brain-informed consultation — answers questions using brain context (sinapses, conventions) without full task orchestration. 3 modes: Quick, Research (+docs), Consensus (+Codex). Auto-captures episodes on corrections.",
         "trigger": "/brain-consult \"question\""
-      },
-      {
-        "name": "brain-aside",
-        "description": "Pipeline interrupt handler — saves brain-task state during asides, no context loading. For brain-informed answers use /brain-consult.",
-        "trigger": "/brain-aside \"question\""
       },
       {
         "name": "brain-mckinsey",
@@ -72,22 +67,17 @@
       },
       {
         "name": "brain-document",
-        "description": "Documenter — propose sinapse updates after task completion",
+        "description": "Documenter — propose sinapse updates after task completion, auto-capture episodes for anti-patterns",
         "trigger": "/brain-document"
       },
       {
-        "name": "brain-lesson",
-        "description": "Learner — capture failures as lessons with confidence scoring (0.3 initial)",
-        "trigger": "/brain-lesson \"failure description\""
-      },
-      {
         "name": "brain-consolidate",
-        "description": "Consolidation cycle — batch process tasks, propose sinapse updates, escalate lessons to conventions",
+        "description": "Consolidation cycle — process episodes into approval-gated sinapse updates, batch review, escalate patterns to conventions",
         "trigger": "/brain-consolidate"
       },
       {
         "name": "brain-status",
-        "description": "Health dashboard — display Brain stats and regenerate 3D visualization",
+        "description": "Health dashboard — display Brain stats, episode counts, and regenerate 3D visualization",
         "trigger": "/brain-status"
       },
       {

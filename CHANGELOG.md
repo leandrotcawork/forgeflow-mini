@@ -2,6 +2,28 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.0.0] — 2026-03-29
+
+**ForgeFlow Mini v1.0.0 — Production Release**
+
+This release marks the plugin as production-ready. All architectural changes from v0.9.0 through v0.10.0 are stable, reviewed (dual Claude Opus + Codex GPT-5.4 review), and tested.
+
+### Summary of what v1.0.0 includes
+
+- **brain-dev** — single intelligent entry point for all developer requests (pure classifier, ~500 tokens, zero DB queries, 7 intents including fix-investigate/fix-known split)
+- **Associative retrieval** — brain-map uses FTS5 + spreading activation (brain-inspired tag expansion, ~5ms, zero LLM cost) instead of weight-only ranking
+- **Auto-episode capture** — brain-task automatically captures failure/struggle episodes; brain-consolidate processes them into approval-gated sinapse `## Lessons Learned` sections
+- **No separate lessons** — lessons dissolved into sinapses (episodic → semantic memory consolidation). brain-lesson skill removed, lessons table dropped, 4 lesson directories removed
+- **14 skills, 9 hooks** — brain-decision, brain-aside, brain-lesson all removed. Clean, focused architecture
+- **brain-consolidate modernized** — 6-step flow with episode proposals, approval gate, Lessons Learned bullet counting for convention promotion
+- **brain-plan Phase 0** — interactive Q&A (1-3 questions) + 2 approach proposals before generating TDD plan
+- **Sequential subagent dispatch** — brain-dev Phase 3 dispatches fresh brain-task subagents per plan step with spec + quality review
+
+### Changed (since v0.10.0)
+- **plugin.json** — updated to 14 skills, removed brain-decision/brain-aside/brain-lesson, added brain-dev
+
+---
+
 ## [0.10.0] — 2026-03-28
 
 ### Added
