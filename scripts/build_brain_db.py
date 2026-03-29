@@ -19,23 +19,6 @@ import json as json_lib
 from pathlib import Path
 from datetime import datetime
 
-def extract_domain_from_path(file_path):
-    """Extract domain from file path."""
-    parts = file_path.replace('\\', '/').split('/')
-
-    if 'lessons' in parts:
-        idx = parts.index('lessons')
-        if idx > 0 and parts[idx - 1] in ('backend', 'frontend', 'database', 'infra'):
-            return parts[idx - 1]  # cortex/backend/lessons → 'backend'
-        elif idx + 1 < len(parts):
-            return parts[idx + 1]  # lessons/cross-domain → 'cross-domain'
-    return 'unknown'
-
-def is_lesson(file_path):
-    """Check if file is in a lessons directory."""
-    parts = file_path.replace('\\', '/').split('/')
-    return 'lessons' in parts
-
 def parse_yaml_dict(yaml_str):
     """Simple YAML parser for frontmatter (no external deps)."""
     result = {}
@@ -151,9 +134,7 @@ def create_tables(conn):
     # Drop existing tables — FTS5 virtual tables MUST be dropped before
     # their backing content tables to avoid content-sync corruption.
     cursor.execute('DROP TABLE IF EXISTS sinapses_fts')
-    cursor.execute('DROP TABLE IF EXISTS lessons_fts')
     cursor.execute('DROP TABLE IF EXISTS sinapse_links')
-    cursor.execute('DROP TABLE IF EXISTS lessons')
     cursor.execute('DROP TABLE IF EXISTS consolidation_log')
     cursor.execute('DROP TABLE IF EXISTS sinapses')
     cursor.execute('DROP TABLE IF EXISTS brain_state')
@@ -193,40 +174,6 @@ def create_tables(conn):
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapse_links_source ON sinapse_links(source_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_sinapse_links_target ON sinapse_links(target_id)')
 
-    # Create lessons table — aligned with docs/brain-db-schema.sql
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS lessons (
-            id               TEXT PRIMARY KEY,
-            file_path        TEXT NOT NULL,
-            title            TEXT NOT NULL,
-            domain           TEXT NOT NULL,
-            scope            TEXT NOT NULL DEFAULT 'domain-local',
-            affected_domains TEXT DEFAULT '[]',
-            tags             TEXT DEFAULT '[]',
-            severity         TEXT NOT NULL DEFAULT 'medium',
-            status           TEXT NOT NULL DEFAULT 'draft',
-            parent_synapse   TEXT,
-            recurrence_count INTEGER NOT NULL DEFAULT 1,
-            promotion_candidate INTEGER NOT NULL DEFAULT 0,
-            created_from     TEXT,
-            source_agent     TEXT DEFAULT 'brain-lesson',
-            supersedes       TEXT,
-            superseded_by    TEXT,
-            confidence       REAL DEFAULT 0.30,
-            root_cause_type  TEXT,
-            evidence         TEXT,
-            weight           REAL NOT NULL DEFAULT 0.50,
-            related_links    TEXT DEFAULT '[]',
-            created_at       TEXT NOT NULL,
-            updated_at       TEXT NOT NULL
-        )
-    ''')
-
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_domain ON lessons(domain)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_status ON lessons(status)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_severity ON lessons(severity)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_lessons_domain_tags ON lessons(domain, tags)')
-
     # Create consolidation_log table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS consolidation_log (
@@ -250,7 +197,7 @@ def create_tables(conn):
     ''')
 
     # Create FTS5 virtual tables — v0.7.0
-    # Content-sync tables mirroring sinapses/lessons for semantic search.
+    # Content-sync table mirroring sinapses for semantic search.
     # Wrapped in try/except: FTS5 requires SQLite compiled with it enabled.
     try:
         cursor.execute('''
@@ -263,17 +210,7 @@ def create_tables(conn):
                 content_rowid=rowid
             )
         ''')
-        cursor.execute('''
-            CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
-                id UNINDEXED,
-                title,
-                tags,
-                evidence,
-                content=lessons,
-                content_rowid=rowid
-            )
-        ''')
-        print('   [FTS5] Virtual tables created')
+        print('   [FTS5] Virtual table created')
     except Exception as e:
         print(f'   [FTS5] Skipped — not available ({e})')
 
@@ -305,56 +242,28 @@ def migrate_tables(conn):
     except Exception as e:
         print(f'   [migrate] brain_state table: skipped ({e})')
 
-    # Migration 2: Add 'evidence' column to lessons table if missing
-    try:
-        cursor.execute("PRAGMA table_info(lessons)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if 'evidence' not in columns:
-            cursor.execute("ALTER TABLE lessons ADD COLUMN evidence TEXT")
-            migrations_applied += 1
-            print('   [migrate] lessons.evidence column: added')
-        else:
-            print('   [migrate] lessons.evidence column: already exists')
-    except Exception as e:
-        print(f'   [migrate] lessons.evidence column: skipped ({e})')
-
-    # Migration 3: Create FTS5 virtual tables if missing (v0.7.0)
-    # Each table is checked and created independently to avoid partial failures.
+    # Migration 2: Create FTS5 virtual table if missing (v0.7.0)
     try:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sinapses_fts'")
         sinapses_fts_exists = cursor.fetchone() is not None
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lessons_fts'")
-        lessons_fts_exists = cursor.fetchone() is not None
 
-        if not sinapses_fts_exists or not lessons_fts_exists:
-            if not sinapses_fts_exists:
-                cursor.execute('''
-                    CREATE VIRTUAL TABLE IF NOT EXISTS sinapses_fts USING fts5(
-                        id UNINDEXED, title, content, tags,
-                        content=sinapses, content_rowid=rowid
-                    )
-                ''')
-                print('   [migrate] sinapses_fts: created')
-
-            if not lessons_fts_exists:
-                cursor.execute('''
-                    CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
-                        id UNINDEXED, title, tags, evidence,
-                        content=lessons, content_rowid=rowid
-                    )
-                ''')
-                print('   [migrate] lessons_fts: created')
-
+        if not sinapses_fts_exists:
+            cursor.execute('''
+                CREATE VIRTUAL TABLE IF NOT EXISTS sinapses_fts USING fts5(
+                    id UNINDEXED, title, content, tags,
+                    content=sinapses, content_rowid=rowid
+                )
+            ''')
+            print('   [migrate] sinapses_fts: created')
             # Note: FTS5 rebuild is NOT called here because create_tables()
             # drops and recreates base tables before migrate_tables() runs,
-            # so sinapses/lessons are empty at this point. The authoritative
+            # so sinapses are empty at this point. The authoritative
             # rebuild fires after data insertion in main().
-
             migrations_applied += 1
         else:
-            print('   [migrate] FTS5 virtual tables: already exist')
+            print('   [migrate] FTS5 virtual table: already exists')
     except Exception as e:
-        print(f'   [migrate] FTS5 virtual tables: skipped ({e})')
+        print(f'   [migrate] FTS5 virtual table: skipped ({e})')
 
     conn.commit()
     return migrations_applied
@@ -393,7 +302,6 @@ def main():
 
     # Process files
     sinapses_count = 0
-    lessons_count = 0
     links_count = 0
     cursor = conn.cursor()
 
@@ -417,62 +325,24 @@ def main():
         weight = frontmatter.get('weight', 0.5)
         updated_at = frontmatter.get('updated_at', datetime.now().isoformat())
 
-        # Route to correct table
-        if is_lesson(file_path):
-            domain = extract_domain_from_path(file_path)
-            scope = frontmatter.get('scope', 'domain-local')
-            severity = frontmatter.get('severity', 'medium')
-            status = frontmatter.get('status', 'draft')
-            recurrence_count = frontmatter.get('recurrence_count', frontmatter.get('occurrence_count', 1))
-            promotion_candidate = 1 if frontmatter.get('promotion_candidate', False) else 0
-            created_from = frontmatter.get('created_from', '')
-            source_agent = frontmatter.get('source_agent', 'brain-lesson')
-            created_at = frontmatter.get('created_at', datetime.now().isoformat())
-            updated_at_val = frontmatter.get('updated_at', created_at)
+        # Insert as sinapse
+        if isinstance(tags, list):
+            tags = sorted(tags)
+        tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
+        links_json = json_lib.dumps(links) if isinstance(links, list) else (links if links else '[]')
+        created_at_val = frontmatter.get('created_at', datetime.now().isoformat())
 
-            if isinstance(tags, list):
-                tags = sorted(tags)
-            tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
+        try:
+            cursor.execute('''
+                INSERT INTO sinapses (id, file_path, title, region, tags, links, content, weight, last_accessed, usage_count, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (record_id, file_path, title, region, tags_json, links_json, body, weight, None, 0, created_at_val, updated_at))
+            sinapses_count += 1
+        except Exception as e:
+            print(f'[Warn] Error inserting sinapse {record_id}: {e}')
 
-            affected_domains = frontmatter.get('affected_domains', [])
-            affected_domains_json = json_lib.dumps(affected_domains) if isinstance(affected_domains, list) else '[]'
-            parent_synapse = frontmatter.get('parent_synapse', None)
-            supersedes = frontmatter.get('supersedes', None)
-            superseded_by = frontmatter.get('superseded_by', None)
-            confidence = float(frontmatter.get('confidence', 0.3))
-            root_cause_type = frontmatter.get('root_cause_type', None)
-            evidence = frontmatter.get('evidence', None)
-            related_links = frontmatter.get('related_links', [])
-            related_links_json = json_lib.dumps(related_links) if isinstance(related_links, list) else '[]'
-
-            try:
-                cursor.execute('''
-                    INSERT INTO lessons (id, file_path, title, domain, scope, affected_domains, tags, severity, status, parent_synapse, recurrence_count, promotion_candidate, created_from, source_agent, supersedes, superseded_by, confidence, root_cause_type, evidence, weight, related_links, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (record_id, file_path, title, domain, scope, affected_domains_json, tags_json, severity, status, parent_synapse, recurrence_count, promotion_candidate, created_from, source_agent, supersedes, superseded_by, confidence, root_cause_type, evidence, weight, related_links_json, created_at, updated_at_val))
-                lessons_count += 1
-            except Exception as e:
-                print(f'[Warn] Error inserting lesson {record_id}: {e}')
-        else:
-            # Sinapse
-            if isinstance(tags, list):
-                tags = sorted(tags)
-            tags_json = json_lib.dumps(tags) if isinstance(tags, list) else (tags if tags else '[]')
-            links_json = json_lib.dumps(links) if isinstance(links, list) else (links if links else '[]')
-            created_at_val = frontmatter.get('created_at', datetime.now().isoformat())
-
-            try:
-                cursor.execute('''
-                    INSERT INTO sinapses (id, file_path, title, region, tags, links, content, weight, last_accessed, usage_count, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (record_id, file_path, title, region, tags_json, links_json, body, weight, None, 0, created_at_val, updated_at))
-                sinapses_count += 1
-            except Exception as e:
-                print(f'[Warn] Error inserting sinapse {record_id}: {e}')
-
-        # Insert links into sinapse_links (sinapses only, not lessons)
-        # Lessons use 'related_links' stored as JSON in the lessons table.
-        if links and not is_lesson(file_path):
+        # Insert links into sinapse_links
+        if links:
             for target_id in links:
                 try:
                     cursor.execute('INSERT INTO sinapse_links (source_id, target_id) VALUES (?, ?)', (record_id, target_id))
@@ -482,21 +352,19 @@ def main():
 
     conn.commit()
 
-    # Rebuild FTS5 indexes after all data is inserted
+    # Rebuild FTS5 index after all data is inserted
     try:
         cursor.execute("INSERT INTO sinapses_fts(sinapses_fts) VALUES('rebuild')")
-        cursor.execute("INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild')")
         conn.commit()
-        print(f'   [FTS5] Indexes rebuilt ({sinapses_count} sinapses, {lessons_count} lessons)')
+        print(f'   [FTS5] Index rebuilt ({sinapses_count} sinapses)')
     except Exception:
-        print('   [FTS5] Rebuild skipped — tables not available')
+        print('   [FTS5] Rebuild skipped — table not available')
 
     conn.close()
 
-    print(f'\n[OK] Tables created: sinapses, sinapse_links, lessons, consolidation_log, brain_state, sinapses_fts, lessons_fts')
+    print(f'\n[OK] Tables created: sinapses, sinapse_links, consolidation_log, brain_state, sinapses_fts')
     print(f'[Files] Scanned {len(files)} .md files')
     print(f'   -> {sinapses_count} sinapses indexed')
-    print(f'   -> {lessons_count} lessons indexed')
     print(f'   -> {links_count} links')
     print(f'[OK] brain.db built successfully')
     print(f'\nDatabase: {os.path.abspath(db_path)}')
