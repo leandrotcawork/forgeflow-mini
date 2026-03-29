@@ -169,6 +169,8 @@ This outputs a JSON array. Create a TodoWrite entry for each task.
 
 ### Step 3b: Dispatch brain-task subagents (sequential — one at a time)
 
+**Subtask ID convention:** Each subtask gets a unique ID: `{task_id}-step-{N}` (e.g., `2026-03-29-auth-fix-step-1`). This prevents task-completion and episode files from overwriting each other across subtasks.
+
 For each task in order:
 
 **1. Dispatch implementer subagent:**
@@ -191,7 +193,8 @@ Previous task completed: {title of previous task, or "none — this is the first
 
 ## Brain Context
 
-Read `.brain/working-memory/context-packet-{task_id}.md` for the loaded sinapses and brain context (created by brain-map at Step 1).
+Read `.brain/working-memory/dev-context-{task_id}.md` for classification, keywords, and previous task context.
+If you need deeper sinapse context, query brain.db using the keywords from dev-context.
 
 ## Your Job
 
@@ -312,7 +315,7 @@ After reviews pass and before marking the task complete, run the post-task pipel
 
 ```bash
 node scripts/brain-post-task.js \
-  --task-id "{task_id}" \
+  --task-id "{task_id}-step-{N}" \
   --status "{success|failure}" \
   --model "{model}" \
   --domain "{domain}" \

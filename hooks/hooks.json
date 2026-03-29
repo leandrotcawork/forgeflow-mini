@@ -16,6 +16,12 @@
         "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" configProtection"
       },
       {
+        "id": "brain-circuit-breaker",
+        "description": "Tier 1: Block execution when circuit breaker is OPEN (3+ consecutive failures)",
+        "matcher": "*",
+        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" circuitBreakerCheck"
+      },
+      {
         "id": "brain-strategy-rotation",
         "description": "Tier 2: Suggest strategy rotation after 2+ consecutive failures",
         "matcher": "*",

@@ -312,10 +312,13 @@ Move processed `task-completion-*.md` and processed `episode-*.md` files to `.br
 
 **5c: Write consolidation checkpoint**
 
-Append ONE line to `.brain/progress/activity.md`:
+Append a checkpoint marker to `.brain/progress/activity.md` that `brain-post-task.js` uses to count tasks since last consolidation:
+
 ```
-| [date] | consolidation | Cycle [N]: [Y] approved, [R] rejected, [E] escalations | brain-consolidate |
+<!-- consolidation-checkpoint: {ISO8601} cycle-{N} -->
 ```
+
+This HTML comment marker is what `brain-post-task.js` scans for when computing `consolidation_needed`. Without this marker, `consolidation_needed` stays true forever after 5 tasks.
 
 Do NOT append task rows to activity.md — brain-task already wrote those during task execution.
 
