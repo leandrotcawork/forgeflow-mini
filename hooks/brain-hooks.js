@@ -132,6 +132,43 @@ function hippocampusGuard(input) {
 }
 
 /**
+ * routingGuard — enforces that router skills (brain-dev, brain-consult)
+ * can only write to their allowlisted files. All other writes are blocked.
+ *
+ * Allowlist when current_skill is "brain-dev" or "brain-consult":
+ *   - .brain/working-memory/dev-context-*.md
+ *   - .brain/working-memory/brain-state.json
+ *   - .brain/working-memory/consult-*.json
+ *   - .brain/progress/consult-log.md
+ *
+ * If current_skill is null, missing, or any other skill → ALLOW all writes.
+ */
+function routingGuard(input) {
+  var state = readJSON(brainStatePath());
+  var currentSkill = state && state.current_skill;
+
+  // No state, null skill, or non-router skill → allow
+  if (!currentSkill) return ok();
+  if (currentSkill !== 'brain-dev' && currentSkill !== 'brain-consult') return ok();
+
+  var filePath = (input && (input.file_path || input.filePath)) || '';
+  // Normalise to forward slashes for cross-platform matching
+  filePath = filePath.replace(/\\/g, '/');
+
+  // Allowlist patterns
+  if (filePath.indexOf('.brain/working-memory/dev-context-') !== -1) return ok();
+  if (filePath.indexOf('.brain/working-memory/brain-state.json') !== -1) return ok();
+  if (filePath.indexOf('.brain/working-memory/consult-') !== -1 && filePath.endsWith('.json')) return ok();
+  if (filePath.indexOf('.brain/progress/consult-log.md') !== -1) return ok();
+
+  return block(
+    'brain-routing-guard: ' + currentSkill + ' is a router, not a worker. ' +
+    'Blocked write to: ' + filePath + '. ' +
+    'Route to brain-plan (planning) or brain-task (implementation).'
+  );
+}
+
+/**
  * configProtection — blocks writes to linter/formatter config files when the
  * change REMOVES rules or WEAKENS severity (error -> warn/off, warn -> off).
  */
@@ -487,6 +524,7 @@ function activityObserver(input) {
 var HOOKS = {
   stateRestore:      { fn: stateRestore,      tier: 1 },
   hippocampusGuard:  { fn: hippocampusGuard,   tier: 1 },
+  routingGuard:      { fn: routingGuard,       tier: 1 },
   configProtection:      { fn: configProtection,      tier: 1 },
   circuitBreakerCheck:   { fn: circuitBreakerCheck,    tier: 1 },
   sessionEnd:            { fn: sessionEnd,             tier: 1 },
@@ -592,6 +630,7 @@ function main() {
 module.exports = {
   stateRestore: stateRestore,
   hippocampusGuard: hippocampusGuard,
+  routingGuard: routingGuard,
   configProtection: configProtection,
   circuitBreakerCheck: circuitBreakerCheck,
   sessionEnd: sessionEnd,
