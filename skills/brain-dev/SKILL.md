@@ -256,7 +256,7 @@ If Important issues: re-dispatch brain-task implementer to fix. Re-review (dispa
 
 After all tasks complete:
 - Check session context: did any implementation surface a new pattern, unexpected behaviour, or recurring failure?
-- If yes: suggest `/brain-lesson` to capture the learning
+- Episodes are auto-captured by brain-task during execution (struggled tasks get full episodes, failures get drafts). No manual action needed.
 - Run `/brain-status` to verify brain health
 
 ---

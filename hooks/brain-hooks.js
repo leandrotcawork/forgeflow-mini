@@ -197,7 +197,7 @@ function circuitBreakerCheck(/* input */) {
       return block(
         'CIRCUIT BREAKER OPEN: Pipeline blocked until ' + cb.cooldown_until +
         '. Reason: ' + (cb.failure_count || 0) + ' consecutive failures. ' +
-        'Try a different approach, run /brain-lesson, or wait for cooldown.'
+        'Try a different approach or wait for cooldown. Episodes are auto-captured.'
       );
     }
     // Cooldown expired — transition to half-open
@@ -324,6 +324,7 @@ function sessionEnd(/* input */) {
 
   // Prune stale consult audit files (failure must never block session end)
   var pruneResult = { deleted_for_ttl: 0, deleted_for_cap: 0, remaining: 0 };
+  var episodesSwept;
   try {
     var wmDir = path.join(brainRoot(), 'working-memory');
     pruneResult = pruneConsultAuditFiles(wmDir, state.ended_at, 7, 50);
@@ -331,9 +332,27 @@ function sessionEnd(/* input */) {
     // Never block session end on cleanup failure
   }
 
+  // Sweep stale episode files (30-day TTL)
+  try {
+    var episodeFiles = fs.readdirSync(wmDir).filter(function(f) { return f.startsWith('episode-') && f.endsWith('.md'); });
+    var thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    episodesSwept = 0;
+    for (var i = 0; i < episodeFiles.length; i++) {
+      var epPath = path.join(wmDir, episodeFiles[i]);
+      var stat = fs.statSync(epPath);
+      if (Date.now() - stat.mtimeMs > thirtyDaysMs) {
+        fs.unlinkSync(epPath);
+        episodesSwept++;
+      }
+    }
+  } catch {
+    // Never block session end on cleanup failure
+  }
+
   return ok({
     reason: 'brain-state.json saved at session end.',
     consult_cleanup: pruneResult,
+    episodes_swept: episodesSwept || 0,
   });
 }
 
@@ -364,7 +383,7 @@ function strategyRotation(/* input */) {
     additionalContext:
       'STRATEGY ROTATION ADVICE (' + failures + ' consecutive failures):\n' +
       advice + '\n' +
-      'Consider running /brain-lesson to capture the failure pattern.',
+      'Episode will be auto-captured when this task completes.',
   });
 }
 

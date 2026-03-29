@@ -63,11 +63,10 @@ For each touched domain, answer:
 - Should this change best practices?
 
 **Important:** If a new **anti-pattern** is discovered (e.g., "We made this mistake and it broke things"):
-- Do NOT document the anti-pattern in cortex sinapses
-- Route to `/brain-lesson` instead
-- Lessons live in `.brain/cortex/<domain>/lessons/` or `.brain/lessons/cross-domain/` (distributed architecture)
-- Anti-patterns are failures that became knowledge, not architectural patterns
-- brain-lesson will handle escalation if 3+ same anti-pattern lessons exist -> propose convention
+- Do NOT document the anti-pattern as a regular sinapse
+- Write an episode file to `.brain/working-memory/episode-document-{task_id}.md` with `trigger: anti-pattern`
+- brain-consolidate will process the episode and propose a sinapse update with the anti-pattern as a `## Lessons Learned` entry
+- Anti-patterns are failures that became knowledge — they belong in the relevant sinapse's lessons section, not as standalone files
 
 ### Step 3: Propose Sinapse Updates
 
@@ -261,7 +260,7 @@ Agent(model: "haiku", description: "Propose sinapse updates after task completio
 **What the subagent returns:**
 - Sinapse update proposals in unified diff format
 - Each proposal includes: section, current text, proposed text, rationale
-- Anti-pattern discoveries flagged for `/brain-lesson` routing
+- Anti-pattern discoveries captured as episode files in working-memory
 
 **When subagent is used (score < 40):**
 - Simpler tasks produce straightforward documentation updates
@@ -286,9 +285,9 @@ Agent(model: "haiku", description: "Propose sinapse updates after task completio
 | Adding subjective opinions | "This is the best way" | Stick to observed patterns in code |
 | Linking to non-existent sinapses | Creates broken references | Verify all [[links]] exist first |
 | Changing weights without reason | Undermines weight-based ranking | Only adjust if pattern usage changes |
-| Documenting anti-patterns in cortex sinapses | Anti-patterns are failures, not patterns | Use `/brain-lesson` for anti-pattern capture |
-| Editing .brain/cortex/<domain>/lessons/ directly | Lessons have their own lifecycle | Use `/brain-lesson` skill workflow |
-| Mixing patterns with failure stories | Confuses architectural advice with debugging notes | Keep sinapses (patterns) and lessons (failures) separate |
+| Documenting anti-patterns as standalone sinapses | Anti-patterns are failure knowledge | Write episode file, brain-consolidate adds to relevant sinapse |
+| Writing lesson files directly | Lessons are now episode-based | Write episode file to working-memory, brain-consolidate processes it |
+| Ignoring anti-patterns | Loses failure knowledge | Capture as episode, brain-consolidate merges into sinapse ## Lessons Learned |
 
 ---
 
