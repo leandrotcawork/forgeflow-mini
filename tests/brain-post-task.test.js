@@ -742,6 +742,34 @@ test('main: consolidation_needed true when >= 5 tasks', function () {
 });
 
 // ---------------------------------------------------------------------------
+// computeLessonTrigger tests
+// ---------------------------------------------------------------------------
+
+test('computeLessonTrigger returns full when strategy_rotation has 2+ attempts for current task', function () {
+  var result = mod.computeLessonTrigger('success', {
+    strategy_rotation: { task_id: 'task-123', attempts: [{ strategy: 'retry' }, { strategy: 'different' }] }
+  }, 'task-123');
+  assertEqual(result, 'full');
+});
+
+test('computeLessonTrigger returns null when attempts are from a different task', function () {
+  var result = mod.computeLessonTrigger('success', {
+    strategy_rotation: { task_id: 'task-old', attempts: [{ strategy: 'retry' }, { strategy: 'different' }] }
+  }, 'task-123');
+  assertEqual(result, null);
+});
+
+test('computeLessonTrigger returns draft when status is failure and no strategy rotation', function () {
+  var result = mod.computeLessonTrigger('failure', {}, 'task-123');
+  assertEqual(result, 'draft');
+});
+
+test('computeLessonTrigger returns null when status is success and no attempts', function () {
+  var result = mod.computeLessonTrigger('success', {}, 'task-123');
+  assertEqual(result, null);
+});
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
