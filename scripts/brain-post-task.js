@@ -437,6 +437,23 @@ function countTasksSinceConsolidation(brainPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Lesson trigger computation
+// ---------------------------------------------------------------------------
+
+function computeLessonTrigger(status, brainState, taskId) {
+  var attempts = 0;
+  if (brainState && brainState.strategy_rotation && brainState.strategy_rotation.attempts) {
+    // Only count attempts for the CURRENT task — stale attempts from a previous task must not trigger
+    if (brainState.strategy_rotation.task_id === taskId) {
+      attempts = brainState.strategy_rotation.attempts.length || 0;
+    }
+  }
+  if (attempts >= 2) return 'full';    // struggled (success or failure) — rich context available
+  if (status === 'failure') return 'draft';  // simple failure — raw data only
+  return null;                               // clean success — no episode
+}
+
+// ---------------------------------------------------------------------------
 // Step 6.5: Circuit breaker state computation
 // ---------------------------------------------------------------------------
 
@@ -635,6 +652,19 @@ function main(argv) {
     }
     diag('  -> circuit_breaker.state=' + cbResult.state.state + ', failure_count=' + cbResult.state.failure_count);
 
+    // Lesson trigger — read brain state BEFORE updateBrainState() modifies it
+    var brainStateForLesson = readJSON(path.join(brainPath, 'working-memory', 'brain-state.json')) || {};
+    var lessonTrigger = computeLessonTrigger(args.status, brainStateForLesson, args.taskId);
+    var lessonContext = null;
+    if (lessonTrigger) {
+      var attempts = (brainStateForLesson.strategy_rotation && brainStateForLesson.strategy_rotation.attempts) || [];
+      lessonContext = {
+        error_summary: attempts.length > 0 ? (attempts[attempts.length - 1].error || '') : '',
+        strategies_tried: attempts.map(function(a) { return a.strategy || ''; }),
+        consecutive_failures: brainStateForLesson.consecutive_failures || 0
+      };
+    }
+
     // Update state files
     diag('Updating brain-state.json...');
     updateBrainState(brainPath, args);
@@ -648,7 +678,9 @@ function main(argv) {
       archived_files: archivedFiles,
       consolidation_needed: consolidationNeeded,
       tasks_since_consolidation: tasksSinceConsolidation,
-      circuit_breaker_state: cbResult.state
+      circuit_breaker_state: cbResult.state,
+      lesson_trigger: lessonTrigger,
+      lesson_context: lessonContext
     };
 
     if (cbResult.message) {
@@ -676,6 +708,7 @@ module.exports = {
   archiveContextArtifacts: archiveContextArtifacts,
   countTasksSinceConsolidation: countTasksSinceConsolidation,
   computeCircuitBreakerNextState: computeCircuitBreakerNextState,
+  computeLessonTrigger: computeLessonTrigger,
   main: main
 };
 
