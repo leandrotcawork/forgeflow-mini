@@ -105,6 +105,7 @@ function stateRestore(/* input */) {
   const lines = [
     'BRAIN_STATE summary:',
     '  session_id:              ' + (state.session_id || 'none'),
+    '  current_skill:           ' + (state.current_skill || 'none'),
     '  current_pipeline_step:   ' + (state.current_pipeline_step || 0),
     '  tasks_completed:         ' + (state.tasks_completed_this_session || 0),
     '  consecutive_failures:    ' + (state.consecutive_failures || 0),
@@ -341,6 +342,7 @@ function pruneConsultAuditFiles(wmDir, nowIso, maxAgeDays, maxFiles) {
 function sessionEnd(/* input */) {
   var state = readJSON(brainStatePath()) || {
     session_id: null,
+    current_skill: null,
     started_at: null,
     last_task_id: null,
     current_pipeline_step: 0,
@@ -354,6 +356,7 @@ function sessionEnd(/* input */) {
     snapshot_reason: null,
   };
 
+  state.current_skill = null;
   state.snapshot_reason = 'session_end';
   state.ended_at = new Date().toISOString();
 
