@@ -10,6 +10,12 @@
         "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" hippocampusGuard"
       },
       {
+        "id": "brain-routing-guard",
+        "description": "Tier 1: Enforce router skills (brain-dev, brain-consult) cannot write outside allowlist",
+        "matcher": "Write|Edit",
+        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" routingGuard"
+      },
+      {
         "id": "brain-config-protection",
         "description": "Tier 1: Block config changes that remove rules or weaken severity",
         "matcher": "Write|Edit",
