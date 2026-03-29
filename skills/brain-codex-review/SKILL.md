@@ -16,23 +16,23 @@ description: Codex code review agent — validates implementation, finds bugs, c
 ## Pipeline Position
 
 ```
-brain-dev → brain-map → brain-task (Steps 1-3) → brain-codex-review (Step 3.5) → brain-task (Steps 4-6) → brain-document → brain-consolidate
+brain-dev → brain-map → brain-task (Step 1-2) → brain-codex-review (Step 2.5) → brain-task (Step 3: post-task) → brain-document → brain-consolidate
                                                         ↑ you are here
                                                         (runs as subagent OR inline)
 ```
 
-**Architecture:** This skill is invoked by brain-task at Step 3.5 (Codex path only). It does NOT depend on any hook. It gates forward progress — if review fails, brain-task pauses until fixes are applied. For Codex-path tasks (score >= 40), brain-task dispatches this as a Sonnet subagent. If subagent dispatch fails, it falls back to inline execution.
+**Architecture:** This skill is invoked by brain-task at Step 2.5 (Codex path only). It does NOT depend on any hook. It gates forward progress — if review fails, brain-task pauses until fixes are applied. For Codex-path tasks (score >= 40), brain-task dispatches this as a Sonnet subagent. If subagent dispatch fails, it falls back to inline execution.
 
 ---
 
-## When Codex Reviews (Step 3.5)
+## When Codex Reviews (Step 2.5)
 
-After Codex completes implementation (Step 3), run automatic review:
+After Codex completes implementation (Step 2), run automatic review:
 
 ```
-Step 3: Codex executes implementation
+Step 2: Codex executes implementation + verify
         ↓
-Step 3.5: brain-codex-review runs automatically (Codex path only)
+Step 2.5: brain-codex-review runs automatically (Codex path only)
         ├─ Check: conventions followed
         ├─ Check: tests passing
         ├─ Check: no obvious bugs
@@ -46,7 +46,7 @@ Step 3.5: brain-codex-review runs automatically (Codex path only)
         ├─ Re-run tests
         └─ Return to review (until clean)
         ↓
-brain-task Step 4: task-completion record → Step 5: activity log → Step 6: brain-document + archival + commit
+brain-task Step 3: post-task (brain-post-task.js → task-completion + activity + state + episode capture)
 ```
 
 ---

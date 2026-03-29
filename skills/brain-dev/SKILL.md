@@ -306,13 +306,68 @@ Only report Important issues that genuinely require fixing.
 
 If Important issues: re-dispatch brain-task implementer to fix. Re-review (dispatch quality reviewer again). Repeat until ✅.
 
-**5. Mark task complete in TodoWrite. Move to next task.**
+**5. Post-task finalization (REQUIRED after each task — do NOT skip):**
+
+After reviews pass and before marking the task complete, run the post-task pipeline inline:
+
+```bash
+node scripts/brain-post-task.js \
+  --task-id "{task_id}" \
+  --status "{success|failure}" \
+  --model "{model}" \
+  --domain "{domain}" \
+  --score {score} \
+  --files-changed '{files_json_array_from_subagent_report}' \
+  --sinapses-loaded '{sinapses_json_array}' \
+  --short-description "{task_title}" \
+  --task-description "{task_description}" \
+  --tests-summary "{tests_pass_fail_summary_from_subagent_report}"
+```
+
+This script:
+- Writes `task-completion-{task_id}.md` to `.brain/working-memory/`
+- Appends a row to `.brain/progress/activity.md`
+- Updates `brain-state.json` (`last_task_id`, `tasks_completed_this_session`, `tasks_since_consolidate`)
+- Updates `brain-project-state.json` (circuit breaker, model usage counters)
+- Computes `lesson_trigger` and `lesson_context`
+
+Read the JSON output:
+- `consolidation_needed: true` → note it, suggest `/brain-consolidate` after all tasks finish
+- `lesson_trigger: "full"` → write a **full episode** (What Happened + What Worked) using the subagent's warnings/concerns as context
+- `lesson_trigger: "draft"` → write a **draft episode** (What Happened only) with the failure details
+- `lesson_trigger: null` → no episode needed
+
+**Episode capture:** If `lesson_trigger` is non-null, write `.brain/working-memory/episode-{task_id}.md`:
+
+```yaml
+---
+type: episode
+task_id: {task_id}
+domain: {domain}
+severity: {from subagent confidence — low confidence → high severity}
+trigger: {struggled|failure}
+tags: ["{keywords from dev-context}"]
+sinapses_loaded: {sinapses_json_array}
+related_completion: task-completion-{task_id}.md
+created_at: {ISO8601}
+---
+
+## What Happened
+{from subagent's mechanical warnings + LLM concerns}
+
+## What Worked
+{from subagent's final implementation — only for trigger=struggled}
+
+## Files Involved
+{from subagent's files changed report}
+```
+
+**6. Mark task complete in TodoWrite. Move to next task.**
 
 ### Step 3c: Post-execution
 
 After all tasks complete:
-- Check session context: did any implementation surface a new pattern, unexpected behaviour, or recurring failure?
-- Episodes are auto-captured by brain-task during execution (struggled tasks get full episodes, failures get drafts). No manual action needed.
+- If `consolidation_needed` was flagged during any task: suggest `/brain-consolidate`
 - Run `/brain-status` to verify brain health
 
 ---
