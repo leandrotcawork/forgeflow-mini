@@ -478,7 +478,7 @@ Possible capability levels:
 1. Review generated files in `.brain/`
 2. Edit `.brain/hippocampus/strategy.md` with product goals
 3. Run `/brain-status` to check health
-4. Run `/brain-task` to start using the Brain
+4. Run `/brain-dev` to start using the Brain
 
 ---
 
