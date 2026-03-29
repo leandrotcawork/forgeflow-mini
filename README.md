@@ -62,7 +62,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses, optionally researches docs or gets Codex opinion |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
-| Upgrade from older version | `/brain-init --upgrade` | Adds v1.0.0 features (FTS5, consult-log) without full re-init |
+| Upgrade from older version | `/brain-init --upgrade` | Adds v1.1.0 features (FTS5, consult-log) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
 
 ---
