@@ -141,7 +141,7 @@ Consensus is NEVER auto-selected. Only via explicit `--consensus` flag.
 **Quick mode only -- Tier 1B expansion (if confidence is low):**
 
 Confidence is low when:
-- (a) The loaded lesson's domain doesn't match the inferred domain
+- (a) The loaded sinapse's domain doesn't match the inferred domain
 - (b) The question contains keywords not found in condensed hippocampus content
 - (c) No thread context exists and the question references prior work ("the thing we discussed", "that endpoint")
 

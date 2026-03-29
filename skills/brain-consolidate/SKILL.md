@@ -384,7 +384,7 @@ Action items:
 | Target sinapse file missing from disk | Recreate from `sinapses.content` in brain.db (Step 0b). If DB row also missing, skip with warning. |
 | Escalation proposal conflicts with existing convention | Flag in proposal file. Developer decides: approve (override) or reject. |
 | Developer approves contradictory updates to same sinapse | Merge approved changes into single update. Clarify rationale to developer. |
-| brain.db is corrupted or missing | Output: "Cannot access brain.db. Run `node scripts/build-brain-db.js` to rebuild." |
+| brain.db is corrupted or missing | Output: "Cannot access brain.db. Run `python scripts/build_brain_db.py` to rebuild." |
 | FTS5 tables don't exist | Fall back to domain+tags grouping for escalation. Log warning. |
 | Concurrent task running during consolidation | Skip any locked files. Process only completed, unlocked records. |
 

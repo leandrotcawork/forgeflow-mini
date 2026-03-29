@@ -13,7 +13,7 @@ claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.g
 claude plugin install brain-mini@forgeflow-plugins
 ```
 
-This registers the plugin and all 11 skills automatically.
+This registers the plugin and all 14 skills automatically.
 
 ---
 
@@ -30,7 +30,6 @@ Now when you type `/`, you should see:
 - /brain-status
 - /brain-consolidate
 - /brain-codex-review
-- /brain-lesson
 
 ---
 
@@ -44,9 +43,8 @@ From inside a Claude Code session in your project root:
 
 This creates:
 - `.brain/hippocampus/` — architecture, conventions, strategy, decisions
-- `.brain/cortex/<domain>/` — domain knowledge sinapses + domain-local lessons
-- `.brain/lessons/` — cross-domain, inbox, archived lesson directories
-- `.brain/working-memory/` — ephemeral task artifacts
+- `.brain/cortex/<domain>/` — domain knowledge sinapses
+- `.brain/working-memory/` — ephemeral task artifacts + episodes auto-captured
 - `.brain/progress/` — activity log, health reports, completed context archives
 - `.brain/brain.db` — SQLite index (built by `python scripts/build_brain_db.py`)
 
@@ -211,8 +209,7 @@ After tasks, you'll have:
 ```
 .brain/
 ├── cortex/           (updated with new patterns)
-├── lessons/          (failure patterns, if any)
-├── working-memory/   (cleared after consolidation)
+├── working-memory/   (episodes auto-captured)
 ├── progress/         
 │   ├── activity.md   (running log)
 │   └── brain-health.md (health report)

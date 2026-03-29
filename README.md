@@ -3,7 +3,7 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.9.1-blue" alt="Version 0.9.1">
+  <img src="https://img.shields.io/badge/Version-0.10.0-blue" alt="Version 0.10.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
   <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
@@ -60,7 +60,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Check brain health | `/brain-status` | Staleness, coverage gaps, circuit breaker, subagent stats |
 | Review completed work | `/brain-consolidate` | Batch-review sinapses, surface escalations, update weights |
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
-| Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses/lessons, optionally researches docs or gets Codex opinion |
+| Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses, optionally researches docs or gets Codex opinion |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
 | Upgrade from older version | `/brain-init --upgrade` | Adds v0.7.0 features (FTS5, consult-log) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
@@ -91,8 +91,8 @@ brain-init scans your project, generates hippocampus (architecture + conventions
   cortex/database/ -- 2 sinapses (schema patterns, migration conventions)
 
 [Brain] Building brain.db (SQLite + FTS5 indexes)...
-  9 sinapses indexed, 0 lessons, 0 links
-  FTS5 virtual tables: sinapses_fts, lessons_fts
+  9 sinapses indexed, 0 links
+  FTS5 virtual tables: sinapses_fts
 
 [Brain] Install hooks? (minimal/standard/strict/skip): standard
   Installed 6 hooks (Tier 1 + 2)
@@ -110,7 +110,7 @@ Ready. Use /brain-task to start building.
   Plan mode: no (score < 50)
 
 [Brain] Loading context...
-  Tier 1: architecture + conventions + 3 lessons
+  Tier 1: architecture + conventions
   Tier 2: 5 backend sinapses (auth, API routes, adapters, error handling, outbox)
   Tokens: ~18k context loaded
 
@@ -148,11 +148,11 @@ From documentation (Context7: mercadolibre-sdk):
 - Use POST /oauth/token with grant_type=refresh_token
 - Store refresh tokens securely (env var, not DB)
 
-Note: [[lesson-00042]] warns that hardcoding token expiry leads to
-race conditions -- use the SDK's built-in refresh interceptor instead.
+Note: embedded `## Lessons Learned` in [[sinapse-backend-auth]] warn that hardcoding
+token expiry leads to race conditions -- use the SDK's built-in refresh interceptor instead.
 
 ---
-Brain context: Tier 1+2 (3 sinapses, 2 lessons) + 1 external lookup
+Brain context: Tier 1+2 (3 sinapses) + 1 external lookup
 ```
 
 **Follow-up question (same thread, automatic context reuse):**
@@ -199,7 +199,7 @@ with a thin type-extension layer for missing fields.
 - Recommendation: use SDK + extend types for /items endpoint
 
 ---
-Brain context: Tier 1+2 (3 sinapses, 1 lesson) | Consensus: aligned with nuance
+Brain context: Tier 1+2 (3 sinapses) | Consensus: aligned with nuance
 ```
 
 ### Example 4: Debugging
@@ -211,7 +211,7 @@ Brain context: Tier 1+2 (3 sinapses, 1 lesson) | Consensus: aligned with nuance
   Model: Opus (full codebase access for root cause analysis)
 
 [Brain] Loading debug context...
-  Tier 1+2: architecture, conventions, 3 lessons, 5 backend sinapses
+  Tier 1+2: architecture, conventions, 5 backend sinapses
   Error context: empty array return, expected products
 
 [Brain] Root cause analysis...
@@ -223,7 +223,7 @@ Brain context: Tier 1+2 (3 sinapses, 1 lesson) | Consensus: aligned with nuance
   + return response.body.results.map(mapProduct)
 
 [Brain] Verification: all 6 phases pass
-[Brain] Lesson captured: lesson-00043 "ML API response nesting" (confidence 0.3)
+[Brain] Episode captured: episode-2026-03-27-ml-api.md (trigger: struggled)
 ```
 
 ### Example 5: Strategic Architecture Decision
@@ -302,8 +302,7 @@ Sinapse Updates Proposed: 3
   [3] sinapses/caching.md -- new cross-cutting cache pattern [y/n/m]: y
 
 Escalation Proposal:
-  3 lessons share pattern: "ML API response format gotchas"
-  (lesson-00042, 00043, 00044)
+  3 Lessons Learned entries share pattern across sinapses: "ML API response format gotchas"
   Promote to convention? [y/n]: y
   -> Added to hippocampus/conventions.md
 
@@ -483,7 +482,7 @@ brain-dev scores every task on a 0-100 complexity scale:
 
 | Tier | Tokens | Content | When |
 |---|---|---|---|
-| Tier 1 | ~4k | Hippocampus (condensed) + top 3 lessons + task | Always |
+| Tier 1 | ~4k | Hippocampus (condensed) + task | Always |
 | Tier 2 | ~10-15k | Domain sinapses (top 5) + cross-cutting + backlinks | Standard + Codex + Opus |
 | Tier 3 | ~5k | Deep linked sinapses | Only if complexity >= 75 |
 | Lightweight | ~4k | Tier 1 only | Haiku tasks |
@@ -531,7 +530,7 @@ Task fails -> brain-task auto-captures episode -> brain-consolidate proposes sin
 ```
 .brain/
 +-- hippocampus/           Constitution -- architecture, conventions, strategy
-+-- cortex/                Domain knowledge -- sinapses + domain-local lessons
++-- cortex/                Domain knowledge -- sinapses
 |   +-- backend/
 |   +-- frontend/
 |   +-- database/
@@ -539,7 +538,7 @@ Task fails -> brain-task auto-captures episode -> brain-consolidate proposes sin
 +-- sinapses/              Cross-cutting knowledge flows
 +-- working-memory/        Ephemeral task artifacts + brain-state.json + consult-*.json
 +-- progress/              activity.md + consult-log.md + brain-health.md + brain-project-state.json
-+-- brain.db               SQLite index (sinapses + lessons + links + state + FTS5)
++-- brain.db               SQLite index (sinapses + links + state + FTS5)
 ```
 
 ### Skill Map (14 Skills)

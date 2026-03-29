@@ -11,7 +11,7 @@ All notable changes to ForgeFlow Mini are documented in this file.
 - **brain-document episode capture** — anti-pattern discoveries write episode files instead of routing to /brain-lesson.
 - **Episode 30-day TTL sweep** — sessionEnd hook cleans up stale episode files.
 - **`scripts/brain-migrate-lessons.js`** — one-time migration script converts existing lesson files into sinapse `## Lessons Learned` sections.
-- **`computeLessonTrigger` in brain-post-task.js** — detects struggled (2+ attempts) vs simple failure vs clean success. 3 unit tests.
+- **`computeLessonTrigger` in brain-post-task.js** — detects struggled (2+ attempts) vs simple failure vs clean success. 4 unit tests.
 
 ### Removed
 - **brain-lesson** — entire skill deleted. Auto-episode capture + brain-consolidate replaces manual lesson invocation.

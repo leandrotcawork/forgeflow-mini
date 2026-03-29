@@ -128,10 +128,10 @@ Do these actions NOW. Do not skip to implementation.
 
 1. Read `.brain/hippocampus/architecture.md` and `.brain/hippocampus/conventions.md` (condensed — key patterns only)
 2. Query brain.db for domain sinapses: `SELECT * FROM sinapses WHERE region LIKE '%{domain}%' ORDER BY weight DESC LIMIT 5`
-3. Query brain.db for top 3 lessons matching the task domain
+3. Lesson knowledge is embedded in sinapse content (## Lessons Learned sections) — loaded naturally through sinapse retrieval. No separate lesson query needed.
 4. Write all of the above into `.brain/working-memory/context-packet-{task_id}.md`
 
-**For Haiku (lightweight) tasks:** Load Tier 1 only (hippocampus + lessons, ~4k tokens). Skip Tier 2.
+**For Haiku (lightweight) tasks:** Load Tier 1 only (hippocampus + sinapses, ~4k tokens). Skip Tier 2.
 
 **For Tier 3 (score >= 75 or critical):** Also load linked sinapses: `SELECT target_id FROM sinapse_links WHERE source_id IN (...) LIMIT 3`
 
@@ -342,7 +342,7 @@ Read `.brain/working-memory/implementation-plan-{task_id}.md` and extract:
 - `micro_steps`: total count
 - `estimated_tokens`: total budget
 - File Structure table: all files to be created/modified
-- Sinapse Index: all linked sinapses and lessons
+- Sinapse Index: all linked sinapses and embedded `## Lessons Learned` references
 - Implementation Order: topological sort with parallelizable groups
 - Subagent model per step: recommended model for each micro-step
 
@@ -385,7 +385,7 @@ Build a self-contained prompt for the subagent. The subagent has NO access to yo
 - The micro-step's Implementation section (exact file, pattern, key decisions)
 - The micro-step's Acceptance Gate (exact commands to run)
 - All sinapses referenced by `[[sinapse-id]]` in this micro-step — inline the relevant sinapse content from the context packet (not just the ID)
-- All lessons referenced by `[[lesson-id]]` — inline the lesson content
+- Relevant `## Lessons Learned` bullets from referenced sinapses — inline that sinapse-backed guidance
 - The File Structure table (so the subagent knows where files go)
 - If this micro-step depends on others (Requires field), include the file paths and signatures created by those completed steps
 
@@ -406,7 +406,7 @@ You are implementing micro-step M{N} of an expanded TDD plan.
 {Inlined sinapse content for each [[sinapse-id]] referenced}
 
 ## Mistakes to Avoid
-{Inlined lesson content for each [[lesson-id]] referenced}
+{Inlined relevant `## Lessons Learned` bullets from referenced sinapses}
 
 ## File Structure Context
 {Relevant rows from File Structure table}
@@ -632,7 +632,7 @@ node scripts/brain-post-task.js \
   --score {score} \
   --files-changed '{files_json_array}' \
   --sinapses-loaded '{sinapses_json_array}' \
-  --lessons-loaded '{lessons_json_array}' \
+  --lessons-loaded '{sinapse_ids_with_embedded_lessons_json_array}' \
   --short-description "{short_description}" \
   --task-description "{full_task_description}" \
   --tests-summary "{tests_pass_fail_summary}"
@@ -706,7 +706,7 @@ Token cost: ~300-500 (no LLM reasoning, just raw data capture).
 
 **Important:** Pass the sinapse ID array (not just the count) via `--sinapses-loaded` when calling brain-post-task.js. Example: `--sinapses-loaded '["sinapse-auth-001", "sinapse-session-003"]'`
 
-**LLM still owns:** Step 5.1 (brain-document sinapse proposals), Step 5.3 (/commit), and episode capture (auto-lesson).
+**LLM still owns:** Step 5.1 (brain-document sinapse proposals), Step 5.3 (/commit), and episode capture (auto-captured episode flow).
 **LLM still writes:** The episode file "What Worked" section for struggled tasks (requires AI reasoning about what fixed the problem).
 
 ---
