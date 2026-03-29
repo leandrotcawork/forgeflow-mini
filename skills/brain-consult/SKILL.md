@@ -53,6 +53,17 @@ Resume when ready: /brain-task --resume
 
 This pipeline check is built into brain-consult. Use brain-consult for any question during an active pipeline.
 
+### Step 0.5: Read dev-context (if routed from brain-dev)
+
+If a `task_id` was passed from brain-dev routing:
+1. Read `.brain/working-memory/dev-context-{task_id}.md`
+2. Extract `## Previous Task` section if present
+3. Use this context throughout the consultation
+
+If no task_id was passed (direct /brain-consult invocation): skip this step.
+
+---
+
 ### Step 1: Pipeline Check + Question Analysis
 
 **1a: Check active pipeline**
@@ -249,6 +260,19 @@ mcp__codex__codex(
 ---
 
 ### Step 5: Synthesize and Respond
+
+**Previous Task awareness:**
+
+If the dev-context (routed from brain-dev) contains a `## Previous Task` section:
+1. **Acknowledge the previous work** at the start of your response: "I see you just implemented {description}, changing {files}."
+2. **Focus your answer** on those specific files and patterns — not generic domain advice.
+3. **Use test results** to guide debugging: "The 2 failed tests ({test names}) suggest the issue is in {area}."
+
+If no `## Previous Task` section: respond normally using domain sinapses.
+
+This costs zero extra tokens — brain-dev already loaded the context.
+
+---
 
 **Quick mode output:**
 
