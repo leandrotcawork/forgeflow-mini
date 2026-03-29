@@ -1,6 +1,6 @@
 ---
 name: brain-consult
-description: Brain-informed consultation — answers questions using brain context (sinapses, conventions, lessons) without full task orchestration. The default skill for non-implementation questions like "how should I...", "why is this...", "what approach for...", "explain...", "compare...", "what does X do...", "remind me...". Supports quick answers, doc research (Context7/WebSearch), and multi-model consensus (Claude + Codex via --consensus flag).
+description: Brain-informed consultation — answers questions using brain context (sinapses, conventions) without full task orchestration. The default skill for non-implementation questions like "how should I...", "why is this...", "what approach for...", "explain...", "compare...", "what does X do...", "remind me...". Supports quick answers, doc research (Context7/WebSearch), and multi-model consensus (Claude + Codex via --consensus flag).
 ---
 
 # brain-consult -- Brain-Informed Consultation
@@ -134,19 +134,7 @@ Consensus is NEVER auto-selected. Only via explicit `--consensus` flag.
 
 1. Read `.brain/hippocampus/architecture.md` -- condense to key patterns (~300 chars)
 2. Read `.brain/hippocampus/conventions.md` -- condense to relevant rules (~300 chars)
-3. Query brain.db for 1 most relevant lesson:
-   ```sql
-   -- Note: brain-consult intentionally excludes 'draft' (unreviewed, low confidence)
-   -- and includes 'promoted' (highest confidence, convention-grade knowledge).
-   -- This differs from brain-map which includes 'draft' for implementation tasks
-   -- where even unreviewed lessons may prevent mistakes.
-   SELECT id, title, severity, tags, evidence, confidence
-   FROM lessons
-   WHERE domain = '{domain}'
-     AND status IN ('active', 'promotion_candidate', 'promoted')
-   ORDER BY weight DESC
-   LIMIT 1
-   ```
+3. Lesson knowledge is now embedded in sinapse content (`## Lessons Learned` sections) and loaded naturally through sinapse retrieval. No separate lesson query needed.
 4. Read active task summary from `.brain/working-memory/brain-state.json` (if pipeline active)
 5. Include thread context from prior `consult-*.json` (if thread continuation detected in Step 1b)
 
@@ -159,15 +147,7 @@ Confidence is low when:
 
 If any of (a), (b), (c) are true, expand to Tier 1B:
 
-- 2 additional lessons (total 3):
-  ```sql
-  SELECT id, title, severity, tags, evidence, confidence
-  FROM lessons
-  WHERE domain = '{domain}'
-    AND status IN ('active', 'promotion_candidate', 'promoted')
-  ORDER BY weight DESC
-  LIMIT 3
-  ```
+- Lesson knowledge is now embedded in sinapse content (`## Lessons Learned` sections) and loaded naturally through sinapse retrieval. No separate lesson query needed.
 - Last 3 entries from `.brain/progress/consult-log.md`
 
 **Research + Consensus modes -- Tier 2 via FTS5 (~4-8k additional tokens):**
@@ -195,15 +175,7 @@ LIMIT 3
   ```
 - Also falls back if FTS5 tables don't exist (old brain without v0.7.0 upgrade)
 
-Also load full Tier 1 (3 lessons, not just 1):
-```sql
-SELECT id, title, severity, tags, evidence, confidence
-FROM lessons
-WHERE domain = '{domain}'
-  AND status IN ('active', 'promotion_candidate', 'promoted')
-ORDER BY weight DESC
-LIMIT 3
-```
+Lesson knowledge is now embedded in sinapse content (`## Lessons Learned` sections) and loaded naturally through sinapse retrieval. No separate lesson query needed.
 
 **Important:** Do NOT create any files in `.brain/working-memory/` during context loading. Context is assembled in-memory only. brain-consult writes only two artifacts post-response (Step 6): the audit JSON (`consult-*.json` in working-memory) and a log line (`consult-log.md` in progress).
 
@@ -285,12 +257,11 @@ mcp__codex__codex(
 
 {Direct answer using brain context}
 
-{Reference relevant sinapses/lessons inline:}
+{Reference relevant sinapses inline:}
 Per [[sinapse-id]]: {how this applies}
-Note: [[lesson-XXXX]] warns that {relevant caution}
 
 ---
-Brain context: Tier {1A or 1A+1B} ({N} lessons, domain: {domain})
+Brain context: Tier {1A or 1A+1B} ({N} sinapses, domain: {domain})
 ```
 
 **Research mode output:**
@@ -302,14 +273,13 @@ Brain context: Tier {1A or 1A+1B} ({N} lessons, domain: {domain})
 
 ### From Brain Context
 - [[sinapse-id]]: {relevant pattern or convention}
-- [[lesson-XXXX]]: {relevant warning or insight}
 
 ### From External Documentation
 - {Finding 1} -- source: {Context7 library / WebSearch URL}
 - {Finding 2} -- source: {URL}
 
 ---
-Brain context: Tier 1+2 ({N} sinapses, {M} lessons) + {K} external lookups
+Brain context: Tier 1+2 ({N} sinapses) + {K} external lookups
 ```
 
 **Consensus mode output:**
@@ -318,7 +288,7 @@ Brain context: Tier 1+2 ({N} sinapses, {M} lessons) + {K} external lookups
 [Brain] Consult (consensus) | Domain: {domain} | Models: Claude + Codex
 
 ### Claude Assessment (with brain context)
-{Claude's answer referencing sinapses and lessons}
+{Claude's answer referencing sinapses}
 
 ### Codex Assessment
 {Codex's independent analysis}
@@ -329,7 +299,7 @@ Brain context: Tier 1+2 ({N} sinapses, {M} lessons) + {K} external lookups
 - **Recommendation:** {synthesized recommendation with reasoning}
 
 ---
-Brain context: Tier 1+2 ({N} sinapses, {M} lessons) | Consensus: {aligned/divergent}
+Brain context: Tier 1+2 ({N} sinapses) | Consensus: {aligned/divergent}
 ```
 
 ---
@@ -350,7 +320,6 @@ Write `.brain/working-memory/consult-{timestamp}.json`:
   "context_loaded": {
     "tier": "{1A|1A+1B|1A+2|1A+1B+2}",
     "sinapse_ids": ["{loaded sinapse IDs}"],
-    "lesson_ids": ["{loaded lesson IDs}"],
     "external_sources": ["{Context7:lib-name or WebSearch:query}"]
   },
   "confidence": "{high|medium|low}",
@@ -378,25 +347,40 @@ If `consult-log.md` doesn't exist, create it with header:
 |---|---|---|---|---|---|
 ```
 
-**6c: Suggest lesson capture (when warranted)**
+**6c: Auto-capture episode (when warranted)**
 
 If the consultation revealed:
-- A failure pattern not in existing lessons
+- A failure pattern not in existing knowledge
 - A correction to what the developer believed
 - A new anti-pattern discovered during research
 - A significant insight about project architecture
 
-Output:
-```
-This consultation revealed a potential lesson:
-  Pattern: {description}
-  Domain: {domain}
-  Estimated severity: {low/medium/high}
+Write `.brain/working-memory/episode-consult-{timestamp}.md`:
 
-To persist this knowledge: /brain-lesson "{brief description}"
+```yaml
+---
+type: episode
+task_id: consult-{timestamp}
+domain: {domain}
+severity: {estimated: low|medium|high|critical}
+trigger: consultation
+tags: ["{extracted from Q&A}"]
+sinapses_loaded: ["{sinapse IDs used in answer}"]
+related_completion: null
+created_at: {ISO8601}
+---
+
+## What Happened
+{what the developer believed or was doing wrong}
+
+## What Worked
+{the correct answer from the consultation}
+
+## Files Involved
+{if any files were discussed, otherwise omit}
 ```
 
-brain-consult MUST NOT create lesson files directly. It suggests when brain-lesson should be invoked.
+brain-consolidate will process this episode and propose a sinapse update during the next consolidation cycle.
 
 **6d: Suggest escalation (when warranted)**
 
@@ -452,7 +436,7 @@ Flags:
 | Answering without brain context | Defeats the purpose of brain-informed consultation | Always load Tier 1A minimum |
 | More than 3 MCP calls in Research | Diminishing returns | Stop at clarity after first authoritative answer |
 | Forcing Codex when unavailable | Blocks response | Fall back Claude-only with note |
-| Creating lesson files directly | Violates brain-lesson ownership | Suggest `/brain-lesson`, never create |
+| Skipping episode capture on corrections | Loses learning opportunity | Always write episode file when a correction is identified |
 | Starting implementation | Scope creep into brain-task | Suggest escalation, never write code |
 | Auto-selecting Consensus | Too slow, overlaps mckinsey | Only via `--consensus` flag |
 | Defaulting to Quick when uncertain | False confidence | Default to Research when uncertain |
@@ -467,7 +451,7 @@ Flags:
 |---|---|
 | brain.db missing or corrupt | Read hippocampus `.md` files directly. Note: `[brain.db unavailable]` |
 | FTS5 tables don't exist | Fall back to LIKE queries on tags + region. Note: `[FTS5 unavailable -- basic retrieval]` |
-| No sinapses match | Answer with hippocampus + lessons only. Note: `[No matching sinapses]` |
+| No sinapses match | Answer with hippocampus + sinapses only. Note: `[No matching sinapses]` |
 | Context7/WebSearch unavailable | Proceed brain context only. Note: `[External research unavailable]` |
 | Codex MCP unavailable (--consensus) | Proceed Claude-only. Note: `[Codex unavailable -- single-model response]` |
 | Vague question, no context anywhere | Ask ONE focused clarifying question |
@@ -484,10 +468,10 @@ Flags:
 | **brain-dev** | Not invoked. brain-consult skips the router entirely. If consultation reveals need for implementation, suggest /brain-task (which goes through brain-dev). |
 | **brain-map** | Not invoked as sub-skill. brain-consult does its own lightweight inline context loading (Tier 1A/1B + FTS5 Tier 2). brain-map's full 3-tier loading with context-packet generation is overkill for consultation. |
 | **brain-task** | Escalation target. When consultation evolves into implementation, suggest /brain-dev for full routing. |
-| **brain-lesson** | Suggestion target. When consultation reveals a learning, suggest /brain-lesson. brain-consult never creates lesson files. |
+| **brain-lesson** | Deleted. brain-consult writes episode files directly to working-memory. brain-consolidate processes them into sinapse updates. |
 | **brain-mckinsey** | Escalation target for high-stakes architectural decisions. If question is "should we adopt X for our entire stack?", suggest /brain-mckinsey. |
 | **brain-consolidate** | Secondary cleanup path for consult-*.json files. Primary cleanup is automatic via sessionEnd hook (7-day TTL + 50 max cap). brain-consolidate remains a fallback for missed cleanups. |
 
 ---
 
-**Created:** 2026-03-27 | **Agent Type:** Consultant | **Skill Count:** 15 -> 16
+**Created:** 2026-03-27 | **Agent Type:** Consultant | **Skill Count:** 14
