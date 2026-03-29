@@ -5,7 +5,7 @@ description: Health dashboard — display Brain stats and regenerate 3D visualiz
 
 # brain-status Skill — Health Dashboard
 
-**Purpose:** Display Brain health status and regenerate the 3D brain-graph.html visualization. Shows staleness per region, lesson density, pending actions, and overall Brain fitness.
+**Purpose:** Display Brain health status and regenerate the 3D brain-graph.html visualization. Shows staleness per region, pending actions, and overall Brain fitness.
 
 **Token Budget:** 5k in / 3k out (minimal)
 
@@ -55,10 +55,9 @@ Display the text dashboard directly to the developer. Use the JSON data for any 
 From `.brain/brain.db`:
 - Count sinapses per region
 - Calculate average weight per region
-- Count lessons per region
 - Find latest `updated_at` per region
 - Detect staleness (>30 days, >60 days)
-- Count pending escalations in `.brain/lessons/inbox/escalation-*.md` (These files are created by brain-consolidate during the escalation review phase, not by brain-lesson.)
+- Count pending escalations in `.brain/working-memory/escalation-PROPOSAL-*.md` (These files are created by brain-consolidate during the escalation review phase.)
 
 From `.brain/progress/consult-log.md` (v0.7.0):
 - Count total consultations by mode (Quick/Research/Consensus)
@@ -84,18 +83,17 @@ Output to terminal (formatted table):
 ```
 🧠 Brain Status — [project name]
 
-Region           │ Sinapses │ Lessons │ Avg Weight │ Last Updated │ Status
-─────────────────┼──────────┼─────────┼────────────┼──────────────┼───────────
-hippocampus      │ 5        │ 0       │ 0.87       │ 2026-03-24   │ ✅ healthy
-cortex/backend   │ 3        │ 5       │ 0.78       │ 2026-03-24   │ ✅ healthy
-cortex/frontend  │ 2        │ 5       │ 0.71       │ 2026-03-24   │ ✅ healthy
-cortex/database  │ 2        │ 0       │ 0.62       │ 2026-03-22   │ ⚠️ stale (2d)
-cortex/infra     │ 1        │ 0       │ 0.45       │ 2026-02-10   │ 🔴 very stale (43d)
-sinapses         │ 4        │ 0       │ 0.83       │ 2026-03-24   │ ✅ healthy
-lessons/cross-d  │ 0        │ 3       │ 0.60       │ 2026-03-23   │ ✅ healthy
+Region           │ Sinapses │ Avg Weight │ Last Updated │ Status
+─────────────────┼──────────┼────────────┼──────────────┼───────────
+hippocampus      │ 5        │ 0.87       │ 2026-03-24   │ ✅ healthy
+cortex/backend   │ 3        │ 0.78       │ 2026-03-24   │ ✅ healthy
+cortex/frontend  │ 2        │ 0.71       │ 2026-03-24   │ ✅ healthy
+cortex/database  │ 2        │ 0.62       │ 2026-03-22   │ ⚠️ stale (2d)
+cortex/infra     │ 1        │ 0.45       │ 2026-02-10   │ 🔴 very stale (43d)
+sinapses         │ 4        │ 0.83       │ 2026-03-24   │ ✅ healthy
 
 ────────────────────────────────────────────────────────────────────────────
-Total: 17 sinapses · 13 lessons · 7 regions
+Total: 17 sinapses · 6 regions
 
 Circuit Breaker:
   State: ✅ closed (normal operation)

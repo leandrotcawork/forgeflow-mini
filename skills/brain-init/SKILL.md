@@ -18,7 +18,7 @@ Initialize a Brain for any project. Scans the project, detects type, generates h
 ## Input
 
 - **project-path** (optional): Path to project root. Default: current directory (`.`)
-- **--upgrade** (optional): Skip Phases 1-6 and 8. Runs only Phases 7, 9, and 10 on an existing `.brain/` directory. Use this when migrating between versions (e.g., v0.2.0 to v0.3.0) to install new hooks and state files without regenerating the brain.
+- **--upgrade** (optional): Skip Phases 1-6 and 8. Runs only Phases 7, 9, and 10 on an existing `.brain/` directory. Use this when migrating between versions (e.g., v0.2.0 to v0.3.0) to install new hooks and state files without regenerating the brain. For v0.10.0 upgrade: runs `scripts/brain-migrate-lessons.js` to convert existing lesson files into sinapse `## Lessons Learned` sections, then drops the lessons table.
 - **--hooks-only** (optional): Run only Phase 7 (hook installation). Use this to change hook profiles or reinstall hooks without touching anything else.
 
 ## Execution Flow
@@ -55,15 +55,11 @@ Initialize a Brain for any project. Scans the project, detects type, generates h
 - Create `.brain/` directory structure:
   - `.brain/hippocampus/`
   - `.brain/cortex/` — with per-region subdirectories:
-    - `.brain/cortex/backend/` + `.brain/cortex/backend/lessons/`
-    - `.brain/cortex/frontend/` + `.brain/cortex/frontend/lessons/`
-    - `.brain/cortex/database/` + `.brain/cortex/database/lessons/`
-    - `.brain/cortex/infra/` + `.brain/cortex/infra/lessons/`
+    - `.brain/cortex/backend/`
+    - `.brain/cortex/frontend/`
+    - `.brain/cortex/database/`
+    - `.brain/cortex/infra/`
   - `.brain/sinapses/`
-  - `.brain/lessons/` — distributed lesson directories:
-    - `.brain/lessons/cross-domain/`
-    - `.brain/lessons/inbox/`
-    - `.brain/lessons/archived/`
   - `.brain/working-memory/`
   - `.brain/progress/`
   - `.brain/progress/completed-contexts/`
@@ -303,7 +299,7 @@ Hook profile: standard (Tier 1+2, 7 hooks)
 ### Phase 8: Build Index
 - Run `python scripts/build_brain_db.py --brain-path .brain` to build `brain.db` from markdown files
 - Schema source of truth: `docs/brain-db-schema.sql`
-- Output: sinapse count, lessons count, indexing stats
+- Output: sinapse count, indexing stats
 
 ### Phase 9: Initialize State Files
 
