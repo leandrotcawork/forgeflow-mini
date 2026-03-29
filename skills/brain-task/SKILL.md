@@ -641,9 +641,73 @@ node scripts/brain-post-task.js \
 Read the JSON output:
 - `consolidation_needed: true` -> output: "BRAIN: 5+ tasks accumulated -- run /brain-consolidate"
 - `circuit_breaker_state.state: "open"` -> output breaker warning to developer
+- `lesson_trigger: "full"` -> Write a **full episode** file (see below)
+- `lesson_trigger: "draft"` -> Write a **draft episode** file (see below)
+- `lesson_trigger: null` -> No episode needed
 
-**LLM still owns:** Step 5.1 (brain-document sinapse proposals) and Step 5.3 (/commit).
-**LLM still writes:** The "Lessons" section of the task-completion record (requires AI reasoning about non-obvious findings).
+### Episode Capture (Auto-Lesson) — FINAL step before returning status
+
+**This must be the LAST thing brain-task does before reporting status back to brain-dev.** The subagent has full failure context at this point — once it returns, the context is lost.
+
+**If `lesson_trigger === "full"` (struggled — strategy rotation had 2+ attempts):**
+
+Write `.brain/working-memory/episode-{task_id}.md`:
+
+```yaml
+---
+type: episode
+task_id: {task_id}
+domain: {domain}
+severity: {estimate based on failure impact}
+trigger: struggled
+tags: ["{relevant tags from task context}"]
+sinapses_loaded: {pass the FULL sinapse ID array from --sinapses-loaded, not just the count}
+related_completion: task-completion-{task_id}.md
+created_at: {ISO8601}
+---
+
+## What Happened
+{what failed — error messages, test failures, verbatim}
+
+## What Worked
+{the fix that resolved it — what you changed and why}
+
+## Files Involved
+{list of files modified during the struggle}
+```
+
+Token cost: ~800-1.5k (includes LLM reasoning for "What Worked").
+
+**If `lesson_trigger === "draft"` (simple failure — no recovery):**
+
+Write `.brain/working-memory/episode-{task_id}.md`:
+
+```yaml
+---
+type: episode
+task_id: {task_id}
+domain: {domain}
+severity: {estimate}
+trigger: failure
+tags: ["{relevant tags}"]
+sinapses_loaded: {sinapse ID array}
+related_completion: task-completion-{task_id}.md
+created_at: {ISO8601}
+---
+
+## What Happened
+{error message or test failure — verbatim}
+
+## Files Involved
+{list of files}
+```
+
+Token cost: ~300-500 (no LLM reasoning, just raw data capture).
+
+**Important:** Pass the sinapse ID array (not just the count) via `--sinapses-loaded` when calling brain-post-task.js. Example: `--sinapses-loaded '["sinapse-auth-001", "sinapse-session-003"]'`
+
+**LLM still owns:** Step 5.1 (brain-document sinapse proposals), Step 5.3 (/commit), and episode capture (auto-lesson).
+**LLM still writes:** The episode file "What Worked" section for struggled tasks (requires AI reasoning about what fixed the problem).
 
 ---
 
