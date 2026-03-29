@@ -199,14 +199,18 @@ Read `.brain/working-memory/context-packet-{task_id}.md` for the loaded sinapses
 2. Write tests first (TDD: write failing test → run it → implement → run again)
 3. Commit your work
 4. Self-review (completeness, quality, no over-building)
-5. Report back:
+5. Run self-check: `node scripts/brain-self-check.js --task-id {task_id} --tests-summary "{tests}"`
+6. Self-assess: ask yourself "Is there anything I'm uncertain about?" If yes, lower confidence one level.
+7. Report back:
    - Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+   - Confidence: high | medium | low (from self-check + self-assessment)
+   - Mechanical warnings: {from self-check script}
+   - LLM concerns: {from self-assessment, if any}
    - What you implemented
    - Files changed
    - Test results
-   - Any concerns
 
-Never silently produce work you are unsure about. DONE_WITH_CONCERNS is always better than pretending everything is fine.
+Never silently produce work you are unsure about. DONE_WITH_CONCERNS is always better than pretending everything is fine. Medium confidence with honest warnings is better than high confidence that hides doubts.
 """
 )
 ```

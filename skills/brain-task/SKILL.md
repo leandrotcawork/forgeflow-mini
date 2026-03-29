@@ -645,6 +645,38 @@ Read the JSON output:
 - `lesson_trigger: "draft"` -> Write a **draft episode** file (see below)
 - `lesson_trigger: null` -> No episode needed
 
+### Self-Check + LLM Confidence Assessment
+
+After reading brain-post-task.js output, run the mechanical self-check:
+
+```bash
+node scripts/brain-self-check.js \
+  --task-id "{task_id}" \
+  --tests-summary "{tests_pass_fail_summary}"
+```
+
+Read the JSON output: `{ confidence: "high|medium|low", warnings: [...] }`
+
+**LLM self-assessment (~100 tokens):**
+
+Before reporting status back, ask yourself: *"Is there anything about this implementation I'm uncertain about — edge cases not covered, assumptions made, or dependencies that might break?"*
+
+If yes: add the concern to the warnings list and lower confidence by one level (high→medium, medium→low). LLM concerns can only LOWER confidence, never raise it.
+
+**Combined status report format:**
+
+```
+Status: DONE
+Confidence: {high|medium|low}
+Mechanical warnings:
+  - {warnings from brain-self-check.js, if any}
+LLM concerns:
+  - {your uncertainty, if any}
+Files changed: {list}
+```
+
+---
+
 ### Episode Capture (Auto-Lesson) — FINAL step before returning status
 
 **This must be the LAST thing brain-task does before reporting status back to brain-dev.** The subagent has full failure context at this point — once it returns, the context is lost.
@@ -706,8 +738,8 @@ Token cost: ~300-500 (no LLM reasoning, just raw data capture).
 
 **Important:** Pass the sinapse ID array (not just the count) via `--sinapses-loaded` when calling brain-post-task.js. Example: `--sinapses-loaded '["sinapse-auth-001", "sinapse-session-003"]'`
 
-**LLM still owns:** Step 5.1 (brain-document sinapse proposals), Step 5.3 (/commit), and episode capture (auto-captured episode flow).
-**LLM still writes:** The episode file "What Worked" section for struggled tasks (requires AI reasoning about what fixed the problem).
+**LLM still owns:** Step 5.1 (brain-document sinapse proposals), Step 5.3 (/commit), episode capture (auto-lesson), and self-assessment confidence.
+**LLM still writes:** The episode file "What Worked" section for struggled tasks, and the confidence self-assessment ("Is there anything I'm uncertain about?").
 
 ---
 
