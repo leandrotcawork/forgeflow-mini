@@ -2,6 +2,27 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.1.0] — 2026-03-29
+
+### Added
+- **Self-awareness in brain-dev (Step 1a.5)** — brain-dev reads `last_task_id` from brain-state.json on every classification (~50 tokens). On debug/fix-investigate, loads task-completion record with files changed + test results (+100 tokens). Adds `recent_task` field and optional `## Previous Task` section to dev-context.
+- **`scripts/brain-self-check.js`** — Zero-LLM mechanical quality check (~5ms, 0 tokens). Checks for skipped tests, missing tests, uncommitted files, missing commit. Outputs `{ confidence, warnings }`. 4 unit tests.
+- **Confidence block in brain-task** — After brain-post-task.js, calls brain-self-check.js and LLM self-assessment (~100 tokens). Status report includes confidence (high/medium/low) + mechanical warnings + LLM concerns.
+- **Confidence display in brain-dev Phase 3** — High: clean DONE. Medium: shows warnings. Low: asks developer before proceeding.
+- **"Fix it" loop** — User says "fix it" after seeing warnings → brain-dev routes fix-known with warning context → brain-task fixes specific issues.
+- **brain-consult Previous Task awareness** — When dev-context has `## Previous Task`, brain-consult acknowledges prior work and focuses answer on those files/tests.
+
+### Fixed
+- **brain-init Next Steps** — `/brain-task` → `/brain-dev` (brain-dev is the primary entry point since v0.9.0)
+
+### Performance
+- Every classification: +50 tokens (read `last_task_id`)
+- Debug/fix-investigate only: +100 tokens (task-completion record)
+- Every task completion: +130 tokens (self-check + LLM question + display)
+- Compared to Reflexion framework (~2-5k tokens): 97% cheaper using existing artifacts
+
+---
+
 ## [1.0.0] — 2026-03-29
 
 **ForgeFlow Mini v1.0.0 — Production Release**

@@ -3,7 +3,7 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/Version-1.1.0-blue" alt="Version 1.1.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
   <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
@@ -397,11 +397,12 @@ Every task flows through a self-contained pipeline. No hooks required -- hooks e
 flowchart TB
     USER["Developer: /brain-dev 'anything'"]
 
-    subgraph BRAINDEV["brain-dev (classifier, ~500 tokens, 0 DB queries)"]
+    subgraph BRAINDEV["brain-dev (classifier, ~550 tokens, reads last_task_id)"]
         CL["Classify intent<br/>build | fix-investigate | fix-known<br/>debug | review | question | refactor"]
+        SA["Check recent work<br/>(+100 tokens on debug/fix-investigate)"]
         SC["Score complexity + select model"]
         KW["Extract 2-3 retrieval keywords"]
-        DC["Write dev-context<br/>(intent, domain, score, model, keywords)"]
+        DC["Write dev-context<br/>(intent, domain, score, model, keywords, recent_task)"]
     end
 
     subgraph PLAN_PATH["Build / Refactor (score ≥ 20)"]
@@ -434,7 +435,7 @@ flowchart TB
         CTX["context-packet<br/>3-4 relevant sinapses<br/>~6-9k tokens"]
     end
 
-    USER --> CL --> SC --> KW --> DC
+    USER --> CL --> SA --> SC --> KW --> DC
 
     DC -->|"build/refactor ≥ 20"| BP0
     DC -->|"fix-known / build < 20"| BT
