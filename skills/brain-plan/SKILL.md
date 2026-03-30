@@ -128,8 +128,6 @@ AskUserQuestion(
 
 Wait for the developer's selection before proceeding to Stage 1.
 
-Wait for developer's choice before proceeding to Stage 1.
-
 ### Step 0d: Confirm approach and proceed
 
 After developer selects or approves an approach:
