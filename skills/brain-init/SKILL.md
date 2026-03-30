@@ -47,6 +47,23 @@ Initialize a Brain for any project. Scans the project, detects type, generates h
 ### Phase 5: Review with Developer
 - Display all generated files
 - Ask: "Proceed with persisting?" (yes/no)
+
+**Present using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Brain files generated. Proceed with persisting to disk?",
+    header: "Persist",
+    options: [
+      { label: "Yes (Recommended)", description: "Write hippocampus, cortex, and config files to .brain/" },
+      { label: "No", description: "Discard generated files — no changes to disk" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 - If NO: cancel without persisting
   **On cancel:** Delete all `.brain/` files and directories generated during Phases 1-4. Do NOT write `.brain/brain.config.json`. Leave the project directory in its original clean state. Inform the developer: 'brain-init cancelled. No files were persisted.'
 - If YES: proceed to Phase 6
@@ -91,6 +108,24 @@ Ask the developer which hook profile they want:
 Present the choice as:
 ```
 Which hook profile? [minimal / standard / strict] (default: standard)
+```
+
+**Present options using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Which hook profile should be installed?",
+    header: "Hooks",
+    options: [
+      { label: "Standard (Recommended)", description: "Tier 1+2: safety guards + quality gates" },
+      { label: "Minimal", description: "Tier 1 only: safety guards (hippocampus, circuit breaker, routing)" },
+      { label: "Strict", description: "All tiers: safety + quality + activity tracking" },
+      { label: "No hooks", description: "Skip hook installation entirely" }
+    ],
+    multiSelect: false
+  }]
+)
 ```
 
 If the developer declines hooks entirely, skip the rest of Phase 7.

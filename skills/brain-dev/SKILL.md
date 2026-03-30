@@ -47,6 +47,22 @@ Example: "implement product recommendations" → 2026-03-27-product-recommendati
 
 **If intent cannot be classified after reading the request twice:** ask ONE clarifying question maximum. Example: *"I can see you want to change the checkout flow — is this a bug fix or a new feature?"* Then proceed.
 
+**When the disambiguation has bounded answers, use `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "{disambiguation question, e.g., 'Is this a bug fix or a new feature?'}",
+    header: "Intent",
+    options: [
+      { label: "{option 1, e.g., 'Bug fix'}", description: "{what this routes to}" },
+      { label: "{option 2, e.g., 'New feature'}", description: "{what this routes to}" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 ### Step 1a.5: Check recent work context
 
 **Always (~50 tokens):**

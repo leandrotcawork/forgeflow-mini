@@ -164,6 +164,23 @@ For each proposed update:
   -> Resubmit
 ```
 
+**Present each proposal using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Sinapse update for {sinapse_path}: {brief diff summary}",
+    header: "Update",
+    options: [
+      { label: "Approve", description: "Apply the proposed changes to this sinapse" },
+      { label: "Reject", description: "Discard this update" },
+      { label: "Modify", description: "Edit the proposal before applying" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 ### Step 5: Format as Diffs (Not Full Rewrites)
 
 Always show changes as unified diff format:

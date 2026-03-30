@@ -97,6 +97,23 @@ Developer choices per proposal:
 - **n** = reject (discard proposal)
 - **m** = modify (developer edits and re-submits)
 
+**For each proposal, use `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Proposal {N}: {sinapse_path} — {brief description of change}",
+    header: "Approve",
+    options: [
+      { label: "Approve", description: "Apply this update to the sinapse file and brain.db" },
+      { label: "Reject", description: "Discard this proposal" },
+      { label: "Modify", description: "Edit the proposal before applying" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 **On approval — apply changes to BOTH file and DB:**
 1. Update the sinapse markdown file on disk (append bullet to `## Lessons Learned` or apply diff)
 2. `UPDATE sinapses SET content = ?, updated_at = ? WHERE id = ?` in brain.db
@@ -158,6 +175,23 @@ When 3 or more `## Lessons Learned` bullets share the same domain+tag pattern (i
      Review: .brain/working-memory/escalation-PROPOSAL-{timestamp}.md
      Actions: approve → conventions.md | reject → discard | modify → edit
      ```
+
+**Present escalation using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Escalate pattern '{pattern_name}' to conventions.md? ({N} bullets across {M} sinapses)",
+    header: "Escalate",
+    options: [
+      { label: "Approve", description: "Add to conventions.md — becomes a project-wide rule" },
+      { label: "Reject", description: "Dismiss — keep as individual sinapse lessons only" },
+      { label: "Modify", description: "Edit the convention text before adding" }
+    ],
+    multiSelect: false
+  }]
+)
+```
 
 4. On approval: append convention text to `.brain/hippocampus/conventions.md`, delete proposal file
 

@@ -67,6 +67,24 @@ Question priority order:
 2. Implementation approach (if multiple valid approaches exist): "Should this be event-driven or synchronous?"
 3. Constraints: "Does this need to be backwards compatible?" / "Is zero-downtime deployment required?"
 
+**When the clarifying question has predictable bounded answers** (e.g., "Replace or extend?", "Backwards compatible?", "Zero-downtime?"), use `AskUserQuestion`:
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "{your clarifying question}",
+    header: "Scope",
+    options: [
+      { label: "{option 1}", description: "{what this means for the implementation}" },
+      { label: "{option 2}", description: "{what this means for the implementation}" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
+When the question is truly open-ended (e.g., "What error are you seeing?"), use plain text instead.
+
 Domain-specific example questions:
 - **backend:** "Should this endpoint be versioned (v2) or replace v1?"
 - **frontend:** "Is this replacing the existing component or adding a new variant alongside it?"
@@ -91,6 +109,24 @@ Cons: {1–2 bullets}
 
 **My recommendation: Option A** — {1 sentence reason, referencing a sinapse or lesson if one applies}
 ```
+
+**Use `AskUserQuestion` tool to present the options:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Which implementation approach should we use?",
+    header: "Approach",
+    options: [
+      { label: "Option A (Recommended)", description: "{short title} — {1-sentence reason}" },
+      { label: "Option B", description: "{short title} — {1-sentence reason}" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
+Wait for the developer's selection before proceeding to Stage 1.
 
 Wait for developer's choice before proceeding to Stage 1.
 

@@ -96,6 +96,23 @@ Generate 3 options:
 
 For each: score, pros (2–4), cons (2–4), time-to-production, reversibility, example company.
 
+**Present alternatives using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Which strategic approach for {decision}?",
+    header: "Strategy",
+    options: [
+      { label: "Option A (Recommended)", description: "{title} — {1-line rationale}" },
+      { label: "Option B (Conservative)", description: "{title} — {1-line rationale}" },
+      { label: "Option C (Radical)", description: "{title} — {1-line rationale}" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 ### Step 5: Output Card
 
 Write `.brain/working-memory/mckinsey-output.md`:

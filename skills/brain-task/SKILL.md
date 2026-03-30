@@ -63,6 +63,23 @@ Output this warning and wait for developer direction before proceeding.
 If no developer input (autonomous mode), attempt RESUME if context files exist, otherwise RESTART.
 ```
 
+**Present options using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Interrupted task detected: {last_task_id} at Step {current_pipeline_step}. How should we proceed?",
+    header: "Resume",
+    options: [
+      { label: "Resume (Recommended)", description: "Continue from Step {N} — context files still exist" },
+      { label: "Restart", description: "Start over from Step 0 — context may be stale" },
+      { label: "Abandon", description: "Discard interrupted task and start fresh" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 ---
 
 ## Step 0: Route through brain-dev (MANDATORY)

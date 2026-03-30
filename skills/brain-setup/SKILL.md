@@ -86,6 +86,26 @@ Example: `/brain-setup hooks`
 
 Then ask the developer which section they want to configure.
 
+**Present section groups using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Which configuration area do you want to edit?",
+    header: "Config",
+    options: [
+      { label: "Core", description: "database, cortex_regions, hooks, linters" },
+      { label: "Resilience", description: "circuit_breaker, strategy_rotation, subagents" },
+      { label: "Learning", description: "learning, consolidation, lesson_escalation, weight_decay" },
+      { label: "Tokens", description: "context_loading, token_budgets, token_optimization" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
+After the developer selects a group, present the specific sections within that group as a follow-up `AskUserQuestion` (if the group has more than one section) or proceed directly (if only one section).
+
 ### Step 3: Display Section Details
 
 When a section is selected (either by argument or from the menu), display its current values as a markdown table.
@@ -209,6 +229,22 @@ Before writing any changes, display a diff:
 Apply these changes? (yes/no)
 ```
 
+**Present using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Apply these configuration changes?",
+    header: "Apply",
+    options: [
+      { label: "Apply (Recommended)", description: "Write changes to brain.config.json" },
+      { label: "Cancel", description: "Discard all queued changes" }
+    ],
+    multiSelect: false
+  }]
+)
+```
+
 If `--dry-run` flag was set, show the diff and stop without writing.
 
 ### Step 6: Write Changes
@@ -252,6 +288,22 @@ When `--reset section` is used:
 4. Ask for confirmation
 5. Write the template values for that section only (preserve all other sections)
 6. Log the reset to activity.md
+
+**Present using `AskUserQuestion`:**
+
+```
+AskUserQuestion(
+  questions: [{
+    question: "Reset {section} to template defaults? Current values will be lost.",
+    header: "Reset",
+    options: [
+      { label: "Reset", description: "Restore template defaults for this section" },
+      { label: "Cancel", description: "Keep current values" }
+    ],
+    multiSelect: false
+  }]
+)
+```
 
 ## Validation Schema
 
