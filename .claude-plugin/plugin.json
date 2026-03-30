@@ -1,7 +1,7 @@
 {
   "name": "forgeflow-mini",
   "description": "Brain-driven development plugin — 14 skills, FTS5 + spreading activation, auto-episode capture, brain-consult (3-mode Q&A), subagent dispatch, TDD micro-step planning, 9 hooks, circuit breaker",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "author": {
     "name": "ForgeFlow contributors"
   },
