@@ -5,82 +5,68 @@ description: 6-phase implementation verification — build, types, lint, tests, 
 
 # brain-verify — Implementation Verification
 
+## Trigger
+
+Called by brain-task at Step 5, or directly via `/brain-verify`.
+
 ## Iron Law
 
-**You cannot output a GO verdict without actual tool output confirming it.**
+**NEVER output a GO verdict without actual tool output confirming it.**
+No tool output = no verdict. If a phase tool is unavailable, verdict is **SKIP** — never PASS.
 
-- Phase 1 PASS means the build command returned exit code 0 — not that the code "probably compiles."
-- Phase 4 PASS means the test runner output shows all tests passing — not that the implementation "looks correct."
-- "The code looks fine" is not verification. Running the tool is.
-- If a phase tool is unavailable (no test runner, no linter), the verdict for that phase is SKIP — not PASS.
+## Phases
 
-## Pipeline Position
-Called by brain-task at Step 3.5, or manually via `/brain-verify`.
+| #  | Phase    | Blocking | What it checks              |
+|----|----------|----------|-----------------------------|
+| 1  | Build    | YES      | Code compiles / builds      |
+| 2  | Types    | no       | Type-checker passes         |
+| 3  | Lint     | no       | Linter reports no errors    |
+| 4  | Tests    | no       | Test suite passes           |
+| 5  | Security | YES      | No hardcoded secrets / SQLi |
+| 6  | Diff     | no       | No unexpected file changes  |
 
-## Execution (Delegated to Script — v0.8.0)
+> Details: [references/verification-phases.md](references/verification-phases.md)
 
-Run all 6 phases via script:
+## Execution
+
+Run all 6 phases via script when available:
 ```bash
 bash scripts/brain-verify.sh --json --project-root .
 ```
 
-Read the JSON output. LLM responsibility:
-- If `overall_verdict: "GO"` -> continue pipeline
-- If `overall_verdict: "NO_GO"` -> stop pipeline, report blocking phase to developer
-- If any phase has `status: "FAIL"` but is non-blocking -> summarize and continue
-- If any phase has `status: "WARN"` -> note in output
-- Interpret ambiguous failures (the ONLY part requiring AI reasoning)
+If script unavailable (exit code 3), fall back to running phases manually per
+[verification-phases.md](references/verification-phases.md).
 
-**Fallback:** If the script is unavailable or fails with exit code 3, fall back to running phases manually as described below.
+Run phases in order (1 → 6). Stop on first **BLOCKING** failure.
 
-## Execution Flow
+## Verdict
 
-Run these 6 phases IN ORDER. Stop on first blocking failure.
+- **GO** — all blocking phases passed (non-blocking failures noted but allowed).
+- **NO-GO** — any blocking phase failed. Report failures, return to brain-task.
 
-**Blocking phases (stop pipeline on failure):** Phase 1 (build fails — code cannot compile), Phase 5 (hardcoded secrets found — security risk).
-**Non-blocking phases (warn and continue):** Phase 2 (type errors), Phase 3 (lint warnings), Phase 4 (test coverage below threshold), Phase 6 (unexpected file changes).
-Command detection: try commands in order (e.g., for tests: npm test → pytest → go test → cargo test), use the first that exists and succeeds.
+## Report Format
 
-### Phase 1: Build Check
-- Detect build system: package.json scripts.build, Makefile, go build, cargo build
-- Run build command
-- PASS: exit code 0 | FAIL: report errors
-
-### Phase 2: Type Check
-- Detect: tsc --noEmit, mypy, go vet
-- PASS: no type errors | FAIL: report errors
-
-### Phase 3: Lint Check
-- Detect: eslint, biome, ruff, golangci-lint
-- PASS: no errors (warnings OK) | FAIL: report errors
-
-### Phase 4: Test Check
-- Detect: npm test, pytest, go test, cargo test
-- Run test suite
-- PASS: all tests pass | FAIL: report failures
-
-### Phase 5: Security Scan
-- Check for: hardcoded secrets (API keys, passwords in code)
-- Check for: SQL injection patterns
-- Check for: XSS patterns (innerHTML, unsanitized HTML injection without sanitize)
-- PASS: no issues | WARN: flag for review
-
-### Phase 6: Diff Review
-- Run git diff --stat
-- Verify: no unintended files changed
-- Verify: no large binary files added
-- Output: summary of changes
-
-## Output Format
+```
 VERIFICATION REPORT:
-  Phase 1 (Build):    PASS | FAIL | SKIP (no build system)
-  Phase 2 (Types):    PASS | FAIL | SKIP (no type checker)
-  Phase 3 (Lint):     PASS | FAIL | SKIP (no linter)
-  Phase 4 (Tests):    PASS | FAIL | SKIP (no test runner)
-  Phase 5 (Security): PASS | WARN | SKIP (no scanner)
-  Phase 6 (Diff):     PASS | WARN
+  Phase | Result | Details
+  ------|--------|--------
+  Build | PASS   | npm run build — exit 0
+  Types | SKIP   | no type checker found
+  Lint  | PASS   | eslint — 0 errors
+  Tests | FAIL   | 2 tests failing (non-blocking)
+  Sec.  | PASS   | no secrets detected
+  Diff  | WARN   | 1 unexpected file changed
 
   Verdict: GO | NO-GO (reason)
+```
+
+## Rules
+
+1. NEVER output GO without running commands — "looks fine" is not verification.
+2. No tool output = no verdict. Every phase needs a real command result.
+3. Unavailable tool → mark **SKIP**, not PASS.
+4. On NO-GO: report blocking failures clearly, hand back to brain-task.
 
 ## Token Budget
-5k in / 3k out (runs tools, doesn't generate much text)
+
+5k in / 3k out

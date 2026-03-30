@@ -1,0 +1,106 @@
+# brain.config.json — Default Template (v2.0.0)
+
+This is the canonical template for `brain.config.json`. Used by Init mode to
+generate the initial config and by `--reset` to restore section defaults.
+
+```json
+{
+  "brain_id": "brain-{project-name}",
+  "version": "2.0.0",
+  "created_at": "{ISO8601_TIMESTAMP}",
+  "project_root": ".",
+  "brain_root": ".brain",
+
+  "database": {
+    "path": ".brain/brain.db",
+    "schema_version": 1
+  },
+
+  "cortex_regions": ["{detected_regions}"],
+
+  "hooks": {
+    "profile": "standard",
+    "profiles": {
+      "minimal": "No hooks — raw pipeline execution",
+      "standard": "session-start + hippocampus-guard (default, recommended)"
+    },
+    "individual_overrides": {}
+  },
+
+  "linters": {
+    ".ts": "npx eslint --fix",
+    ".tsx": "npx eslint --fix",
+    ".js": "npx eslint --fix",
+    ".py": "ruff check --fix",
+    ".go": "gofmt -w"
+  },
+
+  "resilience": {
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 3,
+      "cooldown_seconds": 300,
+      "window_seconds": 600
+    },
+    "strategy_rotation": {
+      "enabled": true,
+      "failure_threshold": 2,
+      "max_retry_per_strategy": 2,
+      "strategies": ["default", "alternative", "minimal", "escalate", "human"]
+    }
+  },
+
+  "subagents": {
+    "enabled": true,
+    "dispatch_threshold": 20,
+    "parallel_review": true,
+    "fallback_to_inline": true,
+    "model_overrides": {
+      "implementation": null,
+      "review": "sonnet",
+      "document": "haiku",
+      "research": "haiku",
+      "status": "haiku"
+    }
+  },
+
+  "learning": {
+    "confidence_initial": 0.3,
+    "promotion_threshold": 0.7,
+    "min_occurrences_for_promotion": 3,
+    "scope_default": "project",
+    "auto_promote_to_global": false
+  },
+
+  "context_loading": {
+    "tier_1_max_tokens": 4000,
+    "tier_2_max_tokens": 15000,
+    "tier_3_max_tokens": 5000,
+    "tier_1_always_loaded": ["hippocampus_summary", "current_task", "top_3_lessons"],
+    "tier_2_default_count": 5,
+    "tier_3_on_demand": true,
+    "persistent_mind_cache": ".brain/working-memory/agent-state.md"
+  },
+
+  "consolidation": {
+    "trigger": "explicit_command_or_5_tasks",
+    "auto_propose_updates": true,
+    "developer_approval_required": true
+  },
+
+  "weight_decay": {
+    "enabled": true,
+    "rate_per_day": 0.005,
+    "min_weight": 0.1,
+    "max_stale_days": 90
+  }
+}
+```
+
+## Placeholder Resolution
+
+| Placeholder | Resolution |
+|-------------|------------|
+| `{project-name}` | Detected from package.json name, go.mod module, or directory name |
+| `{ISO8601_TIMESTAMP}` | `new Date().toISOString()` at init time |
+| `{detected_regions}` | Array from Phase 2 classification (e.g., `["backend", "database"]`) |

@@ -1,73 +1,18 @@
 {
-  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/hooks-schema.json",
-  "_comment": "ForgeFlow Mini — Hook definitions for Claude Code settings.json. Copy the 'hooks' object into your .claude/settings.json to activate.",
   "hooks": {
-    "PreToolUse": [
-      {
-        "id": "brain-hippocampus-guard",
-        "description": "Tier 1: Block writes to .brain/hippocampus/ (immutable without /brain-consolidate)",
-        "matcher": "Write|Edit",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" hippocampusGuard"
-      },
-      {
-        "id": "brain-routing-guard",
-        "description": "Tier 1: Enforce router skills (brain-dev, brain-consult) cannot write outside allowlist",
-        "matcher": "Write|Edit",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" routingGuard"
-      },
-      {
-        "id": "brain-config-protection",
-        "description": "Tier 1: Block config changes that remove rules or weaken severity",
-        "matcher": "Write|Edit",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" configProtection"
-      },
-      {
-        "id": "brain-circuit-breaker",
-        "description": "Tier 1: Block execution when circuit breaker is OPEN (3+ consecutive failures)",
-        "matcher": "*",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" circuitBreakerCheck"
-      },
-      {
-        "id": "brain-strategy-rotation",
-        "description": "Tier 2: Suggest strategy rotation after 2+ consecutive failures",
-        "matcher": "*",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" strategyRotation"
-      },
-      {
-        "id": "brain-task-safety-net",
-        "description": "Tier 2: Warn if pipeline step > 3 but no task-completion file found",
-        "matcher": "*",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" taskSafetyNet"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "id": "brain-quality-gate",
-        "description": "Tier 2: After file writes, check for associated linter command",
-        "matcher": "Write|Edit",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" qualityGate"
-      },
-      {
-        "id": "brain-activity-observer",
-        "description": "Tier 3: Track all modified file paths in modified-files.json",
-        "matcher": "Write|Edit|Bash",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" activityObserver"
-      }
-    ],
     "SessionStart": [
       {
-        "id": "brain-state-restore",
-        "description": "Tier 1: Restore brain state summary into session context",
-        "matcher": "*",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" stateRestore"
+        "name": "brain-session-start",
+        "command": "bash hooks/session-start.sh",
+        "description": "Inject brain orientation + current state"
       }
     ],
-    "SessionEnd": [
+    "PreToolUse": [
       {
-        "id": "brain-session-end",
-        "description": "Tier 1: Persist brain-state.json with session-end timestamp",
-        "matcher": "*",
-        "command": "node \"$CLAUDE_PLUGIN_DIR/hooks/brain-hooks.js\" sessionEnd"
+        "name": "hippocampus-guard",
+        "command": "bash hooks/hippocampus-guard.sh",
+        "toolNames": ["Write", "Edit"],
+        "description": "Block writes to .brain/hippocampus/"
       }
     ]
   }
