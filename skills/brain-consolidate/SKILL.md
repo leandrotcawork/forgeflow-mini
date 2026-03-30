@@ -281,18 +281,20 @@ Sinapses that contributed to successful tasks since last consolidation get an au
 
 **Process:**
 
-1. Read all `task-completion-*.md` files in `.brain/working-memory/` (and `.brain/progress/completed-contexts/` for recently archived ones)
+1. Read all `task-completion-*.md` files in `.brain/working-memory/` only (NOT archived ones — they were already counted in previous cycles)
 2. Filter to `status: success` only
-3. For each successful task-completion, extract the `sinapses_loaded` array
-4. Count occurrences: how many successful tasks used each sinapse
-5. Apply bonus:
+3. Filter to `created_at > last consolidation checkpoint` (read the latest `<!-- consolidation-checkpoint: ... -->` marker from `.brain/progress/activity.md`)
+4. For each successful task-completion, extract the `sinapses_loaded` array
+5. Count occurrences: how many successful tasks used each sinapse
+6. Apply bonus:
 
 ```sql
 UPDATE sinapses
 SET weight = MIN(1.0, weight + (0.01 * {successful_use_count}))
-WHERE id = '{sinapse_id}'
-  AND last_accessed > '{last_consolidation_date}';
+WHERE id = '{sinapse_id}';
 ```
+
+**Guard against double-counting:** Only task-completion files in `.brain/working-memory/` created after the last consolidation checkpoint are counted. Archived completions (in `completed-contexts/`) are skipped — they were already processed in previous consolidation cycles. Step 5a archives these files after processing, ensuring they aren't counted again.
 
 **Weight change rules (complete):**
 
