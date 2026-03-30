@@ -2,6 +2,21 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.2.8] — 2026-03-30
+
+### Fixed
+- **hippocampusGuard** (hooks/brain-hooks.js): allows file creation during brain-init — only blocks edits to existing hippocampus files (existence check added)
+- **brain-task Path F** (SKILL.md): spec/code-quality review subagents have a skip threshold — skipped when `micro_steps <= 2` AND `estimated_tokens < 15k`
+- **brain-task Path F** (SKILL.md): `/brain-document` is mandatory post Path F — always invoked after all micro-steps complete
+- **brain-post-task.js**: plan status updated to `completed` before archival so archived plans reflect final state
+- **brain-post-task.js**: `dev-context-{task_id}.md` added to archival list — no longer left behind in `.brain/working-memory/`
+- **stateRestore hook**: generates `session_id` (`YYYY-MM-DD-HHMMSS-{4hex}`) and `started_at` on fresh sessions — previously always `null`
+- **brain-post-task.js**: added `--tokens-used` optional argument; computes rolling `avg_task_tokens` — previously always 0
+- **brain-init SKILL.md**: `created_at` in brain.config.json uses real ISO8601 timestamp at runtime; cortex directories created only for domains detected in Phase 2
+- **brain-plan SKILL.md**: sparse-brain exception added to lesson checklist — "N/A with reason" accepted when brain.db has 0 sinapses; toolchain detection required before writing test command gates
+- **brain-map SKILL.md**: Hebbian tracking (Step 2.5) marked REQUIRED with failure-safe error handling; Tier 1 hippocampus content must be read from disk verbatim
+- **brain-task SKILL.md**: TDD red-phase fallback documented for projects with no test runner (structural verification); strategy rotation reset on success writes full reset to disk including `attempts: []`
+
 ## [1.2.7] — 2026-03-30
 
 ### Fixed

@@ -71,17 +71,17 @@ AskUserQuestion(
 ### Phase 6: Persist to .brain/
 - Create `.brain/` directory structure:
   - `.brain/hippocampus/`
-  - `.brain/cortex/` — with per-region subdirectories:
-    - `.brain/cortex/backend/`
-    - `.brain/cortex/frontend/`
-    - `.brain/cortex/database/`
-    - `.brain/cortex/infra/`
+  - `.brain/cortex/` — with per-region subdirectories for each region detected in Phase 2 only.
+    Example (if backend + database detected): `.brain/cortex/backend/`, `.brain/cortex/database/`
+    Do NOT create directories for domains not detected in the project scan.
   - `.brain/sinapses/`
   - `.brain/working-memory/`
   - `.brain/progress/`
   - `.brain/progress/completed-contexts/`
 - Write all generated markdown files
-- Copy `brain.config.json` from template
+- Copy `brain.config.json` from template, then update these fields with actual runtime values:
+  - `created_at`: current ISO8601 timestamp (e.g., `new Date().toISOString()` — NOT a placeholder)
+  - `cortex_regions`: list only the regions detected in Phase 2 (e.g., `["backend", "database"]` — omit undetected domains)
 - Create `.brain/progress/activity.md` with header and initial consolidation checkpoint (append-only, never delete):
   ```markdown
   # Brain Activity Log

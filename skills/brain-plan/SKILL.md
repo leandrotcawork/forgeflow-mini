@@ -292,9 +292,11 @@ Each micro-step is a single test-first unit of work. The pattern is always:
 
 - [ ] Spec file exists and contains all test cases listed above
 - [ ] Implementation file exists
-- [ ] All specs pass: `{exact test command}`
-- [ ] No linting errors: `{exact lint command}`
+- [ ] All specs pass: `{exact test command — detect from package.json scripts.test, Makefile, pytest, go test, etc. If no test runner found, use: "Run structural validation: verify all required functions/types exist in the implementation file"}`
+- [ ] No linting errors: `{exact lint command from brain.config.json linters map for this file extension, or omit if no linter configured for this type}`
 - [ ] {Domain-specific check — e.g., "Event schema validates against JSON Schema"}
+
+> **Toolchain detection rule:** Before writing acceptance gates, check whether the project has a test runner (look for `package.json scripts.test`, `pytest.ini`, `go.mod`, `Makefile`). If none exists, replace the test command gate with a structural validation gate that can actually be verified. Never write gates that reference tools the project does not have.
 
 #### Dependencies
 
@@ -343,7 +345,7 @@ Before finalizing the plan, run this checklist. Every item must pass. If any fai
 - [ ] Acceptance gates include exact commands (not "run tests" but "npm test -- --filter=pricing")
 - [ ] Dependencies form a valid DAG (no circular dependencies)
 - [ ] Token estimates sum to a reasonable total (warn if > 80k)
-- [ ] At least one lesson is referenced (we always have something to avoid)
+- [ ] At least one lesson is referenced — OR explicitly noted as N/A with reason (acceptable only when brain.db has 0 sinapses, i.e., new project with no prior task history)
 - [ ] Multi-domain tasks have explicit cross-domain integration micro-steps
 ```
 

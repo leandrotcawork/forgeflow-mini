@@ -62,12 +62,9 @@ ORDER BY weight DESC
 ```markdown
 ### Hippocampus Context
 
-**Architecture:** [condensed architecture.md — 500 chars]
+**Architecture:** [Read `.brain/hippocampus/architecture.md` and include the first 500 characters verbatim — do NOT summarize from memory. If the file does not exist, write: "(hippocampus/architecture.md not found)"]
 
-**Conventions:** [condensed conventions.md — 500 chars]
-  - Naming rules
-  - Absolute rules for this language
-  - Process rules
+**Conventions:** [Read `.brain/hippocampus/conventions.md` and include the first 500 characters verbatim — do NOT summarize from memory. If the file does not exist, write: "(hippocampus/conventions.md not found)"]
 
 ### Task Summary
 
@@ -108,9 +105,11 @@ LIMIT 2
 - Total: 3-4 sinapses, all relevant to the actual task
 - Zero LLM cost — pure SQL (~5ms total)
 
-**Step 2.5: Track sinapse usage (Hebbian learning, NEW in v1.2.0)**
+**Step 2.5: Track sinapse usage (Hebbian learning — REQUIRED, do not skip)**
 
-After Tier 2 sinapses are loaded, update their access tracking in brain.db:
+After Tier 2 sinapses are loaded, run this SQL UPDATE even if only 1 sinapse was loaded. If 0 sinapses were loaded (empty Tier 2), skip this step and log: `[Hebbian skip — 0 sinapses loaded]`.
+
+Update their access tracking in brain.db:
 
 ```sql
 UPDATE sinapses
@@ -131,6 +130,8 @@ WHERE id IN ({tier_3_sinapse_ids});
 **Excluded:** Tier 1 hippocampus sinapses (`hippocampus-architecture`, `hippocampus-conventions`) are NOT tracked — they are always loaded, so tracking them would add noise without signal.
 
 **Cost:** One SQL UPDATE per context load, ~1ms, zero tokens.
+
+**Failure handling:** If the UPDATE fails (brain.db locked, schema mismatch), log the error and continue — Hebbian tracking failure must never block context assembly.
 
 **Fallback:** If FTS5 returns < 2 results (sparse brain, new project), fall back to weight-based query:
 
@@ -209,7 +210,10 @@ generated_at: [ISO8601]
 
 ## Tier 1: Foundational (~4k tokens)
 
-[Condensed hippocampus content]
+> **Content rule:** Tier 1 hippocampus content MUST be read from disk and inlined verbatim (first 500 chars each). Never compose it from memory. A subagent reading this packet has no other access to hippocampus files.
+
+[Verbatim first 500 chars of .brain/hippocampus/architecture.md]
+[Verbatim first 500 chars of .brain/hippocampus/conventions.md]
 [Task summary]
 
 ## Tier 2: Domain-Specific (~10-15k tokens)

@@ -96,7 +96,8 @@ function parseArgs(argv) {
     taskDescription: '',
     testsSummary: '',
     shortDescription: '',
-    now: null
+    now: null,
+    tokensUsed: null
   };
 
   var errors = [];
@@ -131,6 +132,8 @@ function parseArgs(argv) {
         args.shortDescription = val; i += 2; break;
       case '--now':
         args.now = val; i += 2; break;
+      case '--tokens-used':
+        args.tokensUsed = val; i += 2; break;
       default:
         errors.push('Unknown argument: ' + key);
         i += 1;
@@ -203,6 +206,16 @@ function parseArgs(argv) {
     }
   } else {
     args.now = new Date();
+  }
+
+  // Parse --tokens-used
+  if (args.tokensUsed !== null) {
+    var parsedTokens = parseInt(args.tokensUsed, 10);
+    if (isNaN(parsedTokens) || parsedTokens < 0) {
+      errors.push('--tokens-used must be a non-negative integer');
+    } else {
+      args.tokensUsed = parsedTokens;
+    }
   }
 
   if (errors.length > 0) {
@@ -351,6 +364,19 @@ function archiveContextArtifacts(brainPath, args) {
   var wmDir = path.join(brainPath, 'working-memory');
   var archiveDir = path.join(brainPath, 'progress', 'completed-contexts');
 
+  // Update plan status to 'completed' before archiving
+  var planPath = path.join(wmDir, 'implementation-plan-' + taskId + '.md');
+  if (fs.existsSync(planPath)) {
+    try {
+      var planContent = fs.readFileSync(planPath, 'utf-8');
+      planContent = planContent.replace(/^status: planned$/m, 'status: completed');
+      fs.writeFileSync(planPath, planContent, 'utf-8');
+      diag('Plan status updated to completed before archival');
+    } catch (err) {
+      diag('Could not update plan status: ' + err.message);
+    }
+  }
+
   // Map of source filename -> destination filename
   var fileMap = [
     {
@@ -368,6 +394,10 @@ function archiveContextArtifacts(brainPath, args) {
     {
       from: 'implementation-plan-' + taskId + '.md',
       to: taskId + '-implementation-plan.md'
+    },
+    {
+      from: 'dev-context-' + taskId + '.md',
+      to: taskId + '-dev-context.md'
     }
   ];
 
@@ -577,6 +607,15 @@ function updateProjectState(brainPath, args, cbResult) {
   // Increment counters
   projectState.total_tasks_completed = (projectState.total_tasks_completed || 0) + 1;
   projectState.tasks_since_last_consolidation = (projectState.tasks_since_last_consolidation || 0) + 1;
+
+  // Update rolling average token usage (only when --tokens-used is provided)
+  if (args.tokensUsed !== null && args.tokensUsed > 0) {
+    var prevAvg = projectState.avg_task_tokens || 0;
+    var totalCompleted = projectState.total_tasks_completed; // already incremented above
+    projectState.avg_task_tokens = Math.round(
+      (prevAvg * (totalCompleted - 1) + args.tokensUsed) / totalCompleted
+    );
+  }
 
   // Increment model usage
   if (!projectState.model_usage) {

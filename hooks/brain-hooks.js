@@ -97,12 +97,27 @@ function block(reason) {
  * as additionalContext so Claude sees it at session start.
  */
 function stateRestore(/* input */) {
-  const state = readJSON(brainStatePath());
+  var state = readJSON(brainStatePath());
   if (!state) {
     return ok({ additionalContext: 'BRAIN_STATE: No prior state found (fresh session).' });
   }
 
-  const lines = [
+  // On a fresh session (session_id is null/absent), generate one and persist it.
+  // Format: YYYY-MM-DD-HHMMSS-{4-char hex random}
+  if (!state.session_id) {
+    var now = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var datePart = now.getFullYear() + '-' +
+      pad(now.getMonth() + 1) + '-' +
+      pad(now.getDate());
+    var timePart = pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    var randPart = Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0');
+    state.session_id = datePart + '-' + timePart + '-' + randPart;
+    state.started_at = now.toISOString();
+    writeJSON(brainStatePath(), state);
+  }
+
+  var lines = [
     'BRAIN_STATE summary:',
     '  session_id:              ' + (state.session_id || 'none'),
     '  current_skill:           ' + (state.current_skill || 'none'),
@@ -117,7 +132,9 @@ function stateRestore(/* input */) {
 }
 
 /**
- * hippocampusGuard — blocks any write whose file_path touches .brain/hippocampus/.
+ * hippocampusGuard — blocks edits to existing hippocampus files.
+ * Allows creation of new files (brain-init path) but blocks modification
+ * of files that already exist (immutability contract).
  */
 function hippocampusGuard(input) {
   var toolInput = (input && input.tool_input) || input || {};
@@ -126,6 +143,11 @@ function hippocampusGuard(input) {
   filePath = filePath.replace(/\\/g, '/');
 
   if (filePath.indexOf('.brain/hippocampus/') !== -1) {
+    // Allow creation of new files (file does not exist yet — brain-init)
+    var absolutePath = filePath.startsWith('/') ? filePath : require('path').join(process.cwd(), filePath);
+    if (!require('fs').existsSync(absolutePath)) {
+      return ok();
+    }
     return block(
       'Hippocampus files are immutable — they can only be changed via /brain-consolidate with developer approval.'
     );

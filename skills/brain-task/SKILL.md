@@ -380,6 +380,8 @@ IF any micro-step references a file NOT in the File Structure table:
   → Continue but flag for spec review
 ```
 
+> **No-test-runner note:** If the project has no test runner, acceptance gates that reference `npx vitest run` or `pytest` will fail. In this case, substitute structural validation: verify the required exports/functions/types exist in the implementation file using `grep` or `node -e`. Document the substitution in the acceptance gate output.
+
 Record in `brain-state.json`:
 ```json
 {
@@ -500,7 +502,9 @@ If subagent dispatch fails or `--no-subagent` was passed:
 
 1. Log: `subagent failed for M{N}, executing inline (reason: {reason})`
 2. Read the micro-step's Spec section — write the spec file
-3. Run the spec — confirm it fails (TDD red phase)
+3. Run the spec to confirm it fails (TDD red phase):
+   - If test runner available (`package.json scripts.test`, `pytest`, `go test`, etc.): run the spec and verify it fails with "not defined" or import error.
+   - If NO test runner: verify red phase structurally — confirm the implementation file does NOT yet exist, or that the function/class under test is absent. Log: `[TDD red verified structurally — no test runner available]`.
 4. Read the micro-step's Implementation section — write the implementation
 5. Run the spec — confirm it passes (TDD green phase)
 6. Run acceptance gate commands
@@ -699,7 +703,18 @@ Update `brain-state.json` after each strategy attempt:
 }
 ```
 
-**4. On success:** Reset `consecutive_failures` to 0 in `brain-state.json`. Reset `strategy_rotation.current_strategy` to 0.
+**4. On success:** Update `brain-state.json` with a full strategy rotation reset:
+```json
+{
+  "consecutive_failures": 0,
+  "strategy_rotation": {
+    "task_id": null,
+    "current_strategy": 0,
+    "attempts": []
+  }
+}
+```
+These resets must be written to disk (not just in memory) so the next task starts with a clean strategy slate.
 
 ### Additional Verification: Codex Path Only (score >= 40)
 
