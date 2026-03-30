@@ -78,9 +78,9 @@ Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=fa
 **You need these values for every subsequent step. Do not guess them.**
 
 **Plan-mode guard:** If `plan_mode = true` but `.brain/working-memory/implementation-plan-{task_id}.md` does not exist:
-- Log warning: "Plan mode active but no plan file found. Generating plan inline."
-- Run `/brain-plan` NOW to generate the plan before proceeding.
-- Do NOT skip the plan step — plan-mode tasks require a plan.
+- Log warning: "Plan mode active but no plan file found. This is unexpected — brain-plan should have created it before invoking brain-task."
+- STOP. Report to the developer: "Plan file missing. Re-run `/brain-dev` to restart the pipeline from classification."
+- Do NOT invoke `/brain-plan` from here — the pipeline is linear (CLASSIFY → PLAN → EXECUTE). brain-task cannot send control backwards to brain-plan.
 
 **STATE PERSISTENCE (GATE 5):** Update `.brain/working-memory/brain-state.json`:
 

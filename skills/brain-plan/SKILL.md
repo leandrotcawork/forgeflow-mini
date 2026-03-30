@@ -9,7 +9,7 @@ metadata:
 
 ## Pipeline Position
 
-brain-plan is invoked by brain-dev when plan_mode is true (complexity >= 50 or `--plan` flag). After plan approval, brain-plan invokes brain-task directly. Linear flow — no return to brain-dev.
+brain-plan is invoked by brain-dev for all build/refactor tasks with score >= 20. After plan approval, brain-plan invokes brain-task directly. Linear flow — no return to brain-dev.
 
 ```
 brain-dev → brain-plan → brain-task

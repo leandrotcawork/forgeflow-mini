@@ -337,7 +337,7 @@ It's in .env as REDIS_URL=redis://host:port/db
 
 ---
 ⚠️  Brain pipeline active: Task 2026-03-27-ml-cache paused at Step 3.
-Resume when ready: /brain-dev --resume
+Resume when ready: /brain-task --resume
 ```
 
 ### Example 9: Configuring Brain Settings
