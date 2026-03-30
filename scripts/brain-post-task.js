@@ -325,6 +325,10 @@ function appendActivityRow(brainPath, args) {
       throw new Error('Failed to create activity.md: ' + activityPath);
     }
   } else {
+    // Skip if this task_id is already logged (idempotent on retry)
+    if (existing.indexOf('| ' + args.taskId + ' |') !== -1) {
+      return activityPath;
+    }
     // Append row — O(1), no full-file rewrite
     try {
       var suffix = existing.endsWith('\n') ? '' : '\n';
@@ -539,9 +543,10 @@ function updateBrainState(brainPath, args) {
   // Increment session-level tasks_since_consolidate
   state.tasks_since_consolidate = (state.tasks_since_consolidate || 0) + 1;
 
-  // Update consecutive failures
+  // Update consecutive failures and reset strategy rotation on success
   if (args.status === 'success') {
     state.consecutive_failures = 0;
+    state.strategy_rotation = { task_id: null, current_strategy: 0, attempts: [] };
   } else {
     state.consecutive_failures = (state.consecutive_failures || 0) + 1;
   }
@@ -557,7 +562,7 @@ function updateBrainState(brainPath, args) {
 function updateProjectState(brainPath, args, cbResult) {
   var projectStatePath = path.join(brainPath, 'progress', 'brain-project-state.json');
   var projectState = readJSON(projectStatePath) || {
-    version: '0.7.0',
+    version: '1.2.5',
     total_tasks_completed: 0,
     total_consolidation_cycles: 0,
     last_consolidation_at: null,

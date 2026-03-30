@@ -5,6 +5,15 @@ description: 6-phase implementation verification — build, types, lint, tests, 
 
 # brain-verify — Implementation Verification
 
+## Iron Law
+
+**You cannot output a GO verdict without actual tool output confirming it.**
+
+- Phase 1 PASS means the build command returned exit code 0 — not that the code "probably compiles."
+- Phase 4 PASS means the test runner output shows all tests passing — not that the implementation "looks correct."
+- "The code looks fine" is not verification. Running the tool is.
+- If a phase tool is unavailable (no test runner, no linter), the verdict for that phase is SKIP — not PASS.
+
 ## Pipeline Position
 Called by brain-task at Step 3.5, or manually via `/brain-verify`.
 
@@ -64,11 +73,11 @@ Command detection: try commands in order (e.g., for tests: npm test → pytest �
 
 ## Output Format
 VERIFICATION REPORT:
-  Phase 1 (Build):    PASS | FAIL
+  Phase 1 (Build):    PASS | FAIL | SKIP (no build system)
   Phase 2 (Types):    PASS | FAIL | SKIP (no type checker)
   Phase 3 (Lint):     PASS | FAIL | SKIP (no linter)
   Phase 4 (Tests):    PASS | FAIL | SKIP (no test runner)
-  Phase 5 (Security): PASS | WARN
+  Phase 5 (Security): PASS | WARN | SKIP (no scanner)
   Phase 6 (Diff):     PASS | WARN
 
   Verdict: GO | NO-GO (reason)

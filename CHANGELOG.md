@@ -2,6 +2,54 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.2.7] — 2026-03-30
+
+### Fixed
+- `hooks/brain-hooks.js`: All five path-reading hook functions (`hippocampusGuard`, `routingGuard`, `configProtection`, `qualityGate`, `activityObserver`) extracted `file_path` from `input.file_path`, but Claude Code's `PreToolUse` hook delivers tool parameters nested under `input.tool_input.file_path`. The result was that `filePath` was always an empty string: `hippocampusGuard` silently allowed all hippocampus writes, `routingGuard` blocked every write when `current_skill` was `brain-dev` (since no allowlist pattern matched `''`), `configProtection` never checked content, and `qualityGate`/`activityObserver` were no-ops. Fixed by extracting from `input.tool_input` first with a flat-input fallback for backward compatibility.
+
+## [1.2.6] — 2026-03-30
+
+### Fixed
+- `scripts/brain-post-task.js`: `appendActivityRow` now checks for an existing `task_id` row before appending — re-running post-task for the same task no longer duplicates the activity log entry or inflates consolidation counts.
+- `scripts/brain-post-task.js`: Fallback default version updated from `"1.2.4"` to `"1.2.5"` to match the template.
+- `hooks/brain-hooks.js`: `wmDir` in `sessionEnd` was declared inside the first `try` block and referenced in the second. If the first block threw before the assignment, the episode sweep would silently fail and episodes would accumulate indefinitely. `wmDir` is now declared before both `try` blocks.
+- `skills/brain-verify/SKILL.md`: Output Format now lists `SKIP` for Phase 1 (no build system) and Phase 5 (no scanner), consistent with the Iron Law section. Previously only Phases 2–4 listed SKIP, which could force a false PASS verdict when no build system was detected.
+- `skills/brain-task/SKILL.md`: Reference table pointed to "Step 6" and "Step 6.1" — neither of which exist in the document. Corrected to "Step 4 (fallback)" and "Step 5.1" respectively.
+
+## [1.2.5] — 2026-03-30
+
+### Fixed
+- `scripts/brain-post-task.js`: `strategy_rotation` was not reset on successful task completion, causing subsequent failure sequences to inherit stale strategy index and attempt history. Now reset to defaults on success alongside `consecutive_failures`.
+- `scripts/brain-post-task.js`: Fallback default for missing `brain-project-state.json` had hardcoded `version: "0.7.0"`. Updated to `"1.2.4"` to match current schema.
+- `scripts/init.js`: `persistBrain` collected mkdir failures but still silently swallowed per-file write failures. Hippocampus/cortex files that failed to write were not surfaced. Now collects write failures and throws, exiting non-zero.
+- `skills/brain-task/SKILL.md`: GATE 5 definition incorrectly claimed Steps 4 and 5 as recovery checkpoints — only Steps 0, 1, 2, and Path F micro-steps have actual `STATE PERSISTENCE` annotations. Narrowed to match reality.
+
+## [1.2.4] — 2026-03-30
+
+### Fixed
+- `scripts/init.js`: `brain-project-state.json` template source path was `working-memory/` — corrected to `progress/` where the file actually lives. Previously the file was never copied and the circuit breaker started without its template state.
+- `scripts/init.js`: `persistBrain` now surfaces directory creation failures instead of silently swallowing them. Init exits non-zero if the `.brain/` scaffold cannot be created.
+- `scripts/build_brain_db.py`: Empty `links: []` frontmatter was parsed as `['']` (list with one empty string), inserting bogus `sinapse_links` rows with `target_id=''`. Fixed by filtering empty items from inline list parsing.
+- `scripts/build_brain_db.py`: Number detection regex `value.replace('.','').replace('-','').isdigit()` accepted strings like `"1.2.3"` as numeric, then crashed on `float("1.2.3")` causing `parse_frontmatter` to return `None` and silently skip the entire file. Replaced with proper `try int / try float / fallback string` logic.
+- `scripts/build_brain_db.py`: Sinapses with missing `title` or `region` were inserted with empty strings, silently corrupting region-based queries. Now skipped with a warning.
+- `templates/brain/working-memory/brain-state.json`: Added missing `current_skill: null` field. Without it, fresh projects had a schema divergence from what `routingGuard` and `brain-post-task.js` write/read.
+- `hooks/brain-hooks.js`: `configProtection` regex `/:\s*"off"/` fired on any JSON value of `"off"` (e.g. `{"environment": "off"}`), not only rule severity fields. Removed the overly broad pattern; the three specific severity-downgrade patterns remain.
+- `skills/brain-task/SKILL.md`: GATE 5 (state persistence checkpoints) was referenced throughout the document but never defined in the HARD RULE block. Added explicit definition.
+
+## [1.2.3] — 2026-03-30
+
+### Fixed
+- `scripts/init.js` now runs all 10 phases: added Phase 8 (build brain.db via `build_brain_db.py`), Phase 9 (copy brain-state.json + brain-project-state.json from templates), Phase 10 (environment check with FULL/DEGRADED mode report). Previously a fresh `brain-init` left brain.db missing, causing brain-map FTS5 queries to silently fail.
+- Removed 7 vestigial lesson directory entries from `scripts/init.js` (`cortex/*/lessons/` and `lessons/{cross-domain,inbox,archived}`). These directories were created but never used since lessons were dissolved into sinapse content in v1.0.0. Disk no longer contradicts brain-map's "lessons embedded in sinapses" model.
+
+## [1.2.2] — 2026-03-30
+
+### Added
+- Anti-rationalization tables in brain-task and brain-plan — explicit "Thought → Reality" tables that name the exact excuses the LLM generates before skipping pipeline steps
+- Red Flags block in brain-task — 8 rationalizations with counters, positioned immediately after the hard gates where violations are most likely to occur
+- Iron Law in brain-verify — enforces that GO verdict requires actual tool output; "looks correct" is not verification; unavailable phases are SKIP not PASS
+- Spec reviewer distrust in brain-task Path F — explicit instruction to NOT trust the implementer's report; verdict must be based on `git diff HEAD~1` output observed directly
+
 ## [1.2.1] — 2026-03-29
 
 ### Added

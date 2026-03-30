@@ -2,6 +2,7 @@
   "session_id": null,
   "started_at": null,
   "last_task_id": null,
+  "current_skill": null,
   "current_pipeline_step": 0,
   "tasks_completed_this_session": 0,
   "tasks_since_consolidate": 0,

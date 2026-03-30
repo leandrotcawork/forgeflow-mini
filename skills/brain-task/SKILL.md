@@ -15,7 +15,23 @@ GATE 1: context-packet-{task_id}.md MUST exist before Step 2
 GATE 2: Implementation MUST use the context packet as its brief — not your own judgment
 GATE 3: Steps 3-5 (post-task) MUST run inline after Step 2 — NEVER wait for a hook
 GATE 4: State persistence — brain-state.json MUST be updated at every checkpoint listed below
+GATE 5: brain-state.json current_pipeline_step MUST be updated at Steps 0, 1, and 2, and per micro-step in Path F — these are the recovery points for interrupted task detection
 ```
+
+## Anti-Rationalization — STOP
+
+These thoughts are warning signs. If you catch yourself thinking any of these, you are rationalizing a shortcut. Stop and follow the pipeline.
+
+| Thought | Reality |
+|---------|---------|
+| "I can skip the context packet — the task is obvious" | The context packet loads sinapses that prevent repeating past mistakes. Feeling confident is not the same as having context. |
+| "I already know what to do, Step 1 is just overhead" | Step 1 is the only guarantee the brain's knowledge is applied. Skip it and you build blindly. |
+| "The subagent said DONE — that's enough" | The implementer's report means nothing. Run acceptance gates yourself. DONE is not verified until you have tool output. |
+| "The tests passed in the subagent's output" | You have not seen test output. Read it. Run it. Do not trust reported results — verify them. |
+| "Step 2.5 is just a formality — the code looks correct" | Step 2.5 is a hard gate. Either tool output says GO or it doesn't. There is no "looks correct." |
+| "The spec reviewer only catches edge cases — the main thing is fine" | The spec reviewer is your only formal check. If it is not ✅, the task is not done. |
+| "Post-task steps are bookkeeping — I'll skip them to save tokens" | Post-task updates state, captures episodes, and clears current_skill. Skipping corrupts the brain state. |
+| "This is a simple fix, I don't need the full pipeline" | 'Simple' is where the most pipeline violations happen. Score determines complexity — not your intuition. |
 
 **Architecture principle:** This skill is fully self-contained. Pipeline orchestration (routing, state, verification, archival) always runs inline in the current session. Implementation may be delegated to a subagent (Haiku or Sonnet) for speed and token efficiency — but every subagent dispatch has an immediate inline fallback. The pipeline never depends on a subagent succeeding. No external hooks are required. If hooks exist, they serve as optional observers — never as workflow drivers.
 
@@ -503,7 +519,9 @@ Agent(
   prompt: """
 Review the implementation of micro-step M{N}: {title} for spec compliance.
 
-Run `git diff HEAD~1` to see what changed. Verify against the micro-step requirements:
+CRITICAL: Do NOT trust the implementer's report or self-review. Run `git diff HEAD~1`
+yourself. Your verdict must be based on what you observe in the diff and in the files —
+not on what the implementer claimed was done.
 
 1. Was EVERYTHING in the spec implemented? List any gaps.
 2. Was ANYTHING added that was NOT in the spec? List extras.
@@ -890,8 +908,8 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 | Step 2, Path A (Haiku) | haiku | Implement task | Execute inline (same session) |
 | Step 2, Path B (Sonnet) | sonnet | Implement task | Execute inline |
 | Step 2, Path C post-impl | sonnet | Code review (brain-codex-review) | Run inline at Step 2.5 |
-| Step 2, Path C post-impl | haiku | Propose sinapse updates (brain-document) | Run inline at Step 6 |
-| Step 6.1, score < 40 | haiku | Propose sinapse updates (brain-document) | Run inline |
+| Step 2, Path C post-impl | haiku | Propose sinapse updates (brain-document) | Run inline at Step 4 (fallback) |
+| Step 5.1, score < 40 | haiku | Propose sinapse updates (brain-document) | Run inline |
 | Step 2, Path F (Dispatcher) | per-step | TDD micro-step (spec + impl) | Execute micro-step inline |
 | Step 2, Path F parallel | per-step | Independent micro-steps in parallel | Execute sequentially inline |
 

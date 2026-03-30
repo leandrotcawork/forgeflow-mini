@@ -120,7 +120,8 @@ function stateRestore(/* input */) {
  * hippocampusGuard — blocks any write whose file_path touches .brain/hippocampus/.
  */
 function hippocampusGuard(input) {
-  var filePath = (input && (input.file_path || input.filePath)) || '';
+  var toolInput = (input && input.tool_input) || input || {};
+  var filePath = (toolInput.file_path || toolInput.filePath) || '';
   // Normalise to forward slashes for cross-platform matching
   filePath = filePath.replace(/\\/g, '/');
 
@@ -152,7 +153,8 @@ function routingGuard(input) {
   if (!currentSkill) return ok();
   if (currentSkill !== 'brain-dev' && currentSkill !== 'brain-consult') return ok();
 
-  var filePath = (input && (input.file_path || input.filePath)) || '';
+  var toolInput = (input && input.tool_input) || input || {};
+  var filePath = (toolInput.file_path || toolInput.filePath) || '';
   // Normalise to forward slashes for cross-platform matching
   filePath = filePath.replace(/\\/g, '/');
 
@@ -175,7 +177,8 @@ function routingGuard(input) {
  * change REMOVES rules or WEAKENS severity (error -> warn/off, warn -> off).
  */
 function configProtection(input) {
-  var filePath = (input && (input.file_path || input.filePath)) || '';
+  var toolInput = (input && input.tool_input) || input || {};
+  var filePath = (toolInput.file_path || toolInput.filePath) || '';
   var basename = path.basename(filePath);
 
   var protectedFiles = ['.eslintrc', '.eslintrc.js', '.eslintrc.json', '.prettierrc', '.prettierrc.json', 'biome.json', 'tsconfig.json'];
@@ -184,7 +187,7 @@ function configProtection(input) {
   });
   if (!match) return ok();
 
-  var content = (input && input.content) || '';
+  var content = (toolInput.content) || '';
   if (!content) return ok();
 
   // Heuristic: look for patterns that weaken config
@@ -192,7 +195,6 @@ function configProtection(input) {
     /"error"\s*:\s*"(warn|off)"/,
     /"warn"\s*:\s*"off"/,
     /"severity"\s*:\s*"(warn|off)"/,
-    /:\s*"off"/,
     /"rules"\s*:\s*\{\s*\}/,
   ];
 
@@ -366,8 +368,8 @@ function sessionEnd(/* input */) {
   // Prune stale consult audit files (failure must never block session end)
   var pruneResult = { deleted_for_ttl: 0, deleted_for_cap: 0, remaining: 0 };
   var episodesSwept;
+  var wmDir = path.join(brainRoot(), 'working-memory');
   try {
-    var wmDir = path.join(brainRoot(), 'working-memory');
     pruneResult = pruneConsultAuditFiles(wmDir, state.ended_at, 7, 50);
   } catch {
     // Never block session end on cleanup failure
@@ -433,7 +435,8 @@ function strategyRotation(/* input */) {
  * linter command defined in brain.config.json.
  */
 function qualityGate(input) {
-  var filePath = (input && (input.file_path || input.filePath)) || '';
+  var toolInput = (input && input.tool_input) || input || {};
+  var filePath = (toolInput.file_path || toolInput.filePath) || '';
   if (!filePath) return ok();
 
   var config = readJSON(brainConfigPath());
@@ -498,7 +501,8 @@ function taskSafetyNet(/* input */) {
  * .brain/working-memory/modified-files.json.
  */
 function activityObserver(input) {
-  var filePath = (input && (input.file_path || input.filePath)) || '';
+  var toolInput = (input && input.tool_input) || input || {};
+  var filePath = (toolInput.file_path || toolInput.filePath) || '';
   if (!filePath) return ok();
 
   var modifiedFilesPath = path.join(brainRoot(), 'working-memory', 'modified-files.json');

@@ -29,6 +29,19 @@ brain-dev → brain-plan → brain-task
 3. **Sinapse-Linked:** Every convention reference must link to a specific sinapse ID or lesson ID from the context packet. Unlinked conventions are invisible to subagents.
 4. **Self-Contained Micro-Steps:** Each micro-step includes everything a subagent needs: the spec to write, the file to create, the pattern to follow, and the acceptance gate. No ambient context assumed.
 
+## Anti-Rationalization — STOP
+
+These thoughts mean you are about to skip Phase 0 or shortcut the plan. STOP.
+
+| Thought | Reality |
+|---------|---------|
+| "The task is clear enough — no questions needed" | Phase 0 questions catch scope ambiguity before planning. Skipping Phase 0 means discovering the wrong assumption mid-implementation. |
+| "I can write the plan without the context packet" | Without brain-map context, your plan has no sinapse-linked conventions. Subagents will guess patterns instead of following them. |
+| "One approach is obviously correct — no need to propose options" | Presenting options surfaces constraints the developer knows and you don't. 'Obvious' choices cause the most plan revisions. |
+| "The developer approved brain-dev's routing — that's enough approval" | brain-dev approval is for classification. Plan approval is for scope, approach, and micro-step structure. They are separate gates. |
+| "I can combine questions to go faster" | One question per message. Bundled questions get partial answers and miss the ambiguity you were trying to resolve. |
+| "The plan is close enough — I'll fill in the details during implementation" | 'Fill in during implementation' means subagents will guess. Every micro-step must be concrete before approval. |
+
 ---
 
 ## Workflow

@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const { execFileSync } = require('child_process');
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -274,29 +275,28 @@ async function persistBrain(projectPath, files) {
     brainRoot,
     path.join(brainRoot, 'hippocampus'),
     path.join(brainRoot, 'cortex', 'backend'),
-    path.join(brainRoot, 'cortex', 'backend', 'lessons'),
     path.join(brainRoot, 'cortex', 'frontend'),
-    path.join(brainRoot, 'cortex', 'frontend', 'lessons'),
     path.join(brainRoot, 'cortex', 'database'),
-    path.join(brainRoot, 'cortex', 'database', 'lessons'),
     path.join(brainRoot, 'cortex', 'infra'),
-    path.join(brainRoot, 'cortex', 'infra', 'lessons'),
     path.join(brainRoot, 'sinapses'),
-    path.join(brainRoot, 'lessons', 'cross-domain'),
-    path.join(brainRoot, 'lessons', 'inbox'),
-    path.join(brainRoot, 'lessons', 'archived'),
     path.join(brainRoot, 'working-memory'),
     path.join(brainRoot, 'progress'),
     path.join(brainRoot, 'progress', 'completed-contexts'),
   ];
 
+  const dirFailures = [];
   for (const dir of dirs) {
     try {
       await mkdir(dir, { recursive: true });
       log(colors.dim, `  ✓ Created ${path.relative(projectPath, dir)}`);
     } catch (err) {
-      // Directory may already exist
+      if (err.code !== 'EEXIST') {
+        dirFailures.push(`${path.relative(projectPath, dir)}: ${err.message}`);
+      }
     }
+  }
+  if (dirFailures.length > 0) {
+    throw new Error(`Failed to create directories:\n${dirFailures.map(f => `  - ${f}`).join('\n')}`);
   }
 
   // Create progress/activity.md if it does not exist
@@ -307,14 +307,18 @@ async function persistBrain(projectPath, files) {
   }
 
   // Write files
+  const writeFailures = [];
   for (const [relativePath, content] of Object.entries(files)) {
     const filePath = path.join(brainRoot, relativePath);
     try {
       await writeFile(filePath, content, 'utf-8');
       log(colors.green, `  ✓ Wrote ${relativePath}`);
     } catch (err) {
-      log(colors.yellow, `  ✗ Failed to write ${relativePath}: ${err.message}`);
+      writeFailures.push(`${relativePath}: ${err.message}`);
     }
+  }
+  if (writeFailures.length > 0) {
+    throw new Error(`Failed to write files:\n${writeFailures.map(f => `  - ${f}`).join('\n')}`);
   }
 
   // Copy brain.config.json from plugin template
@@ -371,6 +375,72 @@ async function main() {
   log(colors.cyan, '\n💾 PHASE 6: Persisting to .brain/...');
   const allFiles = { ...hippocampus, ...cortex };
   const brainRoot = await persistBrain(projectPath, allFiles);
+
+  // Phase 8: Build brain.db index
+  log(colors.cyan, '\n🔨 PHASE 8: Building brain.db index...');
+  const pluginRoot = path.resolve(__dirname, '..');
+  const buildScript = path.join(pluginRoot, 'scripts', 'build_brain_db.py');
+  function tryExecFile(cmd, args) {
+    try { execFileSync(cmd, args, { stdio: 'ignore' }); return true; } catch { return false; }
+  }
+  if (fs.existsSync(buildScript)) {
+    const pythonCmd = tryExecFile('python', ['--version']) ? 'python'
+      : tryExecFile('python3', ['--version']) ? 'python3'
+      : null;
+    if (pythonCmd) {
+      try {
+        execFileSync(pythonCmd, [buildScript, '--brain-path', brainRoot], { stdio: 'inherit' });
+        log(colors.green, '  ✓ brain.db indexed');
+      } catch (err) {
+        log(colors.yellow, `  ⚠ brain.db build failed: ${err.message}`);
+        log(colors.yellow, '    Run manually: python scripts/build_brain_db.py --brain-path .brain');
+      }
+    } else {
+      log(colors.yellow, '  ⚠ Python not found — skipping brain.db build');
+      log(colors.yellow, '    Run manually: python scripts/build_brain_db.py --brain-path .brain');
+    }
+  } else {
+    log(colors.yellow, '  ⚠ build_brain_db.py not found — skipping index build');
+  }
+
+  // Phase 9: Initialize state files
+  log(colors.cyan, '\n⚙️  PHASE 9: Initializing state files...');
+  const stateFiles = [
+    {
+      src: path.join(pluginRoot, 'templates', 'brain', 'working-memory', 'brain-state.json'),
+      dest: path.join(brainRoot, 'working-memory', 'brain-state.json'),
+    },
+    {
+      src: path.join(pluginRoot, 'templates', 'brain', 'progress', 'brain-project-state.json'),
+      dest: path.join(brainRoot, 'progress', 'brain-project-state.json'),
+    },
+  ];
+  for (const { src, dest } of stateFiles) {
+    const name = path.basename(dest);
+    if (!fs.existsSync(src)) {
+      log(colors.yellow, `  ⚠ Template not found: ${src}`);
+    } else if (fs.existsSync(dest)) {
+      log(colors.dim, `  ✓ ${name} already exists — skipping`);
+    } else {
+      try {
+        fs.copyFileSync(src, dest);
+        log(colors.green, `  ✓ ${name} initialized`);
+      } catch (err) {
+        log(colors.yellow, `  ⚠ Could not copy ${name}: ${err.message}`);
+      }
+    }
+  }
+
+  // Phase 10: Environment check
+  log(colors.cyan, '\n✔️  PHASE 10: Verifying environment...');
+  const nodeOk = tryExecFile('node', ['--version']);
+  const pythonOk = tryExecFile('python', ['--version']) || tryExecFile('python3', ['--version']);
+  log(colors.blue, `  Node.js:  ${nodeOk ? '✓ available' : '✗ not found'}`);
+  log(colors.blue, `  Python:   ${pythonOk ? '✓ available' : '✗ not found'}`);
+  const capMode = (nodeOk && pythonOk) ? 'FULL'
+    : !pythonOk ? 'DEGRADED (no Python — brain.db indexing unavailable)'
+    : 'DEGRADED (no Node)';
+  log(colors.blue, `  Mode:     ${capMode}`);
 
   log(colors.green, `\n✅ Brain initialized successfully!`);
   log(colors.blue, `   Location: ${brainRoot}`);

@@ -41,8 +41,8 @@ def parse_yaml_dict(yaml_str):
 
         # Handle lists [item1, item2, ...]
         if value.startswith('[') and value.endswith(']'):
-            value = value[1:-1]
-            value = [v.strip().strip('"\'') for v in value.split(',')]
+            inner = value[1:-1].strip()
+            value = [v.strip().strip('"\'') for v in inner.split(',') if v.strip()]
         # Handle YAML block lists (key with empty value followed by - items)
         elif value == '':
             # Check if next lines are block list items
@@ -70,15 +70,15 @@ def parse_yaml_dict(yaml_str):
             value = True
         elif value.lower() == 'false':
             value = False
-        # Handle numbers
-        elif value.replace('.', '').replace('-', '').isdigit():
-            if '.' in value:
-                value = float(value)
-            else:
-                value = int(value)
-        # Handle strings
+        # Handle numbers, fall back to string
         else:
-            value = value.strip('"\'')
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except ValueError:
+                    value = value.strip('"\'')  # plain string
 
         result[key] = value
         i += 1
@@ -319,7 +319,13 @@ def main():
             print(f'  [Warn] Skipping {file_path}: missing "id" in frontmatter')
             continue
         title = frontmatter.get('title', '')
+        if not title:
+            print(f'  [Warn] Skipping {file_path}: missing "title" in frontmatter')
+            continue
         region = frontmatter.get('region', '')
+        if not region:
+            print(f'  [Warn] Skipping {file_path}: missing "region" in frontmatter')
+            continue
         tags = frontmatter.get('tags', [])
         links = frontmatter.get('links', [])
         weight = frontmatter.get('weight', 0.5)
