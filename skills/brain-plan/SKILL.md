@@ -9,11 +9,11 @@ metadata:
 
 ## Pipeline Position
 
-brain-plan is invoked by brain-dev when plan_mode is true (complexity >= 50 or `--plan` flag). It runs between brain-map (context loading) and brain-task Step 3 (implementation). Not on the default pipeline path — only activated for complex tasks requiring architectural planning.
+brain-plan is invoked by brain-dev when plan_mode is true (complexity >= 50 or `--plan` flag). After plan approval, brain-plan invokes brain-task directly. Linear flow — no return to brain-dev.
 
 ```
-brain-dev → brain-plan → brain-task (brain-map called within brain-task Step 1)
-                              ↑ you are here
+brain-dev → brain-plan → brain-task
+               ↑ you are here
 ```
 
 **Purpose:** Take a context packet (from brain-map) and task description, then produce a detailed, step-by-step implementation plan with TDD micro-steps, file structure design, sinapse-linked conventions, self-review gates, and acceptance criteria. Every micro-step is a test-first unit of work that a subagent can execute independently.
@@ -100,6 +100,18 @@ After developer selects or approves an approach:
 - Note the chosen approach
 - Proceed to Stage 1 (Analyse Context Packet) — all micro-steps must reflect the chosen approach
 - If dev-context was present: use the keywords from dev-context to inform your understanding of the task scope
+
+### Step 0e: Load context via brain-map (NEW in v1.2.0)
+
+Before Stage 1 can analyze the context packet, it must exist. Call brain-map now:
+
+1. Read `keywords` and `domain` from `dev-context-{task_id}.md`
+2. Call brain-map with these keywords and domain (brain-map creates `context-packet-{task_id}.md`)
+3. Verify `.brain/working-memory/context-packet-{task_id}.md` exists
+
+If brain-map fails or brain.db doesn't exist (new project): proceed to Stage 1 without a context packet. Stage 1 will read the codebase directly instead of relying on sinapse content.
+
+**This fixes the chicken-and-egg bug:** Previously, Stage 1 referenced context-packet but it wasn't created until brain-task Step 1. Now brain-plan creates it first, so the planner has real sinapse context to build the plan with.
 
 ---
 
@@ -461,6 +473,17 @@ Note: Expanded plans (plan_type: expanded) ALWAYS route to Path F. Path E handle
 5. Run /brain-document on completion
 ```
 
+### Post-Approval: Forward to brain-task (NEW in v1.2.0)
+
+After the developer approves the plan (or the self-review checklist passes):
+
+1. Update `.brain/working-memory/brain-state.json`: set `current_skill: "brain-task"`
+2. Invoke `/brain-task` with the task_id
+
+**brain-plan's job ends here.** Do not orchestrate execution. Do not dispatch subagents. Do not wait for brain-task to finish. brain-task owns all execution from this point forward.
+
+**This replaces the old flow** where brain-plan returned control to brain-dev Phase 3. The pipeline is now linear: brain-dev → brain-plan → brain-task.
+
 ---
 
 ## Example: Full Plan for "Add product margin to analytics dashboard"
@@ -678,4 +701,4 @@ or split into 2 sessions at micro-step M{breakpoint}.
 
 ---
 
-**Created:** 2026-03-24 | **Updated:** 2026-03-26 | **Agent Type:** Planner | **Plan Format:** Cortex-Linked TDD (expanded)
+**Created:** 2026-03-24 | **Updated:** 2026-03-29 | **Agent Type:** Planner | **Plan Format:** Cortex-Linked TDD (expanded) | **Version:** v1.2.0
