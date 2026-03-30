@@ -2,6 +2,19 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.2.1] — 2026-03-29
+
+### Added
+- Interactive `AskUserQuestion` UI for all 13 bounded-choice interactions across 8 skills — clickable option buttons instead of plain text questions
+  - brain-plan: approach selection + clarifying questions
+  - brain-task: interrupted task recovery (Resume/Restart/Abandon)
+  - brain-init: persist confirmation + hook profile selection
+  - brain-dev: intent disambiguation
+  - brain-mckinsey: strategic alternative selection
+  - brain-consolidate: proposal approval + escalation approval
+  - brain-document: sinapse update approval
+  - brain-setup: section menu (grouped) + apply/reset confirmations
+
 ## [1.2.0] — 2026-03-29
 
 ### Breaking Changes
