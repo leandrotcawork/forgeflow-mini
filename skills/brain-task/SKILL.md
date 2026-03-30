@@ -122,14 +122,14 @@ All models use `context-packet-{task_id}.md` as their implementation brief. If S
 
 ## Step 1: Load Context — DO THIS FIRST
 
-**Context ownership:** brain-task Step 1 is the ONLY place context is loaded. brain-dev does NOT call brain-map. If a context-packet-{task_id}.md already exists from a previous run, overwrite it — Step 1 always regenerates fresh context.
+**Context ownership:** brain-task Step 1 ensures a context-packet exists. If brain-plan already created one (planned path), reuse it. If not (trivial/fix-known path), call brain-map to create it.
 
-Do these actions NOW. Do not skip to implementation.
-
-1. Read `.brain/hippocampus/architecture.md` and `.brain/hippocampus/conventions.md` (condensed — key patterns only)
-2. Query brain.db for domain sinapses: `SELECT * FROM sinapses WHERE region LIKE '%{domain}%' ORDER BY weight DESC LIMIT 5`
-3. Lesson knowledge is embedded in sinapse content (## Lessons Learned sections) — loaded naturally through sinapse retrieval. No separate lesson query needed.
-4. Write all of the above into `.brain/working-memory/context-packet-{task_id}.md`
+1. Check if `.brain/working-memory/context-packet-{task_id}.md` already exists
+2. **If YES** (brain-plan path): Read it. Skip to Step 1 gate check.
+3. **If NO** (trivial/fix-known path): Call brain-map to create it:
+   a. Read `.brain/hippocampus/architecture.md` and `.brain/hippocampus/conventions.md`
+   b. Query brain.db for domain sinapses
+   c. Write context-packet-{task_id}.md
 
 **For Haiku (lightweight) tasks:** Load Tier 1 only (hippocampus + sinapses, ~4k tokens). Skip Tier 2.
 
@@ -297,24 +297,9 @@ Debugging requires full codebase access and the complete context window. Always 
 
 ---
 
-### Path E: Plan Mode — Execute STANDARD PLAN (score >= 50, plan_type: standard or missing)
+### Path E: REMOVED in v1.2.0
 
-High-complexity tasks require planning first, then inline execution. This path handles **standard plans** (legacy format or `plan_type: standard`).
-
-**Plan type check:** Read `.brain/working-memory/implementation-plan-{task_id}.md` frontmatter.
-
-```
-IF plan_type == "expanded" (or frontmatter contains micro_steps):
-  → Route to Path F (Dispatcher Mode) instead. Do NOT execute Path E.
-  → Log: "Expanded plan detected — routing to Path F (dispatcher mode)"
-
-IF plan_type == "standard" OR plan_type is missing:
-  → Continue with Path E (inline sequential execution)
-```
-
-1. Read the implementation plan (`.brain/working-memory/implementation-plan-{task_id}.md`)
-2. Execute each plan phase sequentially, following the context packet
-3. Checkpoint progress between phases
+Legacy standard plans (`plan_type: standard`) are no longer supported. All plans are now expanded format via brain-plan. If a legacy plan file is encountered, treat it as an expanded plan (route to Path F).
 
 ---
 
@@ -351,7 +336,7 @@ Read `.brain/working-memory/implementation-plan-{task_id}.md` and extract:
 ```
 IF micro_steps == 0 OR File Structure table is empty:
   → ABORT: "Expanded plan is invalid — no micro-steps or file structure found."
-  → Fall back to Path E (treat as standard plan)
+  → Fall back to inline execution (execute plan steps sequentially in current session)
 
 IF any micro-step references a file NOT in the File Structure table:
   → WARN: "Plan integrity issue — micro-step M{N} references unlisted file {path}"
@@ -483,6 +468,88 @@ If subagent dispatch fails or `--no-subagent` was passed:
 5. Run the spec — confirm it passes (TDD green phase)
 6. Run acceptance gate commands
 7. Proceed to next micro-step
+
+**F.2.5: Review gates (per micro-step, after acceptance gates pass)**
+
+After a micro-step passes its acceptance gates, run two review subagents:
+
+**Spec-compliance reviewer (blocking):**
+
+```
+Agent(
+  model: "haiku",
+  description: "Spec review: M{N}: {title}",
+  prompt: """
+Review the implementation of micro-step M{N}: {title} for spec compliance.
+
+Run `git diff HEAD~1` to see what changed. Verify against the micro-step requirements:
+
+1. Was EVERYTHING in the spec implemented? List any gaps.
+2. Was ANYTHING added that was NOT in the spec? List extras.
+3. Do the tests actually verify the specified behaviour (not just mock it)?
+
+Output: ✅ COMPLIANT or ❌ ISSUES: [list]
+"""
+)
+```
+
+If ❌: fix inline (read issues, apply fixes, re-run acceptance gates). Then re-run spec reviewer. Repeat until ✅.
+
+**Code-quality reviewer (blocking):**
+
+```
+Agent(
+  model: "haiku",
+  description: "Quality review: M{N}: {title}",
+  prompt: """
+Review micro-step M{N}: {title} for code quality.
+
+Run `git diff HEAD~1` to see what changed. Read only the changed files.
+
+Check for:
+1. Bugs or logic errors (reference line numbers)
+2. Names that are unclear or misleading
+3. YAGNI violations (features NOT in the spec)
+4. Tests that only mock behaviour without verifying real outcomes
+
+Output: ✅ APPROVED or ⚠️ ISSUES: Important: [list] / Minor: [list]
+"""
+)
+```
+
+If Important issues: fix inline, re-run quality reviewer until ✅.
+
+**F.2.6: Confidence display (per micro-step)**
+
+After reviews pass, display confidence to user:
+- `confidence: high` → `🧠 Task {N}: {title} — DONE ✓`
+- `confidence: medium` → `🧠 Task {N}: {title} — DONE (confidence: medium)` + each ⚠ warning
+- `confidence: low` → `🧠 Task {N}: {title} — DONE (confidence: low)` + warnings + `Should I address these before moving to the next task?`
+
+**The "fix it" loop:** If user says "fix it" after seeing low-confidence warnings:
+1. Create a fix specification from the specific warnings
+2. Re-dispatch brain-task implementer for this micro-step with the fix specification
+3. Re-run review gates after fix
+
+**F.2.7: Post-task per micro-step (REQUIRED — do NOT skip)**
+
+After reviews pass and confidence is displayed, run the post-task pipeline for this micro-step:
+
+```bash
+node scripts/brain-post-task.js \
+  --task-id "{task_id}-step-{N}" \
+  --status "{success|failure}" \
+  --model "{model}" \
+  --domain "{domain}" \
+  --score {score} \
+  --files-changed '{files_json_array}' \
+  --sinapses-loaded '{sinapses_json_array}' \
+  --short-description "{micro_step_title}" \
+  --task-description "{micro_step_description}" \
+  --tests-summary "{tests_pass_fail_summary}"
+```
+
+Read JSON output and handle `lesson_trigger` / `consolidation_needed` as defined in Steps 3-5.
 
 ---
 
@@ -817,4 +884,4 @@ Track estimated token usage at each step. If context pressure is high, adapt:
 
 ---
 
-**Created:** 2025-03-25 | **Agent Type:** Orchestrator | **Last Updated:** 2026-03-26 | **Architecture:** Self-contained (no hook dependencies), subagent-optimized, circuit-breaker protected
+**Created:** 2026-03-27 | **Updated:** 2026-03-29 | **Version:** v1.2.0
