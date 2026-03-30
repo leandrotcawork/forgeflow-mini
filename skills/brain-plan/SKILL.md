@@ -49,7 +49,7 @@ Extract from frontmatter:
 
 Use `keywords` to inform your Q&A questions in Step 0b.
 
-brain-plan does NOT load sinapses or query brain.db. Context loading happens when brain-task runs (brain-map is called at brain-task Step 1, after the plan is approved and brain-dev dispatches implementer subagents).
+brain-plan calls brain-map in Step 0e to create the context-packet before Stage 1. This gives the planner real sinapse context to build the plan with.
 
 If the file does NOT exist (brain-plan called standalone without brain-dev):
 → Ask the developer for intent/domain context directly. Proceed to Step 0b.
