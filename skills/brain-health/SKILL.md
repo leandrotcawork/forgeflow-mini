@@ -1,6 +1,6 @@
 ---
 name: brain-health
-description: Unified health dashboard + consolidation cycle — merges brain-status and brain-consolidate into a single skill
+description: Unified health dashboard + consolidation cycle
 ---
 
 # brain-health Skill — Dashboard + Consolidation
