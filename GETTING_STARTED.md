@@ -1,6 +1,6 @@
 # ForgeFlow Mini — Getting Started Guide
 
-**TL;DR:** Install plugin from marketplace → Initialize brain → Start using /brain-task
+**TL;DR:** Install plugin from marketplace → Configure brain → Start using /brain-task
 
 ---
 
@@ -13,32 +13,31 @@ claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.g
 claude plugin install brain-mini@forgeflow-plugins
 ```
 
-This registers the plugin and all 14 skills automatically.
+This registers the plugin and all 9 skills automatically.
 
 ---
 
 ## Step 2: Restart Claude Code
 
 Now when you type `/`, you should see:
-- /brain-init
+- /brain-config
 - /brain-dev
 - /brain-task
 - /brain-plan
-- /brain-mckinsey
+- /brain-consult
 - /brain-map
 - /brain-document
-- /brain-status
-- /brain-consolidate
-- /brain-codex-review
+- /brain-health
+- /brain-lesson
 
 ---
 
-## Step 3: Initialize Brain for Your Project
+## Step 3: Configure Brain for Your Project
 
 From inside a Claude Code session in your project root:
 
 ```
-/brain-init
+/brain-config
 ```
 
 This creates:
@@ -74,10 +73,10 @@ Brain automatically:
 /brain-task "Your task description"
 
 # Check brain health
-/brain-status
+/brain-health
 
 # Batch-review sinapses updates (every 5 tasks)
-/brain-consolidate
+/brain-health --consolidate
 ```
 
 ---
@@ -126,7 +125,7 @@ Brain automatically:
 /brain-task --plan "Should we migrate to gRPC for internal services?"
 → Plan mode activated (forced with --plan)
 → Shows evaluation framework
-→ McKinsey layer runs (external research, benchmarks)
+→ Consult layer runs with --consensus (external research, benchmarks)
 → 3 alternatives with ROI scores
 → 1-4 hours, 180k tokens
 ```
@@ -138,7 +137,7 @@ Brain automatically:
 Brain will suggest:
 
 ```
-/brain-consolidate
+/brain-health --consolidate
 ```
 
 This batch-reviews all sinapses updates:
@@ -247,7 +246,7 @@ claude plugin marketplace add https://github.com/leandrotcawork/forgeflow-mini.g
 claude plugin install brain-mini@forgeflow-plugins
 
 # Then inside Claude Code:
-/brain-init
+/brain-config
 /brain-task "Your first task"
 ```
 

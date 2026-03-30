@@ -79,7 +79,7 @@ The script will:
 
 - [ ] Verify on GitHub that the tag exists
 - [ ] Reinstall plugin locally to test marketplace description
-- [ ] Run `/brain-init --upgrade` on a test project to verify templates
+- [ ] Run `/brain-config` on a test project to verify templates
 
 ## Common Mistakes
 
