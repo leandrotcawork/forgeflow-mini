@@ -5,56 +5,15 @@
   "author": {
     "name": "Leandro Theodoro"
   },
+  "homepage": "https://github.com/leandrotcawork/forgeflow-mini",
   "repository": "https://github.com/leandrotcawork/forgeflow-mini",
   "license": "MIT",
   "keywords": [
-    "brain", "knowledge", "development", "context", "persistence", "subagents"
-  ],
-  "skills": [
-    {
-      "name": "brain-dev",
-      "description": "Smart router — classifies intent, scores complexity, routes to the right skill",
-      "trigger": "/brain-dev"
-    },
-    {
-      "name": "brain-map",
-      "description": "Context loader — assembles .brain/ context using 3-tier weighted retrieval",
-      "trigger": "/brain-map"
-    },
-    {
-      "name": "brain-plan",
-      "description": "Planner — generates TDD implementation plans with interactive Q&A",
-      "trigger": "/brain-plan"
-    },
-    {
-      "name": "brain-task",
-      "description": "Implementer — executes plans via subagent dispatch or inline for trivial tasks",
-      "trigger": "/brain-task"
-    },
-    {
-      "name": "brain-verify",
-      "description": "Verifier — 6-phase verification checklist (build, types, lint, tests, security, diff)",
-      "trigger": "/brain-verify"
-    },
-    {
-      "name": "brain-document",
-      "description": "Documenter — proposes sinapse updates and captures episodes after task completion",
-      "trigger": "/brain-document"
-    },
-    {
-      "name": "brain-consult",
-      "description": "Consultant — brain-informed Q&A in quick, research, or consensus mode",
-      "trigger": "/brain-consult"
-    },
-    {
-      "name": "brain-config",
-      "description": "Config & initialization — initialize brain for new projects or edit brain.config.json",
-      "trigger": "/brain-config"
-    },
-    {
-      "name": "brain-health",
-      "description": "Dashboard & consolidation — view brain metrics, process episodes, manage sinapses",
-      "trigger": "/brain-health"
-    }
+    "brain",
+    "knowledge",
+    "development",
+    "context",
+    "persistence",
+    "subagents"
   ]
 }
