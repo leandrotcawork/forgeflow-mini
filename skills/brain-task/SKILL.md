@@ -686,12 +686,16 @@ After tests pass, invoke `/brain-codex-review`:
 
 **After Step 2.5 completes, run the post-task sequence below DIRECTLY — do not wait for a hook.**
 
+**Path F exception (v1.2.0):** If the task used Path F (expanded plan dispatch), the per-micro-step post-task (F.2.7) already ran `brain-post-task.js` for each step. Do NOT run `brain-post-task.js` again here — it would double-count tasks and consolidation triggers. Instead, skip directly to the self-check + LLM confidence assessment (Steps 3+4+5 below handle only the overall task summary, not re-running brain-post-task.js).
+
 The `TaskCompleted` hook only fires when a Task tool subagent completes. When brain-task runs in the main session (the normal case), no hook fires. Always execute Steps 3-5 inline.
 
 ### Steps 3+4+5.2+5.4+5.5: Post-Task Automation (Delegated)
 
 **These steps are delegated to `scripts/brain-post-task.js`.** Do NOT manually edit
 task-completion records, activity.md, brain-state.json, or brain-project-state.json for these steps.
+
+**Skip for Path F:** If this task used Path F, brain-post-task.js was already called per micro-step in F.2.7. Skip this call. Proceed to Self-Check + LLM Confidence Assessment below.
 
 Run:
 ```bash
