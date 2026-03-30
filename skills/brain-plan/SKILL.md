@@ -453,7 +453,7 @@ estimated_tokens: [total]k
 **Dispatch ready:** true
 **Recommended mode:** [inline | dispatch]
 - inline: Execute micro-steps sequentially in current session (< 5 steps or < 40k tokens)
-- subagents: Use brain-dev Phase 3 to dispatch fresh subagents per micro-step (>= 5 steps or >= 40k tokens)
+- subagents: Use brain-task Path F to dispatch fresh subagents per micro-step (>= 5 steps or >= 40k tokens)
 
 **Subagent model per step:**
 | Step | Model | Reason |
@@ -468,7 +468,7 @@ estimated_tokens: [total]k
 1. Run Readiness Gate (verify all specs can be created)
 2. If --subagents OR (step_count >= 5 OR estimated_tokens >= 40k): brain-task Path F dispatches subagents per micro-step (sequential — fresh context per step)
 3. If inline (step_count < 5 AND no --subagents): brain-task Path F executes micro-steps sequentially without parallel dispatch
-Note: Expanded plans (plan_type: expanded) ALWAYS route to Path F. Path E handles only legacy standard plans.
+Note: All expanded plans route to brain-task Path F for execution.
 4. Update status after each micro-step
 5. Run /brain-document on completion
 ```
@@ -482,7 +482,7 @@ After the developer approves the plan (or the self-review checklist passes):
 
 **brain-plan's job ends here.** Do not orchestrate execution. Do not dispatch subagents. Do not wait for brain-task to finish. brain-task owns all execution from this point forward.
 
-**This replaces the old flow** where brain-plan returned control to brain-dev Phase 3. The pipeline is now linear: brain-dev → brain-plan → brain-task.
+The pipeline is linear: brain-dev → brain-plan → brain-task.
 
 ---
 
@@ -697,7 +697,7 @@ or split into 2 sessions at micro-step M{breakpoint}.
   - `plan_type: expanded` AND `dispatch_ready: true` AND (`step_count >= 5` OR `estimated_tokens >= 40k`), OR
   - `--subagents` flag is passed (overrides dispatch_ready threshold check)
 - **Path F inline:** micro-steps execute sequentially when `dispatch_ready: true` but `step_count < 5` and `tokens < 40k`, and `--subagents` was not passed.
-- **Legacy plans (`plan_type: standard` or missing):** brain-task Path E executes as before — no micro-step dispatch.
+- **Legacy plans (`plan_type: standard` or missing):** brain-task Path F executes without micro-step dispatch.
 
 ---
 

@@ -16,7 +16,7 @@ brain-dev → brain-map → brain-task (Steps 1-3) → brain-document → brain-
 
 **Token Budget:** 4-5k tokens (context assembly only, no heavy computation)
 
-**Trigger:** Called by brain-task Step 1. Not user-facing — never called directly.
+**Trigger:** Called by brain-task Step 1 or brain-plan Step 0e. Not user-facing — never called directly.
 
 **Lightweight mode:** When brain-task passes `--lightweight`, load Tier 1 only (~4k tokens). Skip Tier 2 and Tier 3. Used for Haiku-scored tasks (complexity < 20).
 
@@ -343,7 +343,7 @@ brain-map is working when:
 
 ## Integration with brain-task
 
-1. brain-task Step 1 calls brain-map
+1. brain-plan Step 0e OR brain-task Step 1 calls brain-map
 2. brain-map outputs context-packet-{task_id}.md
 3. brain-task reads context-packet-{task_id}.md directly for implementation
 4. At completion: context files archived by brain-task post-task step

@@ -38,7 +38,7 @@ claude plugin install brain-mini@forgeflow-plugins
 
 # Then inside Claude Code:
 /brain-init
-/brain-task "Add dark mode toggle"
+/brain-dev "Add dark mode toggle"
 ```
 
 brain-init scans your project, generates hippocampus (architecture + conventions) and cortex (domain knowledge), optionally installs hooks (tiered: minimal/standard/strict), builds the SQLite index, and initializes state files.
@@ -106,7 +106,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 [Brain] Install hooks? (minimal/standard/strict/skip): standard
   Installed 6 hooks (Tier 1 + 2)
 
-Ready. Use /brain-task to start building.
+Ready. Use /brain-dev to start building.
 ```
 
 ### Example 2: Building a Feature

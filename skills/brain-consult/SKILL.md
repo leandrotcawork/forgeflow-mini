@@ -75,6 +75,8 @@ If brain-consult was invoked directly (not via brain-dev routing):
 
 If brain-consult was routed via brain-dev: `current_skill` is already set to `"brain-consult"` by brain-dev. No action needed.
 
+**Note:** If brain-consult is invoked during an active brain-task pipeline (e.g., developer asks a question mid-task), `current_skill` will be `"brain-task"`. Do NOT overwrite it — brain-task needs it to remain `"brain-task"` so its writes aren't blocked. The routing guard already allows all writes when `current_skill` is `"brain-task"`, so brain-consult's own writes (consult-*.json, consult-log.md) are permitted.
+
 **1a: Check active pipeline**
 
 - Pipeline state already read in Pre-Step — use its result. If pipeline is active, the resume reminder will be appended at the end of the response (Step 6e).
