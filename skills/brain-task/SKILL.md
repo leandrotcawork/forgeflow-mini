@@ -40,7 +40,7 @@ See `references/subagent-guidelines.md` for full dispatch mode details.
 2. Fill placeholders:
    - `{{task_description}}` — from plan header
    - `{{plan_content}}` — full plan steps
-   - `{{context_packet_content}}` — from `.brain/context-packet.md`
+   - `{{context_packet_content}}` — from `.brain/working-memory/context-packet-{task_id}.md`
 3. Verify assembled prompt is under 400 lines. If over, trim context to
    essential conventions only.
 
@@ -76,7 +76,7 @@ See `references/subagent-guidelines.md` for full dispatch mode details.
    review_cycles: N
    unresolved_issues: [list or none]
    ```
-3. Append summary to `.brain/activity.md`:
+3. Append summary to `.brain/progress/activity.md`:
    ```
    - [HH:MM] brain-task: <description> → <status> (N files, M review cycles)
    ```

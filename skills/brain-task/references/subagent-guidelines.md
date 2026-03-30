@@ -8,7 +8,7 @@ Each subagent is dispatched with a self-contained prompt (~300-400 lines max):
    or code-reviewer) from `prompts/`.
 2. **Implementation plan** — the approved plan from brain-plan output.
 3. **Context packet** — project conventions, file map, and relevant state from
-   `.brain/context-packet.md`.
+   `.brain/working-memory/context-packet-{task_id}.md`.
 4. **Conventions summary** — naming, formatting, and structural rules extracted
    from the context packet.
 

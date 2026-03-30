@@ -60,7 +60,7 @@ brain-dev is the safest default, but skipping it saves ~500 tokens when intent i
 
 ## Rules (Non-Negotiable)
 
-1. **Never write to hippocampus/** — it is immutable. Only brain-document with explicit user approval can update it.
+1. **Never write to hippocampus/** — it is immutable. Only brain-health (consolidation) with explicit user approval can update it.
 2. **Check circuit breaker** — read `.brain/brain-project-state.json` before starting work. If `circuit_breaker.status` is `"OPEN"`, STOP and report.
 3. **Respect token budgets** — each skill has a budget (see table above). Do not let any phase balloon.
 4. **Subagent isolation** — subagents must NOT call other brain skills. Only the orchestrating skill chains the pipeline.
