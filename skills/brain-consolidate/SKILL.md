@@ -275,6 +275,40 @@ SET weight = MAX(0.1, weight - (0.005 * days_since_last_access))
 WHERE last_accessed < date('now', '-7 days');
 ```
 
+**4a.2: Usage-based weight bonus (Hebbian learning, NEW in v1.2.0)**
+
+Sinapses that contributed to successful tasks since last consolidation get an automatic weight bonus.
+
+**Process:**
+
+1. Read all `task-completion-*.md` files in `.brain/working-memory/` (and `.brain/progress/completed-contexts/` for recently archived ones)
+2. Filter to `status: success` only
+3. For each successful task-completion, extract the `sinapses_loaded` array
+4. Count occurrences: how many successful tasks used each sinapse
+5. Apply bonus:
+
+```sql
+UPDATE sinapses
+SET weight = MIN(1.0, weight + (0.01 * {successful_use_count}))
+WHERE id = '{sinapse_id}'
+  AND last_accessed > '{last_consolidation_date}';
+```
+
+**Weight change rules (complete):**
+
+| Trigger | Change | Cap |
+|---|---|---|
+| Sinapse used in successful task | `+0.01` per successful use | max 1.0 |
+| Sinapse update approved by developer | `+0.02` per approval (Step 1) | max 1.0 |
+| Sinapse unused for 7+ days | `-0.005` per day (Step 4a) | min 0.1 |
+
+**Why +0.01:** Usage bonus is smaller than approval bonus (+0.02) — human validation is worth more than automatic tracking. A sinapse used in 5 successful tasks gains +0.05, equivalent to 2.5 manual approvals.
+
+**Log output:** Include usage bonus summary in the health report:
+```
+Hebbian learning: {N} sinapses received usage bonuses (avg +{X}, max +{Y})
+```
+
 **4b: Consultation artifact TTL**
 
 Scan `.brain/working-memory/` for `consult-*.json` files:

@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS sinapses (
     links         TEXT DEFAULT '[]',         -- JSON array of related sinapse ids
     content       TEXT,                      -- full markdown content (for search/condensing)
     weight        REAL NOT NULL DEFAULT 0.50,-- 0.0–1.0, higher = more relevant. Adjusted by brain-consolidate.
-    last_accessed TEXT,                      -- ISO8601 datetime, updated on each brain-map load
-    usage_count   INTEGER NOT NULL DEFAULT 0,-- incremented each time loaded into a context packet
+    last_accessed TEXT,                            -- ISO8601 datetime, updated by brain-map on every context load (v1.2.0+)
+    usage_count   INTEGER NOT NULL DEFAULT 0,      -- incremented by brain-map on each context load (v1.2.0+), used by brain-consolidate for Hebbian weight bonus
     created_at    TEXT NOT NULL,             -- ISO8601
     updated_at    TEXT NOT NULL              -- ISO8601
 );

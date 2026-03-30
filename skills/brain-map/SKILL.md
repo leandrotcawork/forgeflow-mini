@@ -108,6 +108,30 @@ LIMIT 2
 - Total: 3-4 sinapses, all relevant to the actual task
 - Zero LLM cost — pure SQL (~5ms total)
 
+**Step 2.5: Track sinapse usage (Hebbian learning, NEW in v1.2.0)**
+
+After Tier 2 sinapses are loaded, update their access tracking in brain.db:
+
+```sql
+UPDATE sinapses
+SET last_accessed = '{ISO8601_now}',
+    usage_count = usage_count + 1
+WHERE id IN ({tier_2_sinapse_ids});
+```
+
+**Also run after Step 4 (Tier 3) if Tier 3 was loaded:**
+
+```sql
+UPDATE sinapses
+SET last_accessed = '{ISO8601_now}',
+    usage_count = usage_count + 1
+WHERE id IN ({tier_3_sinapse_ids});
+```
+
+**Excluded:** Tier 1 hippocampus sinapses (`hippocampus-architecture`, `hippocampus-conventions`) are NOT tracked — they are always loaded, so tracking them would add noise without signal.
+
+**Cost:** One SQL UPDATE per context load, ~1ms, zero tokens.
+
 **Fallback:** If FTS5 returns < 2 results (sparse brain, new project), fall back to weight-based query:
 
 ```sql

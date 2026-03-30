@@ -66,6 +66,15 @@ If no task_id was passed (direct /brain-consult invocation): skip this step.
 
 ### Step 1: Pipeline Check + Question Analysis
 
+**1a.0: Set current_skill (direct invocation guard, NEW in v1.2.0)**
+
+If brain-consult was invoked directly (not via brain-dev routing):
+- Read brain-state.json
+- If `current_skill` is null or missing: set `current_skill: "brain-consult"`
+- This ensures the routing guard hook is active even for direct invocations
+
+If brain-consult was routed via brain-dev: `current_skill` is already set to `"brain-consult"` by brain-dev. No action needed.
+
 **1a: Check active pipeline**
 
 - Pipeline state already read in Pre-Step — use its result. If pipeline is active, the resume reminder will be appended at the end of the response (Step 6e).
@@ -187,6 +196,19 @@ LIMIT 3
 - Also falls back if FTS5 tables don't exist (old brain without v0.7.0 upgrade)
 
 Lesson knowledge is now embedded in sinapse content (`## Lessons Learned` sections) and loaded naturally through sinapse retrieval. No separate lesson query needed.
+
+**Track sinapse usage (Hebbian learning, NEW in v1.2.0):**
+
+After FTS5 Tier 2 sinapses are loaded (Research + Consensus modes only), update access tracking:
+
+```sql
+UPDATE sinapses
+SET last_accessed = '{ISO8601_now}',
+    usage_count = usage_count + 1
+WHERE id IN ({loaded_sinapse_ids});
+```
+
+Tier 1A/1B hippocampus sinapses are excluded from tracking (same rule as brain-map).
 
 **Important:** Do NOT create any files in `.brain/working-memory/` during context loading. Context is assembled in-memory only. brain-consult writes only two artifacts post-response (Step 6): the audit JSON (`consult-*.json` in working-memory) and a log line (`consult-log.md` in progress).
 
@@ -429,6 +451,10 @@ If `brain-state.json` shows `current_pipeline_step > 0`:
 ```
 Brain pipeline was at Step {N} for task {task_id}. Continue with /brain-task --resume
 ```
+
+**6f: Clear current_skill (NEW in v1.2.0)**
+
+Set `current_skill: null` in brain-state.json. brain-consult's job is done.
 
 ---
 
