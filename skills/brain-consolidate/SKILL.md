@@ -101,7 +101,7 @@ Developer choices per proposal:
 1. Update the sinapse markdown file on disk (append bullet to `## Lessons Learned` or apply diff)
 2. `UPDATE sinapses SET content = ?, updated_at = ? WHERE id = ?` in brain.db
 3. Rebuild FTS5: `INSERT INTO sinapses_fts(sinapses_fts) VALUES('rebuild');`
-4. Increment sinapse weight: `UPDATE sinapses SET weight = weight + 0.02 WHERE id = ?`
+4. Increment sinapse weight: `UPDATE sinapses SET weight = MIN(1.0, weight + 0.02) WHERE id = ?`
 
 Track tallies: N approved / N rejected / N modified.
 

@@ -534,6 +534,7 @@ function updateBrainState(brainPath, args) {
   state.tasks_completed_this_session = (state.tasks_completed_this_session || 0) + 1;
   state.active_context_files = [];
   state.last_task_id = args.taskId;
+  state.current_skill = null;
 
   // Increment session-level tasks_since_consolidate
   state.tasks_since_consolidate = (state.tasks_since_consolidate || 0) + 1;

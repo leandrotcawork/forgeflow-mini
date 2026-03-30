@@ -212,7 +212,7 @@ WHERE id IN ({loaded_sinapse_ids});
 
 Tier 1A/1B hippocampus sinapses are excluded from tracking (same rule as brain-map).
 
-**Important:** Do NOT create any files in `.brain/working-memory/` during context loading. Context is assembled in-memory only. brain-consult writes only two artifacts post-response (Step 6): the audit JSON (`consult-*.json` in working-memory) and a log line (`consult-log.md` in progress).
+**Important:** Do NOT create any files in `.brain/working-memory/` during context loading. Context is assembled in-memory only. brain-consult writes up to four post-response artifacts: audit JSON (`consult-*.json`), log entry (`consult-log.md`), episode file (`episode-consult-*.md`, when warranted), and `brain-state.json` updates.
 
 ---
 
@@ -454,9 +454,13 @@ If `brain-state.json` shows `current_pipeline_step > 0`:
 Brain pipeline was at Step {N} for task {task_id}. Continue with /brain-task --resume
 ```
 
-**6f: Clear current_skill (NEW in v1.2.0)**
+**6f: Restore current_skill (NEW in v1.2.0)**
 
-Set `current_skill: null` in brain-state.json. brain-consult's job is done.
+If brain-consult set `current_skill: "brain-consult"` in Step 1a.0 (direct invocation):
+→ Set `current_skill: null` in brain-state.json. brain-consult's job is done.
+
+If brain-consult was invoked during an active pipeline (current_skill was already `"brain-task"` or `"brain-plan"`):
+→ Do NOT clear current_skill. The owning skill still needs it.
 
 ---
 
@@ -482,7 +486,7 @@ Flags:
 
 | Anti-Pattern | Why Wrong | Correct Behavior |
 |---|---|---|
-| Creating context-packet files | brain-consult is ephemeral | Context in-memory; only two post-response artifacts persist: audit JSON and consult-log entry |
+| Creating context-packet files | brain-consult is ephemeral | Context in-memory; up to four post-response artifacts persist: audit JSON, consult-log entry, episode file (when warranted), and brain-state.json updates |
 | Invoking brain-map as sub-skill | Too heavy, loads 5+2 sinapses | Inline Tier 1A/1B + FTS5 Tier 2 (max 3) |
 | Invoking brain-dev for simple questions | Overkill for consultation | Direct execution — brain-consult is self-contained |
 | Answering without brain context | Defeats the purpose of brain-informed consultation | Always load Tier 1A minimum |
