@@ -60,10 +60,10 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | I want to... | Use | What happens |
 |---|---|---|
 | **Start anything** | `/brain-dev [anything]` | Classifies request, evaluates brain knowledge, routes to brain-plan/brain-consult/brain-task. Primary daily entry point. |
-| Build a feature | `/brain-task "description"` | Routes, loads context, dispatches subagent or implements inline, reviews |
-| Debug something stuck | `/brain-task --debug "description"` | Routes to Opus for root cause analysis |
-| Plan before building | `/brain-task --plan "description"` | Architecture plan with developer approval gate |
-| Quick trivial fix | `/brain-task "fix typo in header"` | Auto-routes to Haiku (lightweight, inline) |
+| Build a feature | `/brain-dev "description"` | Classifies, loads context, dispatches subagent or implements inline, reviews |
+| Debug something stuck | `/brain-dev "debug: description"` | Routes to Opus for root cause analysis |
+| Plan before building | `/brain-dev "plan: description"` | Architecture plan with developer approval gate |
+| Quick trivial fix | `/brain-dev "fix typo in header"` | Auto-routes to Haiku (lightweight, inline) |
 | Verify implementation | `/brain-verify` | 6-phase check: build, types, lint, tests, security, diff |
 | Define success criteria | `/brain-eval` | Write capability + regression evals before coding |
 | Check brain health | `/brain-status` | Staleness, coverage gaps, circuit breaker, subagent stats |
@@ -112,7 +112,7 @@ Ready. Use /brain-dev to start building.
 ### Example 2: Building a Feature
 
 ```
-> /brain-task "Add Mercado Livre product listing API integration"
+> /brain-dev "Add Mercado Livre product listing API integration"
 
 [Brain] Decision: score 45 (backend, medium risk, feature)
   Model: Codex (inline + parallel review)
@@ -214,7 +214,7 @@ Brain context: Tier 1+2 (3 sinapses) | Consensus: aligned with nuance
 ### Example 4: Debugging
 
 ```
-> /brain-task --debug "Product listing returns empty array but ML API shows products"
+> /brain-dev "debug: Product listing returns empty array but ML API shows products"
 
 [Brain] Decision: score 30 + debugging override -> Opus
   Model: Opus (full codebase access for root cause analysis)
@@ -337,7 +337,7 @@ It's in .env as REDIS_URL=redis://host:port/db
 
 ---
 ⚠️  Brain pipeline active: Task 2026-03-27-ml-cache paused at Step 3.
-Resume when ready: /brain-task --resume
+Resume when ready: /brain-dev --resume
 ```
 
 ### Example 9: Configuring Brain Settings
@@ -375,11 +375,11 @@ You want to...
     |   |
     |   +-- Mid-pipeline? -------> /brain-consult
     |
-    +-- Build/fix/implement? ----> /brain-task "description"
+    +-- Build/fix/implement? ----> /brain-dev "description"
     |   |                            Auto-routes by complexity (Haiku/Sonnet/Codex/Opus)
     |   |
-    |   +-- Need a plan first? --> /brain-task --plan "description"
-    |   +-- Debugging? ---------> /brain-task --debug "description"
+    |   +-- Need a plan first? --> /brain-dev "plan: description"
+    |   +-- Debugging? ---------> /brain-dev "debug: description"
     |
     +-- Strategic decision? -----> /brain-mckinsey "decision"
     |                               Parallel research + scoring framework

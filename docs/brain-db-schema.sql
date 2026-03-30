@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS consolidation_log (
 -- BRAIN_STATE — Key-value store for pipeline state persistence
 ----------------------------------------------------------------------
 -- Secondary persistence layer for brain-state.json.
--- Updated by brain-task at each gate checkpoint.
+-- Updated by brain-dev, brain-plan, brain-task, brain-consult, brain-post-task.js, and sessionEnd hook.
 -- Used for recovery if JSON files get corrupted.
 
 CREATE TABLE IF NOT EXISTS brain_state (
