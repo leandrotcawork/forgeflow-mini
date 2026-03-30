@@ -7,7 +7,7 @@ description: 6-phase implementation verification — build, types, lint, tests, 
 
 ## Trigger
 
-Called by brain-task at Step 3.5, or directly via `/brain-verify`.
+Called by brain-task at Step 5, or directly via `/brain-verify`.
 
 ## Iron Law
 

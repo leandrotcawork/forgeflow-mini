@@ -20,7 +20,7 @@ brain-dev → brain-map → brain-plan → brain-task
 ## Input
 
 Requires: `.brain/working-memory/dev-context-{task_id}.md`
-Fields used: `task_id`, `keywords`, `domain`, `risk_level`, `complexity_score`, `task_type`
+Fields used: `task_id`, `keywords`, `domain`, `score`, `intent`
 
 ---
 
@@ -29,7 +29,7 @@ Fields used: `task_id`, `keywords`, `domain`, `risk_level`, `complexity_score`, 
 ### Step 1: Read dev-context
 
 Parse `dev-context-{task_id}.md` and extract: task_id, keywords, domain,
-complexity_score, risk_level, task_type.
+score, intent.
 
 ### Step 2: Load Tier 1 (always)
 
@@ -38,7 +38,7 @@ Read files from disk verbatim — never compose from memory.
 
 > See [references/context-tiers.md](references/context-tiers.md) — Tier 1 section.
 
-### Step 3: Load Tier 2 (if complexity_score >= 20)
+### Step 3: Load Tier 2 (if score >= 20)
 
 Run FTS5 keyword search against brain.db for domain-specific sinapses.
 Limit 5 results at 800 tokens each.
@@ -46,7 +46,7 @@ Limit 5 results at 800 tokens each.
 > See [references/context-tiers.md](references/context-tiers.md) — Tier 2 section
 > for exact SQL, fallback query, and output format.
 
-### Step 4: Load Tier 3 (if complexity_score >= 75 or critical risk)
+### Step 4: Load Tier 3 (if score >= 75)
 
 Spreading activation — follow related/see_also links from Tier 2 results.
 Max 3 additional sinapses.
@@ -57,7 +57,7 @@ Max 3 additional sinapses.
 ### Step 5: Assemble context-packet
 
 Write to `.brain/working-memory/context-packet-{task_id}.md` with frontmatter
-(task_id, domain, complexity_score, sinapses_loaded, generated_at) followed by
+(task_id, domain, score, sinapses_loaded, generated_at) followed by
 Tier 1/2/3 sections. See shared output-format-standards.md when available.
 
 ### Step 6: Update usage weights (Hebbian)

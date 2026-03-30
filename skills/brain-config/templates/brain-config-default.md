@@ -21,9 +21,8 @@ generate the initial config and by `--reset` to restore section defaults.
   "hooks": {
     "profile": "standard",
     "profiles": {
-      "minimal": "Tier 1 only — session briefing, hippocampus guard, config protection, session end",
-      "standard": "Tier 1+2 — adds strategy rotation, quality gate, task safety net",
-      "strict": "All tiers — adds activity observer"
+      "minimal": "No hooks — raw pipeline execution",
+      "standard": "session-start + hippocampus-guard (default, recommended)"
     },
     "individual_overrides": {}
   },

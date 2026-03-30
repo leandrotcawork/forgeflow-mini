@@ -20,7 +20,7 @@ Target footprint: ~200 tokens.
 
 ## Step 1: Check Circuit Breaker
 
-Read `.brain/working-memory/brain-project-state.json`.
+Read `.brain/brain-project-state.json`.
 If circuit breaker state is `OPEN` -> **stop** and inform the user. Do not route.
 
 ## Step 2: Classify Request

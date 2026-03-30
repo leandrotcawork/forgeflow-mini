@@ -106,4 +106,4 @@ Subagent prompts (in `skills/brain-task/prompts/`) must not exceed 100 lines for
 
 ### 7. Episode files: 500 tokens max each
 
-Episode files (`.brain/working-memory/episode-*.md`) must be concise: type, date, severity, context, observation, learning, related. No multi-page narratives. brain-consolidate processes potentially many episodes in a single run — verbose episodes exhaust its 25k input budget.
+Episode files (`.brain/working-memory/episode-*.md`) must be concise: type, date, severity, context, observation, learning, related. No multi-page narratives. brain-health (consolidation) processes potentially many episodes in a single run — verbose episodes exhaust its 25k input budget.

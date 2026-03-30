@@ -19,7 +19,7 @@
 **Architecture:** [verbatim 500 chars from architecture.md]
 **Conventions:** [verbatim 500 chars from conventions.md]
 ### Task Summary
-[task_id, domain, risk, type from dev-context]
+[task_id, domain, intent, score from dev-context]
 ```
 
 ---
@@ -57,8 +57,7 @@ to 800 tokens), and `related/see_also` links.
 ## Tier 3: Spreading Activation (score >= 75 or critical risk)
 
 **Trigger conditions (any one is sufficient):**
-- `complexity_score >= 75`
-- `risk_level = 'critical'`
+- `score >= 75`
 - Tier 2 sinapse explicitly references another as prerequisite
 - User passes `--deep` flag
 

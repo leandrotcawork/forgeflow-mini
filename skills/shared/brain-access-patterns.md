@@ -18,7 +18,7 @@ Standard patterns for reading `.brain/` efficiently. Use this reference when any
 | Domain knowledge (infra) | `.brain/cortex/infra/index.md` | 3k tokens | One region per task |
 | Cortex registry | `.brain/hippocampus/cortex_registry.md` | 500 tokens | Maps domains to cortex paths |
 | Current task state | `.brain/working-memory/brain-state.json` | 200 tokens | Always read first |
-| Circuit breaker status | `.brain/progress/brain-project-state.json` | 300 tokens | Check before execution |
+| Circuit breaker status | `.brain/brain-project-state.json` | 300 tokens | Check before execution |
 | Dev context (current task) | `.brain/working-memory/dev-context-{task_id}.md` | 500 tokens | Written by brain-dev |
 | Context packet (assembled) | `.brain/working-memory/context-packet-{task_id}.md` | 15-20k tokens | Written by brain-map |
 | Implementation plan | `.brain/working-memory/implementation-plan-{task_id}.md` | 8-15k tokens | Written by brain-plan |
@@ -37,7 +37,7 @@ Always load brain context in this order. Earlier files are smaller and inform wh
 ```
 1. State files (mandatory, ~200 tokens)
    └── .brain/working-memory/brain-state.json
-   └── .brain/progress/brain-project-state.json (circuit breaker)
+   └── .brain/brain-project-state.json (circuit breaker)
 
 2. Hippocampus (foundational, ~300 tokens condensed)
    └── .brain/hippocampus/architecture.md (first 500 chars)
@@ -142,12 +142,12 @@ All transient task artifacts live in `.brain/working-memory/`. These files are c
 | `dev-context-{task_id}.md` | brain-dev | brain-plan, brain-map, brain-consult | Archived to `progress/completed-contexts/` after task |
 | `context-packet-{task_id}.md` | brain-map | brain-task, brain-plan | Archived after task |
 | `implementation-plan-{task_id}.md` | brain-plan | brain-task | Archived after task |
-| `task-completion-{task_id}.md` | brain-task | brain-document, brain-consolidate | Persists until consolidation |
-| `sinapse-updates-{task_id}.md` | brain-document | brain-consolidate, developer | Persists until approved/rejected |
+| `task-completion-{task_id}.md` | brain-task | brain-document, brain-health | Persists until consolidation |
+| `sinapse-updates-{task_id}.md` | brain-document | brain-health, developer | Persists until approved/rejected |
 | `sinapse-review-{task_id}.md` | brain-document | Developer | Persists until review complete |
-| `episode-*.md` | brain-task, brain-consult, brain-document | brain-consolidate | Processed during consolidation |
-| `consult-{timestamp}.json` | brain-consult | Thread continuation, brain-consolidate | 10 min TTL for threads, 50 max cap |
-| `lesson-update-PROPOSAL-*.md` | brain-consolidate | Developer | Persists until approved/rejected |
+| `episode-*.md` | brain-task, brain-consult, brain-document | brain-health | Processed during consolidation |
+| `consult-{timestamp}.json` | brain-consult | Thread continuation, brain-health | 10 min TTL for threads, 50 max cap |
+| `lesson-update-PROPOSAL-*.md` | brain-health | Developer | Persists until approved/rejected |
 
 **Archive location:** `.brain/progress/completed-contexts/` — context packets and implementation plans move here after task completion.
 

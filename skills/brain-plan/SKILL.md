@@ -113,4 +113,4 @@ Output: `.brain/working-memory/implementation-plan-{task_id}.md`
 After user approves the plan, invoke brain-task with the task_id.
 brain-plan does not orchestrate execution — brain-task owns that.
 
-Pipeline: `brain-dev -> brain-plan -> brain-task`
+Pipeline: `brain-dev -> brain-map -> brain-plan -> brain-task`

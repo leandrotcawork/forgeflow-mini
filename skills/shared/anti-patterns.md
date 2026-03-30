@@ -49,7 +49,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 - The `hippocampus-guard` hook blocks ALL writes to `.brain/hippocampus/` unconditionally
 - Only brain-health (consolidation) may write to hippocampus, and only after explicit developer approval
 - brain-document proposals target `.brain/cortex/` and `.brain/sinapses/` only
-- When a skill discovers something that should change conventions, it writes an episode file to working memory — brain-consolidate processes it through the approval pipeline
+- When a skill discovers something that should change conventions, it writes an episode file to working memory — brain-health (consolidation) processes it through the approval pipeline
 - Subagent prompts must never include hippocampus paths as writable targets
 
 ---
@@ -93,7 +93,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 - Developer frustration: "why is this broken?"
 
 **Fix:**
-- brain-task Pre-Step is MANDATORY: read `brain-project-state.json`, check `circuit_breaker.state`
+- brain-task Pre-Step is MANDATORY: read `brain-project-state.json`, check `circuit_breaker.status`
 - If state is `open` and `now < cooldown_until`: BLOCK execution, show remaining cooldown time
 - If state is `half-open`: allow execution as a probe, track result to determine breaker state
 - If state is `closed`: proceed normally
@@ -157,7 +157,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 **What happens:** Sinapse updates are applied to `.brain/cortex/` or `.brain/hippocampus/` without developer review and approval. The brain's knowledge base changes silently, potentially introducing incorrect patterns or removing valid conventions.
 
 **Why it happens:**
-- brain-consolidate auto-applies proposals instead of presenting them for review
+- brain-health (consolidation) auto-applies proposals instead of presenting them for review
 - brain-document writes directly to cortex instead of creating a proposal file
 - A script or hook applies pending proposals without gating
 
@@ -169,8 +169,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 
 **Fix:**
 - brain-document is proposal-only: it creates `.brain/working-memory/sinapse-updates-{task_id}.md` and NEVER writes to cortex directly
-- brain-consolidate presents every proposal individually using `AskUserQuestion` with Approve/Reject/Modify options
-- brain-health (the v2.0 merge of brain-consolidate + brain-status) follows the same approval gate
+- brain-health (consolidation) presents every proposal individually using `AskUserQuestion` with Approve/Reject/Modify options
 - The `hippocampus-guard` hook provides a hard block on hippocampus writes as a safety net
 - All sinapse updates must be committed via git so they are visible in the change history
 - Weight adjustments require explicit justification in the proposal's Impact section

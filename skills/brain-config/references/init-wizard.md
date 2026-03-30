@@ -64,7 +64,7 @@ Create draft files under `.brain/hippocampus/`:
 ## Phase 7: Initialize State (REQUIRED)
 
 - Copy `brain-state.json` template to `.brain/working-memory/brain-state.json`
-- Copy `brain-project-state.json` template to `.brain/progress/brain-project-state.json`
+- Copy `brain-project-state.json` template to `.brain/brain-project-state.json`
 - Create `.brain/progress/activity.md` with header and consolidation checkpoint
 - Verify both JSON files parse correctly
 

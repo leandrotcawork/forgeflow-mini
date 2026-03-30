@@ -19,14 +19,16 @@ The `.brain/` directory is persistent project memory:
 
 ### Development Pipeline
 
-| Skill | Role | Token Budget |
-|-------|------|-------------|
-| `/brain-dev` | Smart router — classifies request, scores complexity, routes | ~500-800 |
-| `/brain-map` | Context loader — retrieves brain files by keywords | ~1,000 |
-| `/brain-plan` | Planner — creates step-by-step implementation plan | ~2,000 |
-| `/brain-task` | Implementer — executes plan, writes code | ~8,000 |
-| `/brain-verify` | Verifier — runs tests, checks quality | ~2,000 |
-| `/brain-document` | Documenter — updates brain files with learnings | ~1,500 |
+| Skill | Role |
+|-------|------|
+| `/brain-dev` | Smart router — classifies request, scores complexity, routes |
+| `/brain-map` | Context loader — retrieves brain files by keywords |
+| `/brain-plan` | Planner — creates step-by-step implementation plan |
+| `/brain-task` | Implementer — executes plan, writes code |
+| `/brain-verify` | Verifier — runs tests, checks quality |
+| `/brain-document` | Documenter — updates brain files with learnings |
+
+Token budgets are defined in `shared/context-budget-guide.md`.
 
 ### Off-Pipeline
 
@@ -59,7 +61,7 @@ brain-dev is the safest default, but skipping it saves ~500 tokens when intent i
 ## Rules (Non-Negotiable)
 
 1. **Never write to hippocampus/** — it is immutable. Only brain-document with explicit user approval can update it.
-2. **Check circuit breaker** — read `.brain/working-memory/brain-state.json` before starting work. If `circuitBreaker.tripped` is true, STOP and report.
+2. **Check circuit breaker** — read `.brain/brain-project-state.json` before starting work. If `circuit_breaker.status` is `"OPEN"`, STOP and report.
 3. **Respect token budgets** — each skill has a budget (see table above). Do not let any phase balloon.
 4. **Subagent isolation** — subagents must NOT call other brain skills. Only the orchestrating skill chains the pipeline.
 5. **State hygiene** — always update `brain-state.json` phase field when transitioning between pipeline stages.

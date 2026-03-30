@@ -57,7 +57,7 @@ For Consensus mode, strategic decisions are scored on 4 axes (Business Impact 40
 
 If the user corrects the answer or reveals a failure pattern not in existing knowledge:
 - Write `.brain/working-memory/episode-consult-{timestamp}.md` with what was believed vs what is correct.
-- brain-consolidate will process into sinapse updates.
+- brain-health (consolidation) will process into sinapse updates.
 
 ## Step 5: Post-Response
 

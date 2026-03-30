@@ -9,7 +9,7 @@ description: Documenter -- Propose sinapse updates and capture episodes after ta
 
 ## Trigger
 
-Called by brain-task after verify passes (Step 6), or manually via `/brain-document`.
+Called after brain-verify passes, or manually via `/brain-document`.
 
 **Preconditions:** task implementation complete, task-completion file exists, tests passing.
 

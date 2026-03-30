@@ -54,7 +54,7 @@ Tests: {pass/fail/skip counts}
 ---
 task_id: YYYY-MM-DD-{slug}
 domain: backend | frontend | database | infra | cross-domain
-complexity_score: 0-100
+score: 0-100
 sinapses_loaded: {N}
 tokens_estimated: {estimated total}
 generated_at: "{ISO8601}"
@@ -344,7 +344,7 @@ estimated_tokens: {total}k
 
 Where `{source}` is `task`, `consult`, or `document`.
 
-**Purpose:** Capture a learning event (success, failure, correction, anti-pattern) for later processing by brain-consolidate into sinapse updates.
+**Purpose:** Capture a learning event (success, failure, correction, anti-pattern) for later processing by brain-health (consolidation) into sinapse updates.
 
 ```yaml
 ---
@@ -381,9 +381,9 @@ created_at: "{ISO8601}"
 ```
 
 **Key rules:**
-- Max 500 tokens per episode — brain-consolidate processes many at once
+- Max 500 tokens per episode — brain-health (consolidation) processes many at once
 - `severity` determines processing priority: critical episodes are processed first
 - `trigger` indicates the source: `task-completion` (after implementation), `anti-pattern` (failure discovered), `consultation` (insight from Q&A), `correction` (developer corrected the system)
-- `sinapses_loaded` links the episode to the context that was active when it occurred — brain-consolidate uses this to target the right sinapse for the lesson update
+- `sinapses_loaded` links the episode to the context that was active when it occurred — brain-health (consolidation) uses this to target the right sinapse for the lesson update
 - `related_completion` links to the task-completion file for additional context
-- The `## Lesson` section is what brain-consolidate extracts as a `## Lessons Learned` bullet in the target sinapse
+- The `## Lesson` section is what brain-health (consolidation) extracts as a `## Lessons Learned` bullet in the target sinapse

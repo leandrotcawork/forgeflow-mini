@@ -43,4 +43,4 @@ Save episodes to `working-memory/episode-{task_id}-{type}.md`.
 ---
 
 **File location:** `working-memory/episode-{task_id}-{type}.md`
-Episodes are factual records. Brain-consolidate processes them into sinapse updates.
+Episodes are factual records. brain-health (consolidation) processes them into sinapse updates.
