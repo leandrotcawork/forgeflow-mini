@@ -66,7 +66,7 @@ See `references/subagent-guidelines.md` for full dispatch mode details.
 ## Step 4 — Post-Task
 
 1. Update `.brain/working-memory/brain-state.json`:
-   - Set `phase` to "verify"
+   - Set `current_skill` to "brain-verify"
    - Record `last_task_result` (pass/fail, files changed)
 2. Write `task-completion` entry to `.brain/working-memory/`:
    ```
@@ -91,7 +91,7 @@ Hand off to `brain-verify` for final validation (tests, lint, type-check).
 
 When implementation fails (tests break, subagent produces bad output):
 
-1. **Increment** `failure_count` in brain-state.
+1. **Increment** `consecutive_failures` in brain-state.
 2. **Strategy rotation** (see `references/subagent-guidelines.md`):
    - 1st failure → alternative approach
    - 2nd failure → minimal approach

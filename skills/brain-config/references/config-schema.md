@@ -40,7 +40,7 @@ These fields cannot be edited via brain-config Edit mode:
 
 | Field Path | Type | Valid Values / Range | Default |
 |------------|------|---------------------|---------|
-| hooks.profile | enum | minimal, standard, strict | standard |
+| hooks.profile | enum | minimal, standard | standard |
 | hooks.individual_overrides.{name} | boolean | true, false | -- |
 | linters.{.ext} | string | non-empty shell command | -- |
 | resilience.circuit_breaker.enabled | boolean | true, false | true |

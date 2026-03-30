@@ -20,7 +20,7 @@ if [[ -f "$ORIENTATION_FILE" ]]; then
 fi
 
 # ── Read project state (optional) ──
-STATE_FILE="${BRAIN_DIR}/brain-project-state.json"
+STATE_FILE="${BRAIN_DIR}/progress/brain-project-state.json"
 state=""
 if [[ -f "$STATE_FILE" ]]; then
   state="$(cat "$STATE_FILE")"
@@ -29,14 +29,14 @@ fi
 # ── Build combined context ──
 context=""
 if [[ -n "$orientation" ]]; then
-  context+="# Brain Orientation\n\n${orientation}"
+  context+=$'# Brain Orientation\n\n'"${orientation}"
 fi
 
 if [[ -n "$state" ]]; then
   if [[ -n "$context" ]]; then
-    context+="\n\n---\n\n"
+    context+=$'\n\n---\n\n'
   fi
-  context+="# Current Project State\n\n${state}"
+  context+=$'# Current Project State\n\n'"${state}"
 fi
 
 # ── Bail if nothing to inject ──

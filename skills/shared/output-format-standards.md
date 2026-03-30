@@ -13,33 +13,21 @@ Standard formats for artifacts produced by brain skills. Every skill that create
 ```yaml
 ---
 task_id: YYYY-MM-DD-{slug}
-intent: build | fix-investigate | fix-known | debug | review | question | refactor
-domain: backend | frontend | database | infra | analytics | cross-domain
+intent: build | refactor | fix | investigate | question | review | debug
+domain: backend | frontend | database | infra | cross-domain
 score: 0-100
-model: haiku | sonnet | codex | opus
-plan_mode: true | false
 keywords: ["{kw1}", "{kw2}", "{kw3}"]
-recent_task: "{last_task_id}" | null
 created_at: "{ISO8601}"
 ---
 
 {developer's original request, verbatim — do not paraphrase}
 ```
 
-**Optional section** (appended when intent is `fix-investigate` or `debug` AND `recent_task` is set):
-
-```markdown
-## Previous Task
-Description: {what was requested}
-Files changed: {list of files}
-Tests: {pass/fail/skip counts}
-```
-
 **Field rules:**
 - `task_id`: format is `YYYY-MM-DD-{slug}`, slug is max 20 chars, kebab-case
+- `intent`: one of build, refactor, fix, investigate, question, review, debug
 - `score`: calculated as `15 (baseline) + domain (0-30) + risk (0-35) + type (0-20)`, capped at 100
-- `keywords`: max 3, nouns and domain terms only (not verbs), used for FTS5 retrieval
-- `model`: determined by score — `< 20` Haiku, `20-39` Sonnet, `40-74` Codex, `75+` Codex + plan mode. Debug intent always Opus.
+- `keywords`: 3-5 nouns and domain terms only (not verbs), used for FTS5 retrieval
 - Body text after frontmatter: the developer's exact words, never paraphrased
 
 ---

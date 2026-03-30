@@ -71,7 +71,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 
 **Fix:**
 - brain-task GATE 1 enforces that `context-packet-{task_id}.md` MUST exist before Step 2
-- brain-plan Step 0e calls brain-map explicitly before generating the plan
+- brain-plan Phase 1 (Load Context) calls brain-map explicitly before generating the plan
 - If brain-map fails (brain.db missing, new project), the skill proceeds but logs a warning — the lack of context is acknowledged, not silently ignored
 - For interrupted task resume: check if the context packet still exists in working memory before resuming
 
@@ -93,11 +93,11 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 - Developer frustration: "why is this broken?"
 
 **Fix:**
-- brain-task Pre-Step is MANDATORY: read `brain-project-state.json`, check `circuit_breaker.status`
+- brain-task Pre-Step is MANDATORY: read `brain-project-state.json`, check `circuit_breaker.state`
 - If state is `open` and `now < cooldown_until`: BLOCK execution, show remaining cooldown time
 - If state is `half-open`: allow execution as a probe, track result to determine breaker state
 - If state is `closed`: proceed normally
-- After a task failure: update `circuit_breaker.failure_count` and check threshold. If failures >= 3 consecutive, open the breaker with a cooldown period
+- After a task failure: update `circuit_breaker.consecutive_failures` and check threshold. If failures >= 3 consecutive, open the breaker with a cooldown period
 - The circuit breaker protects against: repeated build failures, persistent test failures, environment issues (missing deps, wrong Node version)
 
 ---
@@ -119,7 +119,7 @@ Known failure modes in the ForgeFlow Mini brain system. Each pattern describes w
 
 **Fix:**
 - After a task failure, brain-task MUST write an episode file with `trigger: anti-pattern` describing what failed and why
-- brain-plan Step 0c MUST present exactly 2 implementation approaches — never just one
+- brain-plan Phase 0 (Clarify) SHOULD present implementation approach options when multiple valid options exist
 - When retrying a failed task, the episode from the first attempt is available in working memory — brain-map loads it as context, ensuring the next attempt knows what did not work
 - If the same task fails twice with the same approach, the circuit breaker should open — this prevents a third identical attempt
 - Check `get_task_history` for prior attempts on the same feature before starting implementation

@@ -18,7 +18,7 @@ Standard patterns for reading `.brain/` efficiently. Use this reference when any
 | Domain knowledge (infra) | `.brain/cortex/infra/index.md` | 3k tokens | One region per task |
 | Cortex registry | `.brain/hippocampus/cortex_registry.md` | 500 tokens | Maps domains to cortex paths |
 | Current task state | `.brain/working-memory/brain-state.json` | 200 tokens | Always read first |
-| Circuit breaker status | `.brain/brain-project-state.json` | 300 tokens | Check before execution |
+| Circuit breaker status | `.brain/progress/brain-project-state.json` | 300 tokens | Check before execution |
 | Dev context (current task) | `.brain/working-memory/dev-context-{task_id}.md` | 500 tokens | Written by brain-dev |
 | Context packet (assembled) | `.brain/working-memory/context-packet-{task_id}.md` | 15-20k tokens | Written by brain-map |
 | Implementation plan | `.brain/working-memory/implementation-plan-{task_id}.md` | 8-15k tokens | Written by brain-plan |
@@ -37,7 +37,7 @@ Always load brain context in this order. Earlier files are smaller and inform wh
 ```
 1. State files (mandatory, ~200 tokens)
    └── .brain/working-memory/brain-state.json
-   └── .brain/brain-project-state.json (circuit breaker)
+   └── .brain/progress/brain-project-state.json (circuit breaker)
 
 2. Hippocampus (foundational, ~300 tokens condensed)
    └── .brain/hippocampus/architecture.md (first 500 chars)
