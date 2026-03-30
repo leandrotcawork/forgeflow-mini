@@ -248,6 +248,18 @@ test('routingGuard: handles backslash paths (Windows)', function () {
   cleanup(tmp.root);
 });
 
+test('routingGuard: allows episode-consult write when current_skill is brain-consult', function () {
+  var tmp = makeTempBrain();
+  writeJSONFile(path.join(tmp.wmDir, 'brain-state.json'), {
+    current_skill: 'brain-consult'
+  });
+  var result = withCwd(tmp.root, function () {
+    return mod.routingGuard({ file_path: '.brain/working-memory/episode-consult-2026-03-29T10-30-00Z.md' });
+  });
+  assertEqual(result.continue, true, 'should allow episode-consult write');
+  cleanup(tmp.root);
+});
+
 test('routingGuard: blocks non-allowlist .brain write when brain-dev', function () {
   var tmp = makeTempBrain();
   writeJSONFile(path.join(tmp.wmDir, 'brain-state.json'), {

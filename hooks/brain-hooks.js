@@ -160,6 +160,7 @@ function routingGuard(input) {
   if (filePath.indexOf('.brain/working-memory/dev-context-') !== -1) return ok();
   if (filePath.indexOf('.brain/working-memory/brain-state.json') !== -1) return ok();
   if (filePath.indexOf('.brain/working-memory/consult-') !== -1 && filePath.endsWith('.json')) return ok();
+  if (filePath.indexOf('.brain/working-memory/episode-consult-') !== -1 && filePath.endsWith('.md')) return ok();
   if (filePath.indexOf('.brain/progress/consult-log.md') !== -1) return ok();
 
   return block(
