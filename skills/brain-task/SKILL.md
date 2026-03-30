@@ -83,8 +83,12 @@ Proceed with defaults: score=50, model=sonnet, domain=cross-domain, plan_mode=fa
 - Do NOT skip the plan step — plan-mode tasks require a plan.
 
 **STATE PERSISTENCE (GATE 5):** Update `.brain/working-memory/brain-state.json`:
+
+**State update (v1.2.0):** Always set `current_skill: "brain-task"` here, even if brain-dev already set it. This ensures the routing guard allows brain-task to write source files, including when brain-task is invoked directly (CASE B).
+
 ```json
 {
+  "current_skill": "brain-task",
   "last_task_id": "{task_id}",
   "current_pipeline_step": 0,
   "active_context_files": [],
