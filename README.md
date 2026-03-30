@@ -3,10 +3,10 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and circuit breakers.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.1.0-blue" alt="Version 1.1.0">
+  <img src="https://img.shields.io/badge/Version-1.2.0-blue" alt="Version 1.2.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-14-orange" alt="14 Skills">
-  <img src="https://img.shields.io/badge/Hooks-9-yellow" alt="9 Hooks">
+  <img src="https://img.shields.io/badge/Hooks-10-yellow" alt="10 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
@@ -14,9 +14,18 @@ Brain-driven development plugin for Claude Code -- persistent knowledge that lea
 
 **Intelligent routing with subagent dispatch.** Describe what you need. brain-dev classifies complexity (0-100), selects the optimal model (Haiku/Sonnet/Codex/Opus), and dispatches to subagents for speed and token efficiency. Sonnet tasks run as isolated subagents (76% main context savings). Complex tasks run inline with full context.
 
-**Self-contained pipeline. Hooks enhance, never drive.** The pipeline works for any user, first time, with zero hooks configured. Nine optional hooks add guardrails (hippocampus guard, config protection), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence).
+**Linear pipeline with hook enforcement.** The pipeline flows strictly `brain-dev -> brain-plan -> brain-task` with no loops or returns. Ten hooks add guardrails (hippocampus guard, config protection, routing guard), resilience (strategy rotation, circuit breaker), and lifecycle management (session state persistence). The `brain-routing-guard` hook enforces workflow at the code level -- router skills cannot write code.
 
 **Failure becomes knowledge automatically.** When something breaks, brain-task captures an episode. brain-consolidate processes episodes into sinapse updates (developer-approved). Recurring patterns (3+ occurrences) get proposed as conventions. The brain learns from mistakes without manual intervention.
+
+---
+
+## What's New in v1.2.0
+
+- **Workflow enforcement** -- `brain-routing-guard` hook (Tier 1) blocks Write/Edit from router skills. `<HARD-GATE>` in brain-dev enforces router-only behavior. The LLM cannot bypass code-level gates.
+- **Linear pipeline** -- Strictly `brain-dev -> brain-plan -> brain-task` with no loops or returns. FSM states: IDLE -> CLASSIFY -> PLAN -> EXECUTE -> LEARN -> IDLE.
+- **Hebbian learning** -- Sinapses gain weight from successful usage. brain-map updates `last_accessed` and `usage_count` on load; brain-consolidate applies usage-based weight bonus (+0.01 per successful task use).
+- **Unified orchestration** -- brain-dev Phase 3 deleted; brain-task Path F owns all micro-step orchestration with 3 reviewer gates per step, confidence display, and "fix it" loop.
 
 ---
 
@@ -62,7 +71,7 @@ brain-init scans your project, generates hippocampus (architecture + conventions
 | Strategic decision | `/brain-mckinsey "monolith vs microservices"` | Parallel research subagents + scoring framework |
 | Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses, optionally researches docs or gets Codex opinion |
 | Initialize new project | `/brain-init` | Scans project, generates brain, installs hooks |
-| Upgrade from older version | `/brain-init --upgrade` | Adds v1.1.0 features (FTS5, consult-log) without full re-init |
+| Upgrade from older version | `/brain-init --upgrade` | Adds v1.2.0 features (routing guard, Hebbian learning) without full re-init |
 | Configure Brain settings | `/brain-setup [section]` | Interactive wizard — browse, edit, validate, and diff brain.config.json sections |
 
 ---
@@ -397,27 +406,28 @@ Every task flows through a self-contained pipeline. No hooks required -- hooks e
 flowchart TB
     USER["Developer: /brain-dev 'anything'"]
 
-    subgraph BRAINDEV["brain-dev (classifier, ~550 tokens, reads last_task_id)"]
+    subgraph BRAINDEV["brain-dev (router, ~550 tokens, reads last_task_id)"]
         CL["Classify intent<br/>build | fix-investigate | fix-known<br/>debug | review | question | refactor"]
         SA["Check recent work<br/>(+100 tokens on debug/fix-investigate)"]
         SC["Score complexity + select model"]
         KW["Extract 2-3 retrieval keywords"]
-        DC["Write dev-context<br/>(intent, domain, score, model, keywords, recent_task)"]
+        DC["Write dev-context + set current_skill<br/>(intent, domain, score, model, keywords, recent_task)"]
     end
 
-    subgraph PLAN_PATH["Build / Refactor (score ≥ 20)"]
-        BP0["brain-plan Phase 0<br/>Read dev-context<br/>Q&A: 1-3 questions<br/>2 approach proposals<br/>Developer approval gate"]
-        BP1["brain-plan Stage 1-5<br/>Context loaded via brain-map<br/>Generate TDD micro-steps"]
-        PLAN["Plan file written"]
+    subgraph PLAN_PATH["Build / Refactor (score >= 20)"]
+        BP0["brain-plan Phase 0<br/>Read dev-context<br/>Load context via brain-map<br/>Q&A: 1-3 questions<br/>2 approach proposals<br/>Developer approval gate"]
+        BP1["brain-plan Stage 1-5<br/>Generate TDD micro-steps"]
+        PLAN["Plan approved -> invoke brain-task directly"]
     end
 
-    subgraph DISPATCH["brain-dev Phase 3: Subagent Loop"]
+    subgraph EXECUTE["brain-task Path F: Micro-Step Orchestration"]
         PARSE["brain-parse-plan.js<br/>Extract task + title + fullText<br/>(zero LLM, ~5ms)"]
 
-        subgraph PERTASK["Per Task (sequential)"]
-            IMPL["Implementer subagent<br/>(brain-task worker)"]
-            SPECR["Spec reviewer<br/>(Haiku, reads git diff)"]
-            QUALR["Quality reviewer<br/>(Haiku, reads git diff)"]
+        subgraph PERTASK["Per Micro-Step (sequential)"]
+            IMPL["Implement step"]
+            SPECR["Spec reviewer"]
+            QUALR["Quality reviewer"]
+            CONFR["Confidence check + fix-it loop"]
         end
     end
 
@@ -426,23 +436,23 @@ flowchart TB
     end
 
     subgraph TASK_DIRECT["Fix-known / Build (score < 20)"]
-        BT["brain-task<br/>Step 1: brain-map (FTS5 + spreading activation)<br/>Step 2: Implement + verify<br/>Step 3: Post-task"]
+        BT["brain-task<br/>Step 1: brain-map (FTS5 + spreading activation)<br/>Step 2: Implement + verify<br/>Step 3: Post-task + Hebbian update"]
     end
 
-    subgraph BRAINMAP["brain-map: Associative Retrieval (~5ms)"]
+    subgraph BRAINMAP["brain-map: Associative Retrieval (~5ms, Hebbian)"]
         FTS["Step 1: FTS5 keyword match<br/>2 sinapses (direct activation)"]
         SPREAD["Step 2: Tag expansion<br/>2 sinapses (spreading activation)"]
-        CTX["context-packet<br/>3-4 relevant sinapses<br/>~6-9k tokens"]
+        CTX["context-packet<br/>3-4 relevant sinapses<br/>~6-9k tokens<br/>Updates last_accessed + usage_count"]
     end
 
     USER --> CL --> SA --> SC --> KW --> DC
 
-    DC -->|"build/refactor ≥ 20"| BP0
+    DC -->|"build/refactor >= 20"| BP0
     DC -->|"fix-known / build < 20"| BT
     DC -->|"fix-investigate / debug<br/>review / question"| BC
 
     BP0 --> BP1 --> PLAN --> PARSE --> IMPL
-    IMPL --> SPECR --> QUALR
+    IMPL --> SPECR --> QUALR --> CONFR
 
     BC -->|"fix identified"| BT
 
@@ -455,6 +465,8 @@ flowchart TB
     style PARSE fill:#51cf66,color:#000
     style BC fill:#339af0,color:#fff
 ```
+
+> **v1.2.0 Pipeline:** Strictly linear. brain-dev classifies and routes (never implements). brain-plan loads context and generates plans, then invokes brain-task directly. brain-task Path F owns all micro-step orchestration. No loops, no returns.
 
 ### Subagent Dispatch
 
@@ -504,15 +516,19 @@ Hooks never drive workflow -- they add guardrails, observation, and lifecycle ma
 
 | Tier | Profile | Hooks |
 |---|---|---|
-| 1 | `minimal` | Session briefing, hippocampus guard, config protection, session end |
+| 1 | `minimal` | Session briefing, hippocampus guard, config protection, routing guard, session end |
 | 2 | `standard` | + Strategy rotation, quality gate, task safety net |
 | 3 | `strict` | + Activity observer |
 
 Set via `BRAIN_HOOK_PROFILE` env var or `brain.config.json`. Disable individual hooks via `BRAIN_DISABLED_HOOKS`.
 
-### Learning Loop
+### Learning Loop (Hebbian)
 
 ```
+Task completes -> brain-map updates last_accessed + usage_count (Hebbian trace)
+               -> brain-consolidate applies usage-based weight bonus (+0.01 per use)
+               -> frequently-used sinapses rise in weight, unused ones decay
+
 Task fails -> brain-task auto-captures episode -> brain-consolidate proposes sinapse update -> developer approves -> knowledge persists in sinapse
                     |
               Same pattern seen again (3+ occurrences)
@@ -561,7 +577,7 @@ Task fails -> brain-task auto-captures episode -> brain-consolidate proposes sin
 | `brain-consult` | Consultant | Brain-informed Q&A — 3 modes (Quick/Research/Consensus), FTS5 retrieval, threading |
 | `brain-setup` | Configurator | Interactive wizard for brain.config.json — browse, edit, validate, diff |
 
-### Hook Architecture (9 Hooks)
+### Hook Architecture (10 Hooks)
 
 All hooks run through `hooks/brain-hooks.js` -- a pure Node.js runner with profile gating.
 
@@ -571,6 +587,7 @@ All hooks run through `hooks/brain-hooks.js` -- a pure Node.js runner with profi
 | hippocampusGuard | PreToolUse:Write | 1 | Block writes to hippocampus/ |
 | configProtection | PreToolUse:Write | 1 | Block weakening linter/formatter configs |
 | circuitBreakerCheck | PreToolUse | 1 | Block execution when circuit breaker is open |
+| brainRoutingGuard | PreToolUse:Write/Edit | 1 | Block Write/Edit from router skills (brain-dev, brain-consult) outside allowlist |
 | sessionEnd | Stop | 1 | Persist brain-state.json + prune consult audit files |
 | strategyRotation | PostToolUse:Bash | 2 | Inject rotation advice after failures |
 | qualityGate | PostToolUse:Write | 2 | Check for associated linter command |

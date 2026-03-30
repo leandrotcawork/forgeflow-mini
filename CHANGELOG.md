@@ -2,6 +2,34 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [1.2.0] — 2026-03-29
+
+### Breaking Changes
+- brain-dev Phase 3 (Subagent Dispatch) deleted — brain-task Path F now owns all micro-step orchestration
+- brain-task Path E (legacy standard plans) removed — all plans use expanded format
+- brain-plan now invokes brain-task directly after plan approval (no return to brain-dev)
+
+### Added
+- `brain-routing-guard` hook (Tier 1) — blocks Write/Edit from router skills (brain-dev, brain-consult) outside their allowlist
+- `<HARD-GATE>` in brain-dev SKILL.md — soft enforcement that brain-dev is a router only
+- `current_skill` field in brain-state.json — tracks which skill is active for hook enforcement
+- Hebbian learning: brain-map updates `last_accessed` and `usage_count` when sinapses are loaded
+- brain-consolidate Step 4a.2: usage-based weight bonus (+0.01 per successful task use)
+- brain-plan loads context via brain-map before Stage 1 (fixes chicken-and-egg bug)
+- brain-task Path F: 3 reviewer gates per micro-step, confidence display, "fix it" loop
+
+### Fixed
+- brain-plan Stage 1 could not read context-packet (it didn't exist yet) — now created by brain-plan via brain-map
+- brain-dev Phase 3 and brain-task Path F duplicated micro-step orchestration — unified in brain-task
+- Pipeline could loop: brain-plan → brain-dev Phase 3 → brain-task — now strictly linear
+
+### Architecture
+- FSM states: IDLE → CLASSIFY → PLAN → EXECUTE → LEARN → IDLE
+- Single direction flow: brain-dev → brain-plan → brain-task (no returns)
+- Hook enforcement: code-level gate that LLM cannot bypass
+
+---
+
 ## [1.1.0] — 2026-03-29
 
 ### Added
