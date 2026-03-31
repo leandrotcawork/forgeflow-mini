@@ -1,0 +1,13 @@
+{
+  "task_id": null,
+  "intent": null,
+  "phase": "spec",
+  "spec_status": "pending",
+  "plan_status": "pending",
+  "review_status": "pending",
+  "verify_status": "pending",
+  "allowed_files": [],
+  "needs_user_validation": false,
+  "verify_commands": [],
+  "last_error": null
+}
