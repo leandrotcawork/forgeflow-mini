@@ -3,31 +3,30 @@
 Brain-driven development plugin for Claude Code -- persistent knowledge that learns from every task, dispatches subagents for speed, and protects quality with hooks and guardrails.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.0-blue" alt="Version 2.0.0">
+  <img src="https://img.shields.io/badge/Version-3.0.0-blue" alt="Version 3.0.0">
   <img src="https://img.shields.io/badge/Claude_Code-Compatible-blueviolet" alt="Requires Claude Code">
   <img src="https://img.shields.io/badge/Skills-9-orange" alt="9 Skills">
   <img src="https://img.shields.io/badge/Hooks-2-yellow" alt="2 Hooks">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
-**Every task builds the brain.** ForgeFlow maintains a persistent knowledge system that remembers architecture patterns, learns from failures, and routes tasks to the right execution mode. Knowledge compounds across sessions -- the 50th task runs smarter than the first.
+**ForgeFlow v3 uses a rigid kernel.** Requests flow through a deterministic sequence, so the same input follows the same public path every time. The execution core is stable; the control flow is not negotiated by hidden heuristics.
 
-**Lean skills with on-demand context.** 9 invocable skills averaging ~90 lines each, with complementary files (prompts, templates, references) loaded only when needed. Session orientation is injected automatically via the session-start hook, so the LLM always knows the brain system without waiting for `/brain-dev`.
+**Memory is consultive, not directive.** ForgeFlow keeps architectural knowledge and prior learnings available to the workflow, but memory only informs decisions. It does not rewrite the pipeline or hide state transitions.
 
-**Hybrid inline/subagent execution.** brain-task scores complexity and dispatches accordingly: trivial tasks run inline, standard features dispatch to an isolated subagent, complex work gets subagent + dual review. No model names hardcoded -- dispatch is score-based.
-
-**Two hooks, not ten.** The session-start hook injects brain orientation and project state. The hippocampus-guard hook blocks writes to immutable knowledge. Both are bash scripts. Everything else is handled by the skills themselves.
-
-**Failure becomes knowledge automatically.** When something breaks, brain-task captures an episode. brain-health processes episodes into sinapse updates (developer-approved). Recurring patterns (3+ occurrences) get proposed as conventions. The brain learns from mistakes without manual intervention.
+**Public commands stay simple.** `/brain-dev`, `/brain-debug`, `/brain-improve`, `/brain-consult`, `/brain-config`, and `/brain-health` are the main public commands. The model reasons over a compact, explicit command set instead of hidden modes.
 
 ---
 
-## What's New in v2.0.0
+## What's New in v3.0.0
+
+- **Rigid execution kernel** -- the top-level workflow is deterministic and stage-based.
+- **Consultive memory** -- architecture knowledge is available to the pipeline without becoming the pipeline.
+- **Primary public commands** -- `/brain-dev`, `/brain-debug`, `/brain-improve`, `/brain-consult`, `/brain-config`, and `/brain-health`.
 
 - **83% reduction in skill sizes** -- 5,422 lines to 904 lines across 9 invocable SKILL.md files. Each skill is a lean orchestrator (~80-120 lines).
 - **87% reduction in hooks** -- 752 lines (9 hooks in Node.js) to ~90 lines (2 hooks in bash).
 - **Complementary files pattern** -- prompts/, templates/, references/ directories loaded on-demand, not baked into SKILL.md.
-- **Hybrid inline/subagent model** -- score-based dispatch replaces hardcoded model selection (Haiku/Sonnet/Codex/Opus removed).
 - **Session orientation via hook** -- brain-orientation is auto-injected at session start, making brain-dev optional for experienced users.
 - **Skills consolidated**: brain-init + brain-setup merged into **brain-config**, brain-consolidate + brain-status merged into **brain-health**, brain-consult + brain-mckinsey + brain-codex-review merged into **brain-consult** (3 modes: quick/research/consensus).
 - **7 skills retired, 3 new consolidated skills** -- brain-eval absorbed into brain-plan, brain-codex-review became a prompt file in brain-task.
@@ -64,19 +63,12 @@ brain-config scans your project, generates hippocampus (architecture + conventio
 
 | I want to... | Use | What happens |
 |---|---|---|
-| **Start anything** | `/brain-dev [anything]` | Classifies request, scores complexity, routes to brain-plan/brain-consult/brain-task. Primary daily entry point. |
-| Build a feature | `/brain-dev "description"` | Classifies, loads context, dispatches subagent or implements inline, reviews |
-| Debug something stuck | `/brain-dev "debug: description"` | Routes for root cause analysis |
-| Plan before building | `/brain-dev "plan: description"` | Architecture plan with developer approval gate |
-| Quick trivial fix | `/brain-dev "fix typo in header"` | Auto-routes to inline (lightweight) |
-| Verify implementation | `/brain-verify` | 6-phase check: build, types, lint, tests, security, diff |
-| Check brain health | `/brain-health` | Staleness, coverage gaps, circuit breaker, subagent stats |
-| Review completed work | `/brain-health --consolidate` | Batch-review sinapses, surface escalations, update weights |
-| Strategic decision | `/brain-consult --consensus "monolith vs microservices"` | Cross-model research + scoring framework |
-| Ask a question | `/brain-consult "how should I..."` | Loads brain context, answers with sinapses, optionally researches docs or gets second opinion |
-| Initialize new project | `/brain-config` | Scans project, generates brain, installs hooks |
-| Configure Brain settings | `/brain-config [section]` | Interactive wizard -- browse, edit, validate, and diff brain.config.json sections |
-| Propose knowledge updates | `/brain-document` | Proposes sinapse updates and captures episodes after task completion |
+| **Start anything** | `/brain-dev [anything]` | Classifies the request and enters the deterministic v3 kernel. |
+| Debug something stuck | `/brain-debug "description"` | Routes the request through the fixed diagnostic path. |
+| Improve existing work | `/brain-improve "description"` | Reconciles a change against current conventions and quality goals. |
+| Ask a question | `/brain-consult "how should I..."` | Reads consultive memory without changing the workflow. |
+| Configure Brain settings | `/brain-config [section]` | Interactive wizard -- browse, edit, validate, and diff brain.config.json sections. |
+| Check brain health | `/brain-health` | Staleness, coverage gaps, circuit breaker, and review status. |
 
 ---
 
@@ -142,7 +134,7 @@ Ready. Use /brain-dev to start building.
 
 ### Example 3: Asking Questions During Implementation (brain-consult)
 
-While implementing a feature, you hit a problem. Instead of raw conversation (no brain context) or full `/brain-task` (overkill for a question), use `/brain-consult`:
+While implementing a feature, you hit a problem. Instead of raw conversation (no brain context) or jumping into the full pipeline, use `/brain-consult`:
 
 ```
 > /brain-consult "Why is the Mercado Livre API returning 401 on product listing?"
@@ -340,7 +332,7 @@ It's in .env as REDIS_URL=redis://host:port/db
 
 ---
 Warning: Brain pipeline active: Task 2026-03-27-ml-cache paused at Step 3.
-Resume when ready: /brain-task --resume
+Resume when ready: /brain-dev
 ```
 
 ### Example 9: Configuring Brain Settings
@@ -390,8 +382,6 @@ You want to...
     +-- Review brain state? -----> /brain-health (health dashboard)
     |                               /brain-health --consolidate (batch review + promote)
     |
-    +-- Verify code quality? ----> /brain-verify (6-phase check)
-    |
     +-- Configure? --------------> /brain-config [section]
 ```
 
@@ -405,57 +395,10 @@ Every task flows through a self-contained pipeline. Hooks enhance when present b
 
 ```mermaid
 flowchart TB
-    USER["Developer: /brain-dev 'anything'"]
-
-    subgraph BRAINDEV["brain-dev (~88L, classifies + routes)"]
-        CL["Classify intent<br/>build | fix | debug | review | question | refactor"]
-        SC["Score complexity (0-100)"]
-        KW["Extract retrieval keywords"]
-        DC["Write dev-context + route to next skill"]
-    end
-
-    subgraph CONTEXT["brain-map (~80L, context loader)"]
-        FTS["FTS5 keyword match"]
-        SPREAD["Tag expansion (spreading activation)"]
-        CTX["context-packet<br/>3-4 relevant sinapses<br/>Updates last_accessed + usage_count"]
-    end
-
-    subgraph PLAN_PATH["brain-plan (~116L, interactive planner)"]
-        QA["Q&A: 1-3 questions"]
-        APPROACH["2 approach proposals"]
-        APPROVE["Developer approval gate"]
-        STEPS["Generate TDD micro-steps"]
-    end
-
-    subgraph EXECUTE["brain-task (~117L, subagent dispatch)"]
-        DISPATCH["Score-based dispatch decision"]
-        IMPL["Implement (inline or subagent)"]
-        REVIEW["Code review (subagent)"]
-    end
-
-    subgraph POST["Post-implementation"]
-        VERIFY["brain-verify (~72L)<br/>6-phase verification"]
-        DOC["brain-document (~82L)<br/>Propose sinapse updates"]
-    end
-
-    USER --> CL --> SC --> KW --> DC
-
-    DC -->|"build/refactor >= 20"| FTS
-    DC -->|"trivial < 20"| DISPATCH
-    DC -->|"question/consult"| CONSULT["brain-consult"]
-
-    FTS --> SPREAD --> CTX
-    CTX --> QA --> APPROACH --> APPROVE --> STEPS
-    STEPS --> DISPATCH --> IMPL --> REVIEW
-
-    REVIEW --> VERIFY --> DOC
-
-    style BRAINDEV fill:#51cf66,color:#000
-    style CONTEXT fill:#339af0,color:#fff
-    style EXECUTE fill:#ff922b,color:#000
+    USER["Developer"] --> DEV["brain-dev"] --> SPEC["brain-spec"] --> PLAN["brain-plan"] --> TASK["brain-task"] --> REVIEW["brain-review"] --> VERIFY["brain-verify"] --> DOC["brain-document"]
 ```
 
-> **v2.0 Pipeline:** brain-dev classifies and routes (never implements). brain-map loads context. brain-plan generates plans with interactive Q&A. brain-task dispatches to subagents. brain-verify checks quality. brain-document proposes knowledge updates. Strictly linear, no loops.
+> **v3 Pipeline:** brain-dev classifies the request, brain-spec defines scope and acceptance criteria, brain-plan produces the execution plan, brain-task implements the work, brain-review checks the result, brain-verify validates it, and brain-document records approved knowledge. Strictly linear, no loops.
 
 ### Subagent Dispatch
 
@@ -543,7 +486,7 @@ Task fails -> brain-task auto-captures episode -> brain-health proposes sinapse 
 +-- brain.db               SQLite index (sinapses + links + state + FTS5)
 ```
 
-### Skill Map (10 Skills)
+### Skill Map (10 Skills: 9 invocable + 1 auto-injected)
 
 | Skill | Type | Purpose |
 |---|---|---|
@@ -552,8 +495,8 @@ Task fails -> brain-task auto-captures episode -> brain-health proposes sinapse 
 | `brain-map` | Context | Loads 3-tier weighted sinapses from brain.db |
 | `brain-plan` | Planner | Cortex-Linked TDD planner -- micro-steps, interactive Q&A, developer approval |
 | `brain-task` | Implementer | Dispatches subagents or implements inline based on complexity score |
-| `brain-verify` | Verifier | 6-phase verification: build, types, lint, tests, security, diff |
-| `brain-document` | Documenter | Proposes sinapse updates and captures episodes |
+| `brain-debug` | Debugger | Deterministic diagnosis path for stuck or failing work |
+| `brain-improve` | Improver | Review and reconcile changes against current conventions |
 | `brain-consult` | Consultant | Brain-informed Q&A -- 3 modes (Quick/Research/Consensus) |
 | `brain-config` | Configurator | Initialize brain for new projects or edit brain.config.json |
 | `brain-health` | Dashboard | Health metrics, consolidation, weight management |
@@ -644,8 +587,8 @@ Run `python scripts/build_brain_db.py --brain-path .brain` to rebuild. The markd
 **How do I upgrade from v1.x?**
 Run `/brain-config --upgrade`. It adds missing config keys, state files, and database tables without touching existing brain content.
 
-**When should I use `/brain-consult` vs `/brain-task`?**
-Use `/brain-consult` for questions ("how should I...", "why is this error...", "which approach..."). Use `/brain-task` for implementation ("add this feature", "fix this bug", "refactor this module"). Rule of thumb: if the answer requires writing code files, it is a brain-task. If the answer is knowledge or guidance, it is brain-consult.
+**When should I use `/brain-consult` vs `/brain-dev`?**
+Use `/brain-consult` for questions ("how should I...", "why is this error...", "which approach..."). Use `/brain-dev` for implementation ("add this feature", "fix this bug", "refactor this module"). Rule of thumb: if the answer requires writing code files, start with `/brain-dev`. If the answer is knowledge or guidance, it is brain-consult.
 
 **What are the three brain-consult modes?**
 - **Quick** (3-6k tokens): simple questions with brain context. Auto-selected for "remind me", "which file", "explain".

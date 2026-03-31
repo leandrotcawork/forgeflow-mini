@@ -2,6 +2,18 @@
 
 All notable changes to ForgeFlow Mini are documented in this file.
 
+## [3.0.0] - 2026-03-31
+
+### Added
+- `docs/architecture/forgeflow-v3.md` with v3 principles, public commands, internal pipeline, and workflow guarantees.
+
+### Changed
+- README summary repositions ForgeFlow as a deterministic kernel with consultive memory and the main public commands.
+- Top-level product narrative transitions from hybrid execution language toward a deterministic workflow model.
+
+### Removed
+- The old top-level README positioning that framed the system as a hybrid execution model.
+
 ## [1.2.8] — 2026-03-30
 
 ### Fixed
