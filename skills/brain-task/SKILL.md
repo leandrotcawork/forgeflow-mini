@@ -63,23 +63,43 @@ See `references/subagent-guidelines.md` for full dispatch mode details.
    c. After max cycles, proceed with current state and note unresolved issues.
 5. Collect final implementation summary.
 
-## Step 4 — Post-Task
+## Step 4 — Post-Task Checklist
 
-1. Update `.brain/working-memory/brain-state.json`:
-   - Set `current_skill` to "brain-verify"
-   - Record `last_task_result` (pass/fail, files changed)
-2. Write `task-completion` entry to `.brain/working-memory/`:
-   ```
-   task: <description>
-   status: complete | partial | failed
-   files_changed: [list]
-   review_cycles: N
-   unresolved_issues: [list or none]
-   ```
-3. Append summary to `.brain/progress/activity.md`:
-   ```
-   - [HH:MM] brain-task: <description> → <status> (N files, M review cycles)
-   ```
+**Run every item. Do not skip any.**
+
+- [ ] **4a. Update `.brain/working-memory/brain-state.json`**
+
+  Read the current file first. Then write these exact fields:
+  - `current_skill` → `"brain-verify"`
+  - `last_task_id` → `"{task_id}"`
+  - `tasks_completed_this_session` → previous value + 1
+  - `tasks_since_consolidate` → previous value + 1
+  - `consecutive_failures` → `0` (reset on success)
+
+- [ ] **4b. Update `.brain/progress/brain-project-state.json`**
+
+  Read the current file first. Then write these exact fields:
+  - `total_tasks_completed` → previous value + 1
+  - `tasks_since_last_consolidation` → previous value + 1
+
+- [ ] **4c. Write task-completion file**
+
+  Path: `.brain/working-memory/task-completion-{task_id}.md`
+
+  ```
+  task: {original request verbatim}
+  status: complete | partial | failed
+  files_changed: [list all modified files]
+  review_cycles: {N}
+  unresolved_issues: none | [list]
+  ```
+
+- [ ] **4d. Append to `.brain/progress/activity.md`**
+
+  Under today's date header (`## YYYY-MM-DD`), append:
+  ```
+  - [HH:MM] brain-task: {short description} → {status} ({N} files, {M} review cycles)
+  ```
 
 ## Step 5 — Invoke brain-verify
 
