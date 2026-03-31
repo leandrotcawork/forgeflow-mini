@@ -34,7 +34,7 @@ Target footprint: ~200 tokens.
 Read `.brain/progress/brain-project-state.json`.
 
 **STOP immediately if `circuit_breaker.state` is `"open"`:**
-> Output: "brain-dev: Circuit breaker OPEN. Consecutive failures: N. Not routing until user resolves blockers."
+> Output: "brain-dev: Circuit breaker OPEN. Consecutive failures: {circuit_breaker.failure_count}. Not routing until user resolves blockers."
 > Do nothing else.
 
 ---
@@ -65,12 +65,13 @@ score = 15 (baseline)
   = min(total, 100)
 ```
 
-| Range | Label | Route |
-|-------|-------|-------|
-| 0–15 | Trivial | brain-task inline (no plan) |
-| 16–39 | Simple | brain-task or brain-map + brain-plan |
-| 40–74 | Medium | brain-map + brain-plan |
-| 75–100 | Complex | brain-map + brain-plan |
+**Domain scoring note:** `mcp` and `skills` domains score as `backend (+10)`.
+
+| Range | Route |
+|-------|-------|
+| 0–19 | brain-task inline (no plan) |
+| 20–74 | brain-map + brain-plan |
+| 75–100 | brain-map + brain-plan (deep) |
 
 ### Keyword Extraction
 
@@ -128,7 +129,8 @@ brain-dev: {task_id}
    YES → invoke brain-consult. DONE.
 
 2. intent = fix (specific, named change)?
-   YES → invoke brain-task directly. DONE.
+   score < 20  → invoke brain-task directly. DONE.
+   score >= 20 → invoke brain-map, then brain-plan. DONE.
 
 3. intent = build or refactor?
    score < 20  → invoke brain-task inline (no plan). DONE.
