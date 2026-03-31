@@ -1,118 +1,78 @@
 ---
 name: brain-verify
-description: 6-phase implementation verification — build, types, lint, tests, security, diff review
+description: Operational evidence verification only - build, types, lint, tests, security, and diff checks without design judgment.
 ---
 
-# brain-verify — Implementation Verification
+# brain-verify -- Implementation Verification
+
+Operational evidence only. brain-verify does not judge design quality, architecture choice, or plan quality.
 
 ## Trigger
 
-Called by brain-task at Step 5, or directly via `/brain-verify`.
+Called by brain-review, or directly via `/brain-verify`.
 
-## Iron Law
+## Hard Gates
 
-**NEVER output a GO verdict without actual tool output confirming it.**
-
-- No tool output = no verdict. Every phase needs a real command result.
-- Script produces all SKIPs → run phases manually (instructions below). Do NOT accept SKIPs as PASS.
-- "Looks fine" is not verification. Run the commands.
-- Unavailable tool → mark **SKIP**, never PASS.
-
----
+1. Read `.brain/working-memory/workflow-state.json` first.
+2. Stop unless `phase = "verify"` and `review_status = "passed"`.
+3. If the gate fails, stop and return to `brain-review` without updating `verify_status` or `phase`.
+4. Operational evidence only. Run commands and report results.
+5. No design judgment, no architecture review, no plan approval.
+6. No GO verdict without actual command output.
+7. On success, update `.brain/working-memory/workflow-state.json` with `verify_status: "passed"` and `phase: "document"`.
 
 ## Execution
 
-First, try the automated script:
+Run phases in order and stop on the first blocking failure.
+
+### Phase 1 - Build (blocking)
+
+Try the first applicable command:
 
 ```bash
-bash scripts/brain-verify.sh --json --project-root .
+npm run build
+node -c {main_entry_js_file}
+python -m py_compile {main_py_file}
+go build ./...
 ```
 
-**If the script returns all SKIPs for phases 1–4:** the script cannot detect this project's toolchain. Run those phases manually using the commands in each phase section below.
+PASS = exit 0. FAIL = non-zero exit. SKIP = no build system found.
 
-Run phases in order: 1 → 6. **STOP immediately on the first BLOCKING failure.**
-
----
-
-## Phase 1 — Build (BLOCKING)
-
-Try each command in order. Stop at the first one that works.
+### Phase 2 - Types (non-blocking)
 
 ```bash
-npm run build                          # if package.json has a "build" script
-node -c {main_entry_js_file}           # plain Node.js syntax check (e.g. node -c mcp/brain-config-server.js)
-python -m py_compile {main_py_file}    # Python syntax check
-go build ./...                         # Go
+npx tsc --noEmit
+mypy .
 ```
 
-To find a Node.js entry file: check for `main` in `package.json`, or look for files in `mcp/`, `src/`, or the project root ending in `.js`.
+PASS = exit 0. FAIL = non-zero exit. SKIP = tool unavailable.
 
-PASS = exit 0. FAIL = exit non-zero (BLOCKING — stop here, report NO-GO). SKIP = no build system found.
+### Phase 3 - Lint (non-blocking)
 
----
-
-## Phase 2 — Types (non-blocking)
+Prefer configured project linters first. Otherwise try:
 
 ```bash
-npx tsc --noEmit    # TypeScript
-mypy .              # Python
+npx eslint .
+ruff check .
+golangci-lint run
 ```
 
-SKIP if neither tool is available. PASS = exit 0. FAIL = exit non-zero (note but continue).
+PASS = 0 errors. FAIL = errors found. SKIP = no linter found.
 
----
+### Phase 4 - Tests (non-blocking)
 
-## Phase 3 — Lint (non-blocking)
-
-**Step 1: Check `.brain/brain.config.json` for configured linters.**
-
-Read the `linters` section of `.brain/brain.config.json`:
-```json
-"linters": {
-  ".js": "npx eslint --fix",
-  ".py": "ruff check --fix",
-  ".ts": "npx eslint --fix"
-}
-```
-
-Run the linter command for each file extension touched in this task. Example: if `.js` files were modified and brain.config has `".js": "npx eslint --fix"`, run:
+Try the most specific relevant test first, then broader suite if needed:
 
 ```bash
-npx eslint --fix {changed_js_files}
+npm test
+node tests/{relevant_test_file}.test.js
+pytest
+go test ./...
 ```
 
-**Step 2: If brain.config.json not found or linters section is empty**, try:
+PASS = exit 0. FAIL = any failing test. SKIP = no test runner found.
 
-```bash
-npx eslint .        # JavaScript/TypeScript
-ruff check .        # Python
-golangci-lint run   # Go
-```
-
-SKIP if no linter found. PASS = 0 errors. FAIL = errors found (note but continue).
-
----
-
-## Phase 4 — Tests (non-blocking)
-
-Try each in order until one succeeds:
-
-```bash
-npm test                                      # if package.json has "test" script
-node tests/{relevant_test_file}.test.js       # plain Node.js test files
-pytest                                        # Python
-go test ./...                                 # Go
-```
-
-**To find Node.js test files:** `ls tests/*.test.js 2>/dev/null` or `ls tests/*.test.js` on Windows.
-
-Run the most specific test file for the changed code first. If all tests pass, run the full suite.
-
-PASS = exit 0 and all tests pass. FAIL = any test fails (note but continue).
-
----
-
-## Phase 5 — Security (BLOCKING)
+### Phase 5 - Security (blocking)
 
 ```bash
 grep -rn \
@@ -124,45 +84,48 @@ grep -rn \
   . 2>/dev/null | grep -v "test\|spec\|example\|\.env"
 ```
 
-PASS = no output (no matches). FAIL = any match found (BLOCKING — stop here, report NO-GO).
+PASS = no output. FAIL = any match found.
 
----
-
-## Phase 6 — Diff (non-blocking)
+### Phase 6 - Diff (non-blocking)
 
 ```bash
 git diff --stat HEAD
 ```
 
-Compare the changed files to the plan's file list. Flag any unexpected files as WARN.
-
-PASS = all changes are expected. WARN = unexpected file changed (note but continue).
-
----
+Operational evidence only: compare changed files to execution scope. Flag unexpected files as WARN. Do not turn this into design review.
 
 ## Report Format
 
-Always output this table with actual command results:
+Always output actual command evidence:
 
-```
+```text
 VERIFICATION REPORT:
   Phase | Result | Details
   ------|--------|--------
-  Build | PASS   | node -c server.js — exit 0
+  Build | PASS   | npm run build - exit 0
   Types | SKIP   | no type checker found
-  Lint  | PASS   | eslint (from brain.config) — 0 errors
-  Tests | PASS   | node tests/server.test.js — 60/60
+  Lint  | PASS   | eslint - 0 errors
+  Tests | PASS   | npm test - all pass
   Sec.  | PASS   | no secrets detected
-  Diff  | PASS   | 2 files changed (expected)
+  Diff  | PASS   | expected files only
 
   Verdict: GO
 ```
 
 ## Verdict
 
-- **GO** — all BLOCKING phases passed (non-blocking failures are noted)
-- **NO-GO** — any BLOCKING phase failed → report clearly, hand back to brain-task
+- `GO` - all blocking phases passed
+- `NO-GO` - any blocking phase failed; return to execution
 
----
+## State Update
 
-**Refactored:** 2026-03-30 | **Token Budget:** 5k in / 3k out
+If verdict is `GO`, update `.brain/working-memory/workflow-state.json`:
+
+```json
+{
+  "phase": "document",
+  "verify_status": "passed"
+}
+```
+
+If verdict is `NO-GO`, do not advance to document.
