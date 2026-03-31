@@ -803,6 +803,40 @@ test('brain_config_read: _template returns error when template file missing', fu
 });
 
 // ---------------------------------------------------------------------------
+// Tests: brain_health_check
+// ---------------------------------------------------------------------------
+
+test('brain_health_check: returns ok with version and region_count', function () {
+  setupTestConfig();
+  var result = server.brainHealthCheck({});
+  assert(result.ok);
+  assertEqual(result.data.version, '0.6.0');
+  assertEqual(result.data.region_count, 4);
+  assert(typeof result.data.brain_id === 'string');
+  assert(Array.isArray(result.data.regions));
+});
+
+test('brain_health_check: errors when config missing', function () {
+  try { fs.unlinkSync(configFile); } catch {}
+  var result = server.brainHealthCheck({});
+  assert(!result.ok);
+  assert(result.error.indexOf('not found') !== -1);
+  setupTestConfig();
+});
+
+test('CLI: brain_health_check via subprocess', function () {
+  setupTestConfig();
+  var serverPath = path.join(__dirname, '..', 'mcp', 'brain-config-server.js');
+  var input = JSON.stringify({ tool: 'brain_health_check', args: {} });
+  var result = execFileSync('node', [serverPath], {
+    input: input, cwd: tmpDir, encoding: 'utf-8', timeout: 5000
+  });
+  var parsed = JSON.parse(result.trim());
+  assert(parsed.ok);
+  assertEqual(parsed.data.region_count, 4);
+});
+
+// ---------------------------------------------------------------------------
 // Cleanup and run
 // ---------------------------------------------------------------------------
 

@@ -800,6 +800,25 @@ function brainConfigDiff(args) {
 }
 
 // ---------------------------------------------------------------------------
+// brain_health_check
+// ---------------------------------------------------------------------------
+
+function brainHealthCheck(args) {
+  var config = readJSON(configPath());
+  if (config === null) return error('Brain config not found at ' + configPath());
+  var readErr = getReadError(config);
+  if (readErr) return error('Failed to read brain config: ' + readErr);
+
+  var regions = Array.isArray(config.cortex_regions) ? config.cortex_regions : [];
+  return success({
+    brain_id:     config.brain_id || null,
+    version:      config.version || null,
+    region_count: regions.length,
+    regions:      regions,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Tool dispatcher
 // ---------------------------------------------------------------------------
 
@@ -808,6 +827,7 @@ var TOOLS = {
   brain_config_write:    brainConfigWrite,
   brain_config_validate: brainConfigValidate,
   brain_config_diff:     brainConfigDiff,
+  brain_health_check:    brainHealthCheck,
 };
 
 // ---------------------------------------------------------------------------
@@ -883,6 +903,7 @@ module.exports = {
   brainConfigWrite: brainConfigWrite,
   brainConfigValidate: brainConfigValidate,
   brainConfigDiff: brainConfigDiff,
+  brainHealthCheck: brainHealthCheck,
   validateValue: validateValue,
   splitKeyPath: splitKeyPath,
   getDeep: getDeep,
