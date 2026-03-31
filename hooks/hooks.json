@@ -13,6 +13,19 @@
         "command": "bash hooks/hippocampus-guard.sh",
         "toolNames": ["Write", "Edit"],
         "description": "Block writes to .brain/hippocampus/"
+      },
+      {
+        "name": "workflow-pre-tool-use",
+        "command": "bash hooks/pre-tool-use.sh",
+        "toolNames": ["Write", "Edit"],
+        "description": "Enforce workflow-state write gates"
+      }
+    ],
+    "Stop": [
+      {
+        "name": "workflow-stop",
+        "command": "bash hooks/stop.sh",
+        "description": "Prevent finalization before verification passes"
       }
     ]
   }

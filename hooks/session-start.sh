@@ -1,55 +1,40 @@
 #!/usr/bin/env bash
-# ForgeFlow Mini — SessionStart hook
+# ForgeFlow Mini - SessionStart hook
 # Injects brain orientation + current project state into session context.
-# Output: {"result":"add_context","context":"<escaped content>"}
+# Modern output schema: hookSpecificOutput.additionalContext
 
 set -euo pipefail
 
-# ── Resolve plugin directory (one level up from hooks/) ──
-PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-
-# ── Resolve project directory ──
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-BRAIN_DIR="${PROJECT_DIR}/.brain"
-
-# ── Read orientation skill ──
 ORIENTATION_FILE="${PLUGIN_DIR}/skills/brain-orientation/SKILL.md"
-orientation=""
-if [[ -f "$ORIENTATION_FILE" ]]; then
-  orientation="$(cat "$ORIENTATION_FILE")"
-fi
+STATE_FILE="${PROJECT_DIR}/.brain/progress/brain-project-state.json"
 
-# ── Read project state (optional) ──
-STATE_FILE="${BRAIN_DIR}/progress/brain-project-state.json"
-state=""
-if [[ -f "$STATE_FILE" ]]; then
-  state="$(cat "$STATE_FILE")"
-fi
+ORIENTATION_FILE="$ORIENTATION_FILE" STATE_FILE="$STATE_FILE" python3 - <<'PY'
+import json
+import os
+from pathlib import Path
 
-# ── Build combined context ──
-context=""
-if [[ -n "$orientation" ]]; then
-  context+=$'# Brain Orientation\n\n'"${orientation}"
-fi
+orientation_file = Path(os.environ["ORIENTATION_FILE"])
+state_file = Path(os.environ["STATE_FILE"])
 
-if [[ -n "$state" ]]; then
-  if [[ -n "$context" ]]; then
-    context+=$'\n\n---\n\n'
-  fi
-  context+=$'# Current Project State\n\n'"${state}"
-fi
+def read_text(path):
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except (FileNotFoundError, OSError):
+        return ""
 
-# ── Bail if nothing to inject ──
-if [[ -z "$context" ]]; then
-  echo '{"result":"approve"}'
-  exit 0
-fi
+parts = []
 
-# ── Escape for JSON and output ──
-escaped="$(python3 -c "
-import json, sys
-raw = sys.stdin.read()
-print(json.dumps(raw))
-" <<< "$context")"
+orientation = read_text(orientation_file)
+if orientation:
+    parts.append("# Brain Orientation\n\n" + orientation)
 
-echo "{\"result\":\"add_context\",\"context\":${escaped}}"
+state = read_text(state_file)
+if state:
+    parts.append("# Current Project State\n\n" + state)
+
+context = "\n\n---\n\n".join(parts)
+print(json.dumps({"hookSpecificOutput": {"additionalContext": context}}))
+PY

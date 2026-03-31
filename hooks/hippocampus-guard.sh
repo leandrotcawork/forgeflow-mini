@@ -1,20 +1,51 @@
 #!/usr/bin/env bash
-# ForgeFlow Mini — PreToolUse hook (hippocampus guard)
+# ForgeFlow Mini - PreToolUse hook (hippocampus guard)
 # Blocks writes to .brain/hippocampus/ (immutable memory layer).
-# Reads tool input JSON from stdin; outputs approve or block.
+# Modern output schema: hookSpecificOutput.permissionDecision
 
 set -euo pipefail
 
 input="$(cat)"
 
-file_path="$(python3 -c "
-import json, sys
-data = json.loads(sys.stdin.read())
-print(data.get('input', {}).get('file_path', ''))
-" <<< "$input" 2>/dev/null || echo "")"
+INPUT_JSON="$input" python3 - <<'PY'
+import json
+import os
 
-if [[ "$file_path" == *".brain/hippocampus/"* ]]; then
-  echo '{"result":"block","reason":"Hippocampus is immutable. If you are running /brain-health, review and approve this write."}'
-else
-  echo '{"result":"approve"}'
-fi
+raw = os.environ.get("INPUT_JSON", "")
+
+def extract_path(payload):
+    tool_input = payload.get("tool_input") or payload.get("input") or {}
+    for key in ("file_path", "path"):
+        value = tool_input.get(key)
+        if isinstance(value, str) and value:
+            return value
+    for key in ("file_path", "path"):
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+try:
+    payload = json.loads(raw) if raw.strip() else {}
+except json.JSONDecodeError:
+    payload = {}
+
+file_path = extract_path(payload)
+normalized = file_path.replace("\\", "/")
+
+if ".brain/hippocampus/" in normalized:
+    output = {
+        "hookSpecificOutput": {
+            "permissionDecision": "deny",
+            "reason": "Hippocampus is immutable. Review and approve this write before continuing."
+        }
+    }
+else:
+    output = {
+        "hookSpecificOutput": {
+            "permissionDecision": "allow"
+        }
+    }
+
+print(json.dumps(output))
+PY
