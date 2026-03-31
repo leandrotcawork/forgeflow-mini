@@ -1,51 +1,46 @@
 ---
 name: brain-config
-description: "Unified brain initialization and configuration — auto-detects mode based on .brain/ existence"
+description: Unified brain initialization and configuration for repository-local `.claude/` rules and `.brain/` project memory.
 ---
 
-# brain-config — Init + Configuration
+# brain-config -- Init + Configuration
 
 ## Trigger
 
-```
+```text
 /brain-config [section] [--reset section] [--export] [--upgrade] [--hooks-only]
 ```
 
 ## Mode Detection
 
 | Condition | Mode |
-|-----------|------|
-| `.brain/` does not exist | **Init** — run Phases 1–10 below |
-| `.brain/` exists | **Edit** — run Edit Mode below |
-| `--upgrade` flag | **Upgrade** — run Phases 7, 9, 10 only |
-| `--hooks-only` flag | **Hooks** — run Phase 10 only |
+|---|---|
+| `.brain/` does not exist | Init |
+| `.brain/` exists | Edit |
+| `--upgrade` flag | Upgrade |
+| `--hooks-only` flag | Hooks |
 
----
+## Init Mode
 
-## Init Mode — 10-Phase Wizard
-
-Use TodoWrite to track each phase. Mark complete immediately when done.
+Use TodoWrite to track each phase.
 
 ### Phase 1: Project Scan
 
-Read these files to detect project type:
-- `package.json` → name, scripts, dependencies
-- `go.mod` → module name
-- `pyproject.toml` → tool.poetry.name or project.name
-- `Cargo.toml` → package.name
+Read common manifest files to detect project name and stack:
+- `package.json`
+- `go.mod`
+- `pyproject.toml`
+- `Cargo.toml`
 
-If none found: use directory name as project name.
-
-Scan top-level directories to identify domains.
-
-**Output:** project name, tech stack, detected directories.
+If none exist, use the repository directory name.
+Scan top-level directories to detect domains.
 
 ### Phase 2: Classify Cortex Regions
 
-Map detected directories to regions. **Only create regions for directories that actually exist.**
+Map detected directories into regions and only create regions that exist.
 
 | Directory | Region |
-|-----------|--------|
+|---|---|
 | `src/`, `lib/`, `cmd/` | backend |
 | `components/`, `pages/`, `app/` | frontend |
 | `migrations/`, `models/`, `schema/` | database |
@@ -57,230 +52,150 @@ Map detected directories to regions. **Only create regions for directories that 
 | `tests/` | testing |
 | `docs/` | docs |
 
-**Output:** `["region1", "region2", ...]`
-
 ### Phase 3: Generate Hippocampus
 
-Draft these files (hold in context — do not write to disk until Phase 5 approval):
+Draft these files in memory first:
 
 | File | Content |
-|------|---------|
-| `.brain/hippocampus/architecture.md` | Detected stack, folder layout, entry points, major patterns |
+|---|---|
+| `.brain/hippocampus/architecture.md` | Stack, folder layout, entry points, major patterns |
 | `.brain/hippocampus/conventions.md` | Naming rules, folder structure, coding patterns, absolute rules |
-| `.brain/hippocampus/strategy.md` | Product vision placeholder + priorities checklist |
-| `.brain/hippocampus/decisions_log.md` | Empty ADR log with `## ADR-0001: (Title)\n\n**Decision:**\n\n**Rationale:**\n\n**Consequences:**` template |
-| `.brain/hippocampus/cortex_registry.md` | Table: Region | Directory | Purpose |
+| `.brain/hippocampus/strategy.md` | Product vision placeholder and priorities |
+| `.brain/hippocampus/decisions_log.md` | Empty ADR log |
+| `.brain/hippocampus/cortex_registry.md` | Region to directory map |
+| `.brain/hippocampus/rules-promotion-policy.md` | Separation of `.brain/` memory and `.claude/rules/` |
 
-Use YAML frontmatter on each file: `id`, `title`, `region: hippocampus`, `tags`, `weight: 1.0`, `updated_at`.
+Use YAML frontmatter on each hippocampus file.
 
 ### Phase 4: Generate Cortex
 
-Draft `.brain/cortex/{region}/index.md` for each region from Phase 2.
+Draft `.brain/cortex/{region}/index.md` for each detected region.
 
-Each file uses YAML frontmatter (`id: cortex-{region}`, `title: {Region} Domain`, `region: cortex/{region}`, `tags`, `weight: 0.5`, `updated_at`) followed by a domain-specific starter table (e.g., scripts inventory, hooks table, skills table).
+### Phase 5: User Review
 
-### Phase 5: User Review — MANDATORY. NEVER SKIP.
+Present generated hippocampus and cortex files before persisting anything.
 
-**Present all generated hippocampus and cortex files to the developer now.**
-Show each file's path and full content.
-
-Then output exactly:
+Output exactly:
 > **"Brain files generated. Proceed with persisting? (YES / NO)"**
 
-- **YES** → continue to Phase 6
-- **NO** → discard all generated content, output "Init cancelled. Project directory is clean." and stop completely.
+- `YES` -> continue
+- `NO` -> discard drafts and stop
 
-**Do not write a single file to disk before receiving YES.**
+Never write files before explicit `YES`.
 
 ### Phase 6: Persist
 
-Create directory structure:
+Create or update this repository-local layout:
 
-```
+```text
+.claude/
++-- CLAUDE.md
++-- rules/
+|   +-- workflow-core.md
+|   +-- testing.md
+|   +-- reuse-and-architecture.md
 .brain/
-├── hippocampus/
-├── cortex/{region}/     (one per detected region only)
-├── sinapses/
-├── working-memory/
-├── progress/
-│   └── completed-contexts/
-└── lessons/
-    ├── cross-domain/
-    ├── inbox/
-    └── archived/
++-- hippocampus/
++-- cortex/{region}/
++-- episodes/
++-- working-memory/
++-- progress/
+|   +-- completed-contexts/
 ```
 
-Write all hippocampus files from Phase 3 and cortex index files from Phase 4.
+Create or update:
+- `.claude/CLAUDE.md`
+- `.claude/rules/workflow-core.md`
+- `.claude/rules/testing.md`
+- `.claude/rules/reuse-and-architecture.md`
+- `.brain/hippocampus/`
+- `.brain/cortex/`
+- `.brain/episodes/`
+- `.brain/working-memory/`
 
-Write `.brain/brain.config.json` from `templates/brain/brain.config.json`, replacing:
-- `{project-name}` → project name from Phase 1
-- `{ISO8601_TIMESTAMP}` → current timestamp (`new Date().toISOString()`)
-- `{detected_regions}` → JSON array from Phase 2 (e.g., `["skills","scripts","hooks"]`)
+Write hippocampus files from Phase 3 and cortex files from Phase 4.
+Write `.brain/brain.config.json` from `templates/brain/brain.config.json`.
+`.claude/rules/` starts with regras-base do plugin and only receives future memory promotions with explicit approval.
+
+Never store project memory in the plugin installation directory.
+Project memory must live in `.brain/` inside the repository.
 
 ### Phase 7: Initialize State
 
-Write these files exactly from their templates — do not modify content:
+Write from templates:
+- `.brain/working-memory/brain-state.json`
+- `.brain/working-memory/workflow-state.json`
+- `.brain/progress/brain-project-state.json`
 
-- `.brain/working-memory/brain-state.json` ← copy from `templates/brain/working-memory/brain-state.json`
-- `.brain/progress/brain-project-state.json` ← copy from `templates/brain/progress/brain-project-state.json`
+Create `.brain/progress/activity.md`.
+Verify JSON files parse before continuing.
 
-Create `.brain/progress/activity.md`:
+### Phase 8: Build Index
 
-```markdown
-# Activity Log
-
-## Consolidation Checkpoint
-Last consolidation: never
-Tasks since last consolidation: 0
-
----
-
-## {YYYY-MM-DD} — Brain Initialized
-- Brain initialized via /brain-config
-- Regions: {detected_regions}
-- Hook profile: (set in Phase 10)
-```
-
-Verify both JSON files parse correctly before continuing. If either fails to parse, stop and report the error.
-
-### Phase 8: Build Index (Optional — non-blocking)
+Optional, non-blocking:
 
 ```bash
 python scripts/build_brain_db.py --brain-path .brain
 ```
 
-If Python unavailable: output "Phase 8: SKIP — Python not available. brain.db queries will be degraded." and continue.
-If script fails: output the error and continue. Phase 8 is **non-blocking**.
+If unavailable, continue with a clear warning.
 
 ### Phase 9: Environment Check
 
-Run each command and record result:
+Run:
 
 ```bash
-node --version   # FAIL → "Hooks DISABLED — Node.js not found"
-python --version # FAIL → "brain.db queries unavailable — Python not found"
+node --version
+python --version
 ```
 
-Check Agent tool availability. Report capability level:
+Report capability level: `FULL`, `DEGRADED`, or `MINIMAL`.
 
-| Level | Condition |
-|-------|-----------|
-| **FULL** | Node.js + Python + subagents all available |
-| **DEGRADED** | One or more missing — list affected features |
-| **MINIMAL** | No hooks, no DB, no subagents |
+### Phase 10: Hook Installation Wizard
 
-### Phase 10: Hook Installation Wizard — MANDATORY. NEVER SKIP. MANDATORY. RUNS AFTER PHASE 6.
+This phase is mandatory after persist.
 
-**This phase is not optional. It runs every time Init Mode completes.**
+Offer:
 
-Present profile menu:
-
-```
+```text
 Hook Profile Selection:
-  1. minimal  — No hooks. Raw pipeline execution.
-  2. standard — session-start + hippocampus-guard (recommended)
-
-Which profile? (1 or 2, default: 2)
+  1. minimal
+  2. standard
 ```
 
-Wait for user response. Default to `standard` if no answer given.
+Safely merge brain hooks into project-local or global Claude settings without overwriting non-brain hooks.
 
-Find the user's Claude Code settings file. Check in order:
-1. `.claude/settings.json` (project-local)
-2. `~/.claude/settings.json` (global)
+## Edit Mode
 
-**SAFE MERGE RULE — apply exactly:**
-1. Read existing `settings.json` (create empty `{"hooks":{}}` if missing)
-2. Remove only hook entries whose `name` starts with `brain-`
-3. Add new brain hooks for the selected profile (see below)
-4. Write merged result back
+Read `.brain/brain.config.json`.
+Show current sections, allow edits, show diff, and confirm before writing.
 
-**Hooks for `standard` profile** — replace `{PROJECT_ROOT}` with the absolute path to this project:
+Read-only fields:
+- `brain_id`
+- `version`
+- `created_at`
+- `database.path`
+- `database.schema_version`
+- `hooks.profiles`
 
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "name": "brain-session-start",
-        "command": "bash {PROJECT_ROOT}/hooks/session-start.sh"
-      }
-    ],
-    "PreToolUse": [
-      {
-        "name": "hippocampus-guard",
-        "command": "bash {PROJECT_ROOT}/hooks/hippocampus-guard.sh",
-        "toolNames": ["Write", "Edit"]
-      }
-    ]
-  }
-}
-```
-
-**Hooks for `minimal` profile:** remove any existing `brain-*` hooks. Add nothing.
-
-Output confirmation: `"Hooks installed: {profile}. settings.json updated at {path}."`
-
----
-
-## Edit Mode (.brain/ exists)
-
-### Step 1: Show Config Overview
-
-Read `.brain/brain.config.json`. Display:
-
-```
-# Brain Configuration
-Brain ID: {brain_id} | Version: {version}
-
-| # | Section         | Description                          |
-|---|-----------------|--------------------------------------|
-| 1 | database        | DB path and schema version           |
-| 2 | cortex_regions  | Active domain regions                |
-| 3 | hooks           | Hook profile and overrides           |
-| 4 | linters         | Extension-to-linter mapping          |
-| 5 | resilience      | Circuit breaker + strategy rotation  |
-| 6 | subagents       | Dispatch settings                    |
-| 7 | learning        | Confidence scoring and promotion     |
-| 8 | context_loading | Tier token budgets                   |
-| 9 | consolidation   | Trigger mode and approval settings   |
-|10 | weight_decay    | Decay rate and staleness thresholds  |
-```
-
-If `--export` flag: print full `brain.config.json` as formatted JSON and stop.
-
-### Step 2: User Selects Section → Edit → Diff → Confirm
-
-Display current values for selected section as a table: key | current value | type | allowed range.
-
-**Read-only fields (reject any write attempt):** `brain_id`, `version`, `created_at`, `database.path`, `database.schema_version`, `hooks.profiles`
-
-**Protected constraint:** `consolidation.developer_approval_required` MUST remain `true`. Reject any attempt to set it to `false`.
-
-Batch all changes before showing diff. Show before/after diff table. On confirm: write to `brain.config.json` and append change log to `.brain/progress/activity.md`. On cancel: discard all changes.
-
----
+Protected constraint:
+- `consolidation.developer_approval_required` must remain `true`
 
 ## Flags
 
 | Flag | Behavior |
-|------|----------|
-| `--reset <section>` | Reset section to defaults from `templates/brain/brain.config.json` |
-| `--export` | Print full brain.config.json as formatted JSON, then stop |
-| `--upgrade` | Run Phases 7, 9, 10 only on existing .brain/ |
-| `--hooks-only` | Run Phase 10 only |
-
----
+|---|---|
+| `--reset <section>` | Reset from `templates/brain/brain.config.json` |
+| `--export` | Print full config and stop |
+| `--upgrade` | Run missing-init steps on existing `.brain/` |
+| `--hooks-only` | Run hook installation only |
 
 ## Rules
 
-1. **Phase 5 is mandatory** — never write files to disk without explicit YES
-2. **Phase 10 is mandatory** — hook wizard runs at the end of every Init
-3. **Never weaken protected fields** — `developer_approval_required` stays `true`
-4. **Always show diff before writing** — no silent config mutations
-5. **Safe hook merge** — never overwrite non-brain hooks in settings.json
-6. **Idempotent** — running init on existing `.brain/` switches to Edit Mode automatically
-
----
-
-**Refactored:** 2026-03-30 | **Agent Type:** Initializer + Configuration
+1. Phase 5 is mandatory. Never persist without explicit `YES`.
+2. Phase 10 is mandatory. Hook selection runs at the end of Init.
+3. Never weaken protected fields.
+4. Always show diff before writing.
+5. Safe hook merge only. Never overwrite non-brain hooks.
+6. Idempotent. Existing `.brain/` switches to Edit Mode.
+7. Never store project memory. Memory belongs in `.brain/` in the repository, never in the plugin install directory.

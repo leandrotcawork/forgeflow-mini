@@ -472,19 +472,31 @@ Task fails -> brain-task auto-captures episode -> brain-health proposes sinapse 
 
 ### Brain Directory Structure
 
+Canonical v3 layout:
+
+```text
+your-project/
++-- .claude/
+|   +-- CLAUDE.md
+|   +-- rules/
+|       +-- workflow-core.md
+|       +-- testing.md
+|       +-- reuse-and-architecture.md
++-- .brain/
+|   +-- hippocampus/      Constitution and approved project memory
+|   +-- cortex/           Domain knowledge by region
+|   +-- episodes/         Captured learnings and raw experience artifacts
+|   +-- working-memory/   Active workflow state and task artifacts
+|   +-- progress/         Activity and health tracking
+|   +-- brain.db          SQLite index
 ```
-.brain/
-+-- hippocampus/           Constitution -- architecture, conventions, strategy
-+-- cortex/                Domain knowledge -- sinapses
-|   +-- backend/
-|   +-- frontend/
-|   +-- database/
-|   +-- infra/
-+-- sinapses/              Cross-cutting knowledge flows
-+-- working-memory/        Ephemeral task artifacts + brain-state.json + consult-*.json
-+-- progress/              activity.md + consult-log.md + brain-health.md + brain-project-state.json
-+-- brain.db               SQLite index (sinapses + links + state + FTS5)
-```
+
+### Project Layout
+
+Use the same canonical layout above.
+`.claude/CLAUDE.md` and `.claude/rules/` hold repository execution rules.
+`.brain/hippocampus`, `.brain/cortex`, `.brain/episodes`, `.brain/working-memory`, and `.brain/progress` hold project memory and working artifacts.
+Never store project memory in the plugin installation directory. Keep project memory in `.brain/` inside the repository.
 
 ### Skill Map (10 Skills: 9 invocable + 1 auto-injected)
 
