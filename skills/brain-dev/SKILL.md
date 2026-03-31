@@ -18,22 +18,77 @@ After routing, brain-dev is DONE. Do not resume.
 Target footprint: ~200 tokens.
 </HARD-GATE>
 
+## RED FLAGS — Stop and re-read if you think any of these
+
+| Thought | Reality |
+|---------|---------|
+| "I'll peek at the files to score this better" | STOP. Classifier only. Score from the request text. |
+| "Score is borderline, I'll just skip brain-plan" | STOP. Score >= 20 build/refactor ALWAYS goes through brain-plan. |
+| "The routing table doesn't cover this — I'll decide" | STOP. If unsure, route to brain-consult. |
+| "This is a quick fix, brain-task directly" | Only if intent=fix AND score < 20. Otherwise brain-plan. |
+
+---
+
 ## Step 1: Check Circuit Breaker
 
 Read `.brain/progress/brain-project-state.json`.
-If circuit breaker state is `OPEN` -> **stop** and inform the user. Do not route.
+
+**STOP immediately if `circuit_breaker.state` is `"open"`:**
+> Output: "brain-dev: Circuit breaker OPEN. Consecutive failures: N. Not routing until user resolves blockers."
+> Do nothing else.
+
+---
 
 ## Step 2: Classify Request
 
 Determine silently (no output yet):
 
+### Intent Classification
+
+| Intent | Signals | Route |
+|--------|---------|-------|
+| **build** | "implement", "add", "create", "build", "make" | brain-map + brain-plan (score >= 20) or brain-task (score < 20) |
+| **refactor** | "refactor", "clean up", "improve", "optimise", "restructure" | brain-map + brain-plan (score >= 20) or brain-task (score < 20) |
+| **fix** | Specific, named change: "fix X in Y", "change X to Y" | brain-task directly |
+| **investigate** | Symptom: "not working", "getting error", "fails", "broken" | brain-consult |
+| **question** | "how does", "explain", "what is", "can we" | brain-consult |
+| **review** | "is this right", "should we", "best approach", "review" | brain-consult |
+| **debug** | "why is", "trace", "debug", "investigate", "isn't working" | brain-consult |
+
+### Complexity Scoring
+
+```
+score = 15 (baseline)
+  + domain:  cross-domain +30 | backend +10 | other +0
+  + risk:    critical +35 | high +20 | medium +5 | low +0
+  + type:    architectural +20 | debugging +15 | unknown_pattern +10
+  = min(total, 100)
+```
+
+| Range | Label | Route |
+|-------|-------|-------|
+| 0–15 | Trivial | brain-task inline (no plan) |
+| 16–39 | Simple | brain-task or brain-map + brain-plan |
+| 40–74 | Medium | brain-map + brain-plan |
+| 75–100 | Complex | brain-map + brain-plan |
+
+### Keyword Extraction
+
+- Pick 3–5 nouns and domain terms, not verbs
+- "fix the auth token refresh" → `["auth", "token", "refresh"]`
+- Max 5 keywords — more dilutes retrieval precision
+- Vague requests → use domain name as keyword (e.g., `["backend"]`)
+
+Fields to determine:
 - **task_id:** `YYYY-MM-DD-{slug}` (slug = kebab-case, max 20 chars)
 - **intent:** build | refactor | fix | investigate | question | review | debug
-- **complexity score:** 0-100 (see `references/routing-rules.md`)
-- **keywords:** 3-5 nouns/domain terms extracted from request
-- **domain:** backend | frontend | database | infra | cross-domain
+- **score:** 0–100 (use formula above)
+- **keywords:** 3–5 nouns
+- **domain:** backend | frontend | database | infra | mcp | skills | cross-domain
 
 If intent is truly unclassifiable after reading the request, ask ONE clarifying question, then proceed.
+
+---
 
 ## Step 3: Create dev-context
 
@@ -54,9 +109,11 @@ created_at: {ISO8601}
 
 Update `current_skill: "brain-dev"` in `.brain/working-memory/brain-state.json`.
 
+---
+
 ## Step 4: Route
 
-Output the routing decision to the developer:
+Output the routing decision:
 
 ```
 brain-dev: {task_id}
@@ -64,25 +121,20 @@ brain-dev: {task_id}
   Routing to: {target skill}
 ```
 
-Then invoke the target skill:
+### Routing Decision Tree
 
-| Condition | Route |
-|---|---|
-| question / investigate / review / debug | `/brain-consult` |
-| build or refactor, score >= 20 | `/brain-map` then `/brain-plan` |
-| build or fix, score < 20 | `/brain-task` (inline, no plan) |
-| unsure / ambiguous | `/brain-consult` (safe default) |
+```
+1. intent = question / investigate / review / debug?
+   YES → invoke brain-consult. DONE.
 
-See `references/routing-rules.md` for the full decision tree, intent classification table, and complexity scoring guide.
+2. intent = fix (specific, named change)?
+   YES → invoke brain-task directly. DONE.
 
-## Rules
+3. intent = build or refactor?
+   score < 20  → invoke brain-task inline (no plan). DONE.
+   score >= 20 → invoke brain-map, then brain-plan. DONE.
 
-- **Classifier only** — no codebase exploration, no implementation
-- **~200 tokens footprint** — classify fast, route fast
-- **Default to brain-consult** if intent is uncertain
-- **Every build/refactor score >= 20 goes through brain-plan** — no shortcuts
-- **After routing, brain-dev is done** — the invoked skill owns the pipeline
+4. Anything else → invoke brain-consult (safe default). DONE.
+```
 
----
-
-**References:** [routing-rules.md](references/routing-rules.md)
+**After invoking the target skill, brain-dev is DONE. Do not resume.**
