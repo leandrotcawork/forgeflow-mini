@@ -1,116 +1,105 @@
 ---
 name: brain-plan
-description: Generate TDD implementation plans from context-packets
+description: Generate mutable implementation plans only after an approved spec exists in workflow_state.
 ---
 
 # brain-plan
 
-Generate TDD implementation plans from context-packets with interactive
-Q&A, micro-step decomposition, and convention conflict detection.
+Write the mutable implementation plan after the spec is approved.
 
 ## Trigger
 
-`/brain-plan <description>` or invoked by brain-dev after routing.
+- Routed from `brain-spec`
+- Never invoked directly from `brain-dev`
 
-## Input
+## Hard Gates
 
-Requires a context-packet (`context-packet-{task_id}.md`).
-If missing, call brain-map first to generate it.
+1. Read `.brain/working-memory/workflow-state.json` first.
+2. Stop unless `workflow_state.phase = "plan"` and `workflow_state.spec_status = "approved"`.
+3. No mutable plan before approved spec.
+4. Plan is incomplete until `allowed_files`, `verify_commands`, `plan_status`, and `plan_mode` are written to `workflow_state`.
 
-## Budget
+## Required Input
 
-- Read: 500 tokens
-- Output: 2k tokens
-- Max steps: 25
+- `.brain/working-memory/spec-{task_id}.md`
+- `.brain/working-memory/dev-context-{task_id}.md`
+- `.brain/working-memory/workflow-state.json`
 
-## Phase 0: Clarify with User
+If any item is missing, stop and return to `brain-spec`.
 
-Interactive clarification before planning. ONE question at a time.
+## Step 1: Load Spec, Then Plan
 
-- Ask 1-3 clarifying questions about scope, approach, or constraints
-- Wait for answer before asking the next question
-- Skip this phase entirely if complexity score < 30
+Extract from the approved spec:
+- scope
+- constraints
+- candidate files
+- acceptance criteria
 
-Question priority:
-1. Ambiguity in intent or scope
-2. Implementation approach (when multiple valid options exist)
-3. Constraints (backwards compat, zero-downtime, etc.)
+If the spec is vague, ask ONE clarifying question before writing the plan.
 
-## Phase 1: Load Context
+## Step 2: Write the Plan
 
-1. Call brain-map if `context-packet-{task_id}.md` does not exist
-2. Extract from context-packet:
-   - Domain classification
-   - Relevant conventions (with sinapse IDs)
-   - Related lessons (failures to avoid)
-   - Architecture constraints from ADRs
-3. Read 2-3 files in the target domain to understand existing patterns
+Write `.brain/working-memory/implementation-plan-{task_id}.md` with:
 
-## Phase 2: Design File Structure
+1. Goal
+2. File list with exact paths
+3. Ordered execution steps
+4. TDD checkpoints where applicable
+5. Explicit `plan_mode`: `inline` | `subagent` | `subagent+review`
+6. Exact verification commands
+7. Risks or follow-up notes
 
-Before decomposing into steps, list ALL files to create or modify.
+Every mutable file must have an exact path.
+Every verification step must be an executable command.
+Every plan must choose exactly one `plan_mode`.
 
-For each file specify:
-- Full path from project root
-- Action: `create` or `modify`
-- Purpose (one line)
-- Dependencies on other files
+## Step 3: Write workflow_state
 
-Prefer small, focused files. Follow project naming conventions.
+Before approval, write:
 
-## Phase 3: Decompose into Micro-Steps
+```json
+{
+  "phase": "plan",
+  "spec_status": "approved",
+  "plan_status": "draft",
+  "plan_mode": "inline | subagent | subagent+review",
+  "next_action": "approve_plan",
+  "allowed_files": [
+    "exact/path/one",
+    "exact/path/two"
+  ],
+  "verify_commands": [
+    "exact command one",
+    "exact command two"
+  ]
+}
+```
 
-Break the task into TDD micro-steps. See `references/tdd-micro-steps.md`.
+Rules:
+- `allowed_files` must be exhaustive for all planned source changes
+- `verify_commands` must cover the acceptance criteria
+- `plan_mode` must be one of `inline`, `subagent`, or `subagent+review`
+- Empty `allowed_files` is only acceptable for a no-code plan
 
-Each step follows RED-GREEN-REFACTOR:
-1. Write a failing test
-2. Write minimal implementation to pass
-3. Refactor if needed
+## Step 4: Approval Gate
 
-Each step must be independently verifiable and take max 5 min of agent work.
+Ask for explicit plan approval.
 
-Step format:
-- Title, domain, files affected
-- Spec: file path + concrete test cases
-- Implementation: file path + pattern to follow + key decisions
-- Acceptance gate: exact test/lint commands
-- Dependencies: which steps must complete first
+Only after approval, update `workflow_state`:
 
-## Phase 4: Convention Conflict Check
+```json
+{
+  "phase": "task",
+  "plan_status": "approved",
+  "plan_mode": "inline | subagent | subagent+review",
+  "next_action": "execute_task",
+  "allowed_files": [...],
+  "verify_commands": [...]
+}
+```
 
-Cross-reference each step against the context-packet:
+Then hand off to `brain-task`.
 
-- Does any step contradict an ADR?
-- Does any step violate a convention from a linked sinapse?
-- Does any step risk a known pitfall from a lesson?
+## Pipeline
 
-Flag all conflicts for user review with concrete resolution.
-
-## Phase 5: Determine Dispatch Mode
-
-| Score  | Steps  | Mode                     |
-|--------|--------|--------------------------|
-| < 20   | 1-3    | inline                   |
-| 20-39  | <= 8   | single subagent          |
-| 40-74  | <= 20  | subagent + code-reviewer |
-| >= 75  | 20+    | dual review (spec + code)|
-
-## Phase 6: Write Plan
-
-Use `templates/plan-document.md` to produce the final plan.
-
-Fill in all placeholders:
-- Goal, context (complexity, domain, conventions)
-- File structure table
-- Numbered steps with action/expected/files
-- Verification commands (build, test, lint)
-- Dispatch mode and reason
-
-Output: `.brain/working-memory/implementation-plan-{task_id}.md`
-
-## Next Step
-
-After user approves the plan, invoke brain-task with the task_id.
-brain-plan does not orchestrate execution — brain-task owns that.
-
-Pipeline: `brain-dev -> brain-map -> brain-plan -> brain-task`
+`brain-dev -> brain-spec -> brain-plan -> brain-task -> brain-review -> brain-verify`
