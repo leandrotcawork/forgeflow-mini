@@ -1,70 +1,87 @@
 ---
 name: brain-document
-description: Documenter - propose sinapse updates and capture episodes only after successful verification.
+description: Register episode and propose sinapse updates after verified task. Generates auto-commit. Updates phase to COMPLETED.
 ---
 
-# brain-document -- Documenter
+# brain-document
 
-**Budget:** 1k read, 1k output
+Register the episode, propose sinapse updates, generate the auto-commit, and mark the task complete.
 
 ## Trigger
 
-Called after brain-verify passes, or manually via `/brain-document`.
+Called after brain-verify passes. `workflow-state.json` must have `phase: DOCUMENTING` and `verify_status: passed`.
 
 ## Hard Gates
 
-1. brain-document requires successful verification.
-2. Read `.brain/working-memory/workflow-state.json` first.
-3. Stop unless `workflow_state.verify_status = "passed"` and `workflow_state.phase = "document"`.
-4. If the gate fails, stop with this message:
-   `brain-document: requires successful verification (verify_status=passed, phase=document).`
+1. Read `workflow-state.json` first.
+2. Stop unless `phase = "DOCUMENTING"` and `verify_status = "passed"`.
+3. If the gate fails, stop with: `brain-document: requires verify_status=passed and phase=DOCUMENTING.`
+4. Never write to `.brain/hippocampus/` directly.
+5. Never auto-approve sinapse proposals.
 
-**Preconditions:** task implementation complete, task-completion file exists, and successful verification already recorded in workflow_state.
+## Required Input
 
-**Input:** task-completion file (`.brain/working-memory/task-completion-{task_id}.md`) + `git diff --name-only`.
+- `.brain/working-memory/task-completion-{task_id}.md`
+- `.brain/working-memory/workflow-state.json`
+- Git diff of the implementation
 
-## Workflow
+## Step 1: Write Episode
 
-### Step 1: Identify Touched Regions
+Write `.brain/episodes/episode-{task_id}.md` using the template at `templates/episode.md`.
 
-Map changed files to cortex regions using `cortex_registry.md`.
+Fill every section:
+- **What Was Done** — one paragraph summary of what was implemented and how
+- **Errors Encountered** — every significant error hit and how it was resolved
+- **Patterns Used** — patterns, techniques, or architectural decisions used
+- **Proposed Sinapse Updates** — sinapse names + descriptions to propose (not to create directly)
 
-### Step 2: Assess Knowledge Changes
+## Step 2: Propose Sinapse Updates
 
-For each touched region, ask:
-- New learning?
-- Wrong knowledge?
-- Anti-pattern or insight worth recording?
+For each pattern or convention discovered:
+- Write a proposal to `.brain/working-memory/sinapse-updates-{task_id}.md`
+- Format: `[[sinapse-name]]: description of the pattern to encode`
+- Mark clearly as PROPOSED — developer must approve before becoming a convention
 
-### Step 3: Create Proposals
+Rules:
+- Only propose if the pattern is likely to recur
+- All `[[sinapse]]` links must reference patterns that could become real files
+- Example code in proposals must come from the actual implementation
 
-Use `templates/sinapse-proposal.md` for each proposed update.
-Save to `.brain/working-memory/sinapse-updates-{task_id}.md`.
+## Step 3: Generate Auto-Commit
 
-### Step 4: Capture Episodes
-
-Use `templates/episode-format.md` for any anti-pattern, insight, correction, or discovery.
-Save to `.brain/working-memory/episode-{task_id}-{type}.md`.
-
-Episodes are factual records only.
-
-### Step 5: Present to User
-
-Show proposals with brief diff summaries.
-Explain that consolidation happens via `/brain-health`.
-
-## Rules
-
-1. Never write to hippocampus directly.
-2. Never auto-approve a proposal.
-3. Episodes must be factual observations.
-4. Skip documentation if changes are trivial.
-5. All `[[sinapse]]` links must reference existing files.
-6. Use diff format for updates.
-7. Example code in proposals must come from actual implementation.
-
-## Pipeline Position
-
-```text
-brain-review -> brain-verify -> brain-document -> brain-health
+Run:
+```bash
+git add -A
+git commit -m "feat({domain}): {task_id} — {one-line summary} [forgeflow]"
 ```
+
+Where:
+- `{domain}` = primary area affected (e.g., hooks, skills, tests, agents)
+- `{task_id}` = the task_id from workflow-state
+- `{one-line summary}` = brief description of what was built
+
+## Step 4: Update State and Present Result
+
+Update `workflow-state.json`:
+```json
+{
+  "phase": "COMPLETED",
+  "commit_sha": "<sha from the auto-commit>"
+}
+```
+
+Present to the user:
+```
+Task {task_id} — COMPLETED
+
+Branch: forgeflow/{task_id}
+Commit: <sha>
+
+To merge: git merge forgeflow/{task_id} (manual, never automated)
+Episode saved to: .brain/episodes/episode-{task_id}.md
+Sinapse proposals: .brain/working-memory/sinapse-updates-{task_id}.md
+```
+
+## Pipeline
+
+`brain-dev → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`
