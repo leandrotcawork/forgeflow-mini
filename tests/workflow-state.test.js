@@ -163,16 +163,18 @@ test('templates expose the workflow state contract', function () {
   var workflowTemplate = readJSON('templates/brain/working-memory/workflow-state.json');
   var brainStateTemplate = readJSON('templates/brain/working-memory/brain-state.json');
 
-  assertEqual(workflowTemplate.phase, 'spec', 'workflow template should start in spec');
+  assertEqual(workflowTemplate.phase, 'SPEC_PENDING', 'workflow template should start in SPEC_PENDING');
   assert('task_id' in workflowTemplate, 'workflow template should include task_id');
+  assert('worktree_name' in workflowTemplate, 'workflow template should include worktree_name');
+  assert('branch_name' in workflowTemplate, 'workflow template should include branch_name');
   assert('intent' in workflowTemplate, 'workflow template should include intent');
   assert('spec_status' in workflowTemplate, 'workflow template should include spec_status');
   assert('plan_status' in workflowTemplate, 'workflow template should include plan_status');
   assert('review_status' in workflowTemplate, 'workflow template should include review_status');
   assert('verify_status' in workflowTemplate, 'workflow template should include verify_status');
   assert('allowed_files' in workflowTemplate, 'workflow template should include allowed_files');
-  assert('needs_user_validation' in workflowTemplate, 'workflow template should include needs_user_validation');
-  assert('verify_commands' in workflowTemplate, 'workflow template should include verify_commands');
+  assert('needs_user_approval' in workflowTemplate, 'workflow template should include needs_user_approval');
+  assert('commit_sha' in workflowTemplate, 'workflow template should include commit_sha');
   assert('last_error' in workflowTemplate, 'workflow template should include last_error');
   assertEqual(brainStateTemplate.workflow_state_file, '.brain/working-memory/workflow-state.json', 'brain-state template should point to workflow_state_file');
 });

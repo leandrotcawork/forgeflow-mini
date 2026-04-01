@@ -51,7 +51,10 @@ Rules:
 
 Run:
 ```bash
-git add -A
+# Stage only allowed_files from workflow-state.json
+git add <each file from allowed_files>
+git add .brain/episodes/episode-{task_id}.md
+git add .brain/working-memory/sinapse-updates-{task_id}.md
 git commit -m "feat({domain}): {task_id} — {one-line summary} [forgeflow]"
 ```
 
@@ -59,6 +62,8 @@ Where:
 - `{domain}` = primary area affected (e.g., hooks, skills, tests, agents)
 - `{task_id}` = the task_id from workflow-state
 - `{one-line summary}` = brief description of what was built
+
+Only stage files from `allowed_files` in workflow-state plus the episode and sinapse-updates files. Never use `git add -A` — it can stage unintended files (credentials, binaries, .env).
 
 ## Step 4: Update State and Present Result
 

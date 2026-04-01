@@ -48,7 +48,7 @@ Handle result:
 - **PASS** — proceed to Step 3
 - **FAIL** — update `workflow-state.json`:
   ```json
-  { "phase": "IMPLEMENTING", "review_status": "pending" }
+  { "phase": "IMPLEMENTING", "review_status": "failed" }
   ```
   Return to `brain-task` with the failure findings as feedback. Implementer fixes and re-dispatches.
 
@@ -66,7 +66,7 @@ Handle result:
 - **PASS** — proceed to Step 4
 - **FAIL** — update `workflow-state.json`:
   ```json
-  { "phase": "IMPLEMENTING", "review_status": "pending" }
+  { "phase": "IMPLEMENTING", "review_status": "failed" }
   ```
   Return to `brain-task` with the quality findings as feedback. Implementer fixes and re-dispatches.
 

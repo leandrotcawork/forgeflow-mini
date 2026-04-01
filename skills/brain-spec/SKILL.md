@@ -83,6 +83,11 @@ The spec-reviewer will return PASS or FAIL with specific findings.
 If FAIL: address the identified issues and re-dispatch spec-reviewer.
 Do not proceed to user approval until spec-reviewer returns PASS.
 
+After spec-reviewer returns PASS, update `workflow-state.json`:
+```json
+{ "phase": "SPEC_APPROVAL", "spec_status": "pending_user" }
+```
+
 ## Step 5: User Approval Gate
 
 Present the spec to the user with:

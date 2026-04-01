@@ -35,7 +35,7 @@ if task_id in (None, ""):
     print(json.dumps({"hookSpecificOutput": {"permissionDecision": "allow"}}))
     raise SystemExit(0)
 
-risky_phases = {"IMPLEMENTING", "REVIEWING", "VERIFYING"}
+risky_phases = {"IMPLEMENTING", "REVIEWING", "VERIFYING", "DOCUMENTING"}
 if phase in risky_phases and verify_status != "passed":
     print(json.dumps({
         "hookSpecificOutput": {
