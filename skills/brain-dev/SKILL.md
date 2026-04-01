@@ -1,61 +1,45 @@
 ---
 name: brain-dev
-description: Router only for development requests. Classifies intent from request text and routes to brain-consult or brain-spec without source exploration or implementation.
+description: Entry point for all development requests. Classifies intent, initializes workflow state, and routes to brain-spec or brain-consult. Never implements, never plans.
 ---
 
-# brain-dev -- Router Only
+# brain-dev — Classifier and Router
 
 > **Trigger:** `/brain-dev <request>`
 
 <HARD-GATE>
-brain-dev is router only. You MUST NOT:
-- Explore the codebase or inspect source files
-- Write specs, plans, reviews, or source code
-- Route directly to brain-plan, brain-task, or brain-review
+brain-dev is a classifier only. You MUST NOT:
+- Explore the codebase
+- Write specs, plans, or code
+- Route to brain-plan or brain-task directly
+- Make implementation decisions
 
-brain-dev may write routing artifacts only:
+You may only write:
 - `.brain/working-memory/dev-context-{task_id}.md`
-- `.brain/working-memory/brain-state.json`
-
-Your only job: classify -> score -> extract keywords -> write dev-context -> update brain-state -> route.
-After routing, brain-dev is DONE.
+- `.brain/working-memory/workflow-state.json`
 </HARD-GATE>
 
-## Step 1: Classify Request
+## Step 1: Classify Intent
 
-Determine silently from the request text only.
-
-### Routing Table
+Determine from the request text only — no codebase reads.
 
 | Intent | Signals | Route |
-|---|---|---|
-| **consult** | asks for guidance, tradeoffs, explanation | brain-consult |
-| **question** | "how", "what", "why", "can we" | brain-consult |
-| **review** | review, assess, validate, sanity-check | brain-consult |
-| **debug** | debug, trace, investigate failure, broken behavior | brain-spec |
-| **fix** | change specific behavior, correct bug, patch | brain-spec |
-| **build** | implement, add, create, build, make | brain-spec |
-| **refactor** | refactor, restructure, clean up | brain-spec |
-| **improve** | improve, optimize, harden, tighten | brain-spec |
+|--------|---------|-------|
+| build | implement, add, create, build, make | brain-spec |
+| fix | change behavior, correct bug, patch | brain-spec |
+| refactor | refactor, restructure, clean up | brain-spec |
+| improve | improve, optimize, harden, tighten | brain-spec |
+| debug | debug, trace, investigate, broken behavior | brain-spec |
+| consult | guidance, tradeoffs, explanation, "how", "what", "why", "can we" | brain-consult |
+| review | review, assess, validate, sanity-check | brain-consult |
 
-If intent is ambiguous after reading the request, ask ONE clarifying question.
-If still uncertain, route to **brain-consult**.
-
-### Complexity Scoring
-
-```
-score = 15 (baseline)
-  + domain: cross-domain +30 | backend +10 | other +0
-  + risk:   critical +35 | high +20 | medium +5 | low +0
-  + type:   architectural +20 | debugging +15 | unknown_pattern +10
-  = min(total, 100)
-```
+If intent is ambiguous, ask ONE clarifying question before routing.
+If still uncertain, route to brain-consult.
 
 Fields to determine:
-- `task_id`: `YYYY-MM-DD-{slug}` (kebab-case, max 20 chars)
-- `intent`: consult | question | review | debug | fix | build | refactor | improve
-- `score`: 0-100
-- `keywords`: 3-5 nouns or domain terms
+- `task_id`: `YYYY-MM-DD-{slug}` (kebab-case slug from request, max 20 chars)
+- `intent`: one of the values above
+- `keywords`: 3-5 domain nouns from the request
 - `domain`: backend | frontend | database | infra | mcp | skills | cross-domain
 
 ## Step 2: Write dev-context
@@ -67,7 +51,6 @@ Write `.brain/working-memory/dev-context-{task_id}.md`:
 task_id: {task_id}
 intent: {intent}
 domain: {domain}
-score: {N}
 keywords: ["{kw1}", "{kw2}", "{kw3}"]
 created_at: {ISO8601}
 ---
@@ -75,22 +58,31 @@ created_at: {ISO8601}
 {developer request, verbatim}
 ```
 
-Update `current_skill: "brain-dev"` in `.brain/working-memory/brain-state.json`.
+## Step 3: Initialize workflow-state
 
-## Step 3: Route
+Write `.brain/working-memory/workflow-state.json`:
 
-Output:
-
+```json
+{
+  "task_id": "{task_id}",
+  "worktree_name": null,
+  "branch_name": null,
+  "intent": "{intent}",
+  "phase": "SPEC_PENDING",
+  "spec_status": "pending",
+  "plan_status": "pending",
+  "review_status": "pending",
+  "verify_status": "pending",
+  "allowed_files": [],
+  "needs_user_approval": true,
+  "commit_sha": null,
+  "last_error": null
+}
 ```
-brain-dev: {task_id}
-  Intent: {intent} | Domain: {domain} | Score: {N}
-  Routing to: {target skill}
-```
 
-Decision rule:
+## Step 4: Route
 
-1. `consult`, `question`, `review` -> invoke `brain-consult`
-2. `debug`, `fix`, `build`, `refactor`, `improve` -> invoke `brain-spec`
-3. Anything unclear -> invoke `brain-consult`
+- intent in [build, fix, refactor, improve, debug] → invoke brain-spec
+- intent in [consult, review] → invoke brain-consult
 
-brain-dev never resumes after routing.
+brain-dev is done after routing. brain-dev does not wait for the result.
