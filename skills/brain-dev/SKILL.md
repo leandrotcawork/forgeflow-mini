@@ -17,6 +17,7 @@ brain-dev is a classifier only. You MUST NOT:
 You may only write:
 - `.brain/working-memory/dev-context-{task_id}.md`
 - `.brain/working-memory/workflow-state.json`
+- `.worktrees/{task_id}` (via `git worktree add` only)
 </HARD-GATE>
 
 ## Step 1: Classify Intent
@@ -79,6 +80,31 @@ Write `.brain/working-memory/workflow-state.json`:
   "last_error": null
 }
 ```
+
+## Step 3.5: Create Worktree (code-writing intents only)
+
+For intents: build, fix, refactor, improve, debug — create an isolated worktree before routing.
+
+```bash
+git worktree add .worktrees/{task_id} -b forgeflow/{task_id}
+```
+
+This creates:
+- Worktree at `.worktrees/{task_id}` (gitignored — never committed)
+- Branch `forgeflow/{task_id}` for isolated work
+
+After creating the worktree, update `workflow-state.json` with the worktree and branch names:
+
+```json
+{
+  "worktree_name": ".worktrees/{task_id}",
+  "branch_name": "forgeflow/{task_id}"
+}
+```
+
+If the worktree already exists (re-entry), skip creation and read the existing names.
+
+For consult and review intents: skip this step — no worktree needed.
 
 ## Step 4: Route
 

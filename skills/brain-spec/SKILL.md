@@ -57,6 +57,22 @@ Fill every section:
 
 Keep it concrete. If one blocker remains, ask ONE clarifying question before writing.
 
+## Step 3.5: Enforce Reuse Strategy Gate
+
+Before dispatching spec-reviewer, verify the Reuse Strategy section is populated:
+
+- Read `.brain/specs/spec-{task_id}.md`
+- Find the `## Reuse Strategy` section
+- Check that it contains substantive content (not just the template placeholder text)
+
+If the Reuse Strategy section is empty or contains only template text:
+- STOP
+- Output: `brain-spec: Reuse Strategy section is empty. You must document what was found in each search step before this spec can proceed. Return to Step 2 and complete the search.`
+- Do not dispatch spec-reviewer
+- Do not advance phase
+
+Only proceed to spec-reviewer dispatch when Reuse Strategy has real content.
+
 ## Step 4: Dispatch spec-reviewer Agent
 
 Dispatch the `agents/spec-reviewer.md` agent with:
