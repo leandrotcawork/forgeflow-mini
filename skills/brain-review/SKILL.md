@@ -34,9 +34,9 @@ If any item is missing, stop and return to `brain-task`.
 
 Run:
 ```bash
-git diff HEAD~1..HEAD
+git diff $(git merge-base HEAD main)..HEAD
 ```
-or the diff since implementation began. This is passed to both reviewers.
+This captures all implementation commits since branching from main. Passed to both reviewers.
 
 ## Step 2: Dispatch spec-compliance-reviewer
 

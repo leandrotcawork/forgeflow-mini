@@ -73,7 +73,7 @@ test('createState starts in SPEC_PENDING with empty workflow fields', function (
   assertEqual(state.review_status, 'pending', 'review_status should start pending');
   assertEqual(state.verify_status, 'pending', 'verify_status should start pending');
   assertEqual(state.allowed_files, [], 'allowed_files should start empty');
-  assertEqual(state.needs_user_approval, false, 'needs_user_approval should start false');
+  assertEqual(state.needs_user_approval, true, 'needs_user_approval should start true');
   assertEqual(state.commit_sha, null, 'commit_sha should start null');
   assertEqual(state.last_error, null, 'last_error should start null');
 });
@@ -254,6 +254,45 @@ test('createState defaults to SPEC_PENDING phase', function () {
   assertEqual(s.worktree_name, null);
   assertEqual(s.branch_name, null);
   assertEqual(s.commit_sha, null);
+});
+
+test('open_spec: fails if not in SPEC_PENDING', function () {
+  var s = mod.createState({ task_id: 'test' });
+  s = mod.transition(s, 'open_spec'); // now SPEC_REVIEW
+  try {
+    mod.transition(s, 'open_spec');
+    throw new Error('expected error');
+  } catch (err) {
+    assert(err instanceof mod.WorkflowStateError, 'should throw WorkflowStateError');
+    assertEqual(err.message, 'open_spec requires phase = SPEC_PENDING');
+  }
+});
+
+test('approve_spec: fails if not in SPEC_APPROVAL', function () {
+  var s = mod.createState({ task_id: 'test' });
+  try {
+    mod.transition(s, 'approve_spec');
+    throw new Error('expected error');
+  } catch (err) {
+    assert(err instanceof mod.WorkflowStateError, 'should throw WorkflowStateError');
+    assertEqual(err.message, 'approve_spec requires phase = SPEC_APPROVAL');
+  }
+});
+
+test('complete_task: fails if not in IMPLEMENTING', function () {
+  var s = mod.createState({ task_id: 'test' });
+  try {
+    mod.transition(s, 'complete_task');
+    throw new Error('expected error');
+  } catch (err) {
+    assert(err instanceof mod.WorkflowStateError, 'should throw WorkflowStateError');
+    assertEqual(err.message, 'complete_task requires phase = IMPLEMENTING');
+  }
+});
+
+test('needs_user_approval defaults to true', function () {
+  var s = mod.createState();
+  assert(s.needs_user_approval === true, 'needs_user_approval should default to true');
 });
 
 runTests();

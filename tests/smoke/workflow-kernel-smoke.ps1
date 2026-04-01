@@ -169,7 +169,9 @@ try {
   result.approvePlanError = err && err.message ? err.message : String(err);
 }
 
-const approvedSpec = mod.transition(state, 'approve_spec');
+const afterOpenSpec = mod.transition(state, 'open_spec');
+const afterSubmitReview = mod.transition(afterOpenSpec, 'submit_spec_review');
+const approvedSpec = mod.transition(afterSubmitReview, 'approve_spec');
 const approvedPlan = mod.transition(approvedSpec, 'approve_plan', {
   allowed_files: ['src/app.js']
 });
@@ -257,7 +259,7 @@ Write-Host '[smoke] verifying workflow-state transitions'
 $workflowStatePath = Join-Path $root 'scripts\workflow-state.js'
 $workflowStateSmoke = Invoke-WorkflowStateSmoke -NodeExe $script:NodeExe -WorkflowStatePath $workflowStatePath
 
-Assert-True ($workflowStateSmoke.initialPhase -eq 'spec') 'workflow-state must start in spec phase'
+Assert-True ($workflowStateSmoke.initialPhase -eq 'SPEC_PENDING') 'workflow-state must start in SPEC_PENDING phase'
 Assert-True ($workflowStateSmoke.approvePlanFailed -eq $true) 'approve_plan must fail before spec is approved'
 Assert-True ($workflowStateSmoke.approvePlanError -like '*approved spec*') 'approve_plan failure must explain approved spec precondition'
 Assert-True ($workflowStateSmoke.approvePlanAfterSpec.plan_status -eq 'approved') 'approve_spec -> approve_plan must approve the plan'
@@ -269,6 +271,10 @@ $hookKeys = @($hooksJson.hooks.PSObject.Properties.Name)
 Assert-True ($hookKeys -contains 'SessionStart') 'hooks.json must register SessionStart'
 Assert-True ($hookKeys -contains 'PreToolUse') 'hooks.json must register PreToolUse'
 Assert-True ($hookKeys -contains 'Stop') 'hooks.json must register Stop'
+Assert-True ($hookKeys -contains 'SubagentStart') 'hooks.json must register SubagentStart'
+
+$subagentStartEntry = $hooksJson.hooks.SubagentStart | Select-Object -First 1
+Assert-True ($subagentStartEntry.command -eq 'bash hooks/subagent-start.sh') 'SubagentStart command must point to subagent-start.sh'
 
 $preToolNames = @($hooksJson.hooks.PreToolUse | ForEach-Object { $_.name })
 Assert-True ($preToolNames -contains 'hippocampus-guard') 'PreToolUse must include hippocampus-guard'

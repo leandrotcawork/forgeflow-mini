@@ -62,7 +62,7 @@ function createState(overrides) {
     review_status:       'pending',
     verify_status:       'pending',
     allowed_files:       [],
-    needs_user_approval: false,
+    needs_user_approval: true,
     commit_sha:          null,
     last_error:          null
   };
@@ -85,7 +85,7 @@ function createState(overrides) {
   if (copy.plan_status == null)         copy.plan_status = 'pending';
   if (copy.review_status == null)       copy.review_status = 'pending';
   if (copy.verify_status == null)       copy.verify_status = 'pending';
-  if (copy.needs_user_approval == null) copy.needs_user_approval = false;
+  if (copy.needs_user_approval == null) copy.needs_user_approval = true;
   if (copy.last_error == null)          copy.last_error = null;
   if (copy.commit_sha == null)          copy.commit_sha = null;
   return copy;
@@ -106,23 +106,35 @@ function transition(state, action, payload) {
     switch (action) {
 
       case 'open_spec':
+        if (nextState.phase !== PHASES.SPEC_PENDING) {
+          fail(nextState, 'open_spec requires phase = SPEC_PENDING');
+        }
         nextState.phase = PHASES.SPEC_REVIEW;
         nextState.spec_status = 'reviewing';
         nextState.last_error = null;
         return nextState;
 
       case 'submit_spec_review':
+        if (nextState.phase !== PHASES.SPEC_REVIEW) {
+          fail(nextState, 'submit_spec_review requires phase = SPEC_REVIEW');
+        }
         nextState.phase = PHASES.SPEC_APPROVAL;
         nextState.last_error = null;
         return nextState;
 
       case 'approve_spec':
+        if (nextState.phase !== PHASES.SPEC_APPROVAL) {
+          fail(nextState, 'approve_spec requires phase = SPEC_APPROVAL');
+        }
         nextState.spec_status = 'approved';
         nextState.phase = PHASES.PLAN_PENDING;
         nextState.last_error = null;
         return nextState;
 
       case 'reject_spec':
+        if (nextState.phase !== PHASES.SPEC_APPROVAL) {
+          fail(nextState, 'reject_spec requires phase = SPEC_APPROVAL');
+        }
         nextState.spec_status = 'rejected';
         nextState.phase = PHASES.SPEC_PENDING;
         nextState.last_error = null;
@@ -141,6 +153,9 @@ function transition(state, action, payload) {
         return nextState;
 
       case 'complete_task':
+        if (nextState.phase !== PHASES.IMPLEMENTING) {
+          fail(nextState, 'complete_task requires phase = IMPLEMENTING');
+        }
         nextState.phase = PHASES.REVIEWING;
         nextState.last_error = null;
         return nextState;
@@ -155,6 +170,9 @@ function transition(state, action, payload) {
         return nextState;
 
       case 'fail_review':
+        if (nextState.phase !== PHASES.REVIEWING) {
+          fail(nextState, 'fail_review requires phase = REVIEWING');
+        }
         nextState.review_status = 'failed';
         nextState.phase = PHASES.IMPLEMENTING;
         nextState.last_error = null;
