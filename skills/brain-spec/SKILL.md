@@ -1,87 +1,88 @@
 ---
 name: brain-spec
-description: Use when a debug, fix, build, refactor, or improve request needs a mandatory approved spec before mutable planning begins.
+description: Generate spec for any build/fix/refactor/improve/debug task. Runs search-first, writes spec using template, dispatches spec-reviewer, presents for user approval.
 ---
 
 # brain-spec
 
-Create the mandatory spec before any mutable plan exists.
+Create the approved spec before any plan exists.
 
 ## Trigger
 
-- Routed from `brain-dev` for `debug`, `fix`, `build`, `refactor`, or `improve`
-- Never skipped in the implementation pipeline
+Routed from `brain-dev` after `dev-context-{task_id}.md` is written and `workflow-state.json` is initialized with `phase: SPEC_PENDING`.
 
 ## Hard Gates
 
-1. No implementation. No source edits. No plan writing.
-2. No handoff to `brain-plan` until the spec is explicitly approved.
-3. `workflow_state` is the contract. Write it before asking for approval.
+1. No plan writing. No code writing. No implementation.
+2. No handoff to `brain-plan` until the user has explicitly approved the spec.
+3. The `Reuse Strategy` section in the spec MUST NOT be empty — the flow is blocked if it is.
+4. Spec is saved to `.brain/specs/` — not `.brain/working-memory/`.
 
-## Step 1: Load Inputs
+## Step 1: Load Context
 
-Required:
+Read:
 - `.brain/working-memory/dev-context-{task_id}.md`
-
-Optional:
-- Existing `.brain/working-memory/workflow-state.json`
+- `.brain/working-memory/workflow-state.json`
 
 If `dev-context` is missing, stop and return to `brain-dev`.
 
-## Step 2: Open Spec Phase in workflow_state
-
-Write or update `.brain/working-memory/workflow-state.json`:
-
+Update `workflow-state.json`:
 ```json
-{
-  "task_id": "{task_id}",
-  "phase": "spec",
-  "spec_status": "draft",
-  "plan_status": "blocked",
-  "plan_mode": null,
-  "review_status": "pending",
-  "next_action": "approve_spec",
-  "allowed_files": [],
-  "verify_commands": []
-}
+{ "phase": "SPEC_REVIEW" }
 ```
 
-`allowed_files` and `verify_commands` stay empty here on purpose.
-brain-spec defines intent and boundaries, not the mutable plan.
+## Step 2: Search-First (Mandatory)
+
+Before writing a single word of spec, execute the search order:
+
+1. **Repo scan** — search for existing patterns, similar modules, reusable components related to the task
+2. **`.claude/rules/`** — read relevant architectural conventions and stack rules
+3. **`.brain/`** — check episodes/, proposals/, sinapses/ for prior work on similar problems
+4. **Known libs/frameworks** — identify applicable existing libraries
+5. **Web research** — only if steps 1–4 are insufficient
+
+Document what you found in each step. This becomes the Reuse Strategy section.
 
 ## Step 3: Write the Spec
 
-Write `.brain/working-memory/spec-{task_id}.md` with:
+Write `.brain/specs/spec-{task_id}.md` using the template at `templates/spec.md`.
 
-1. Request summary
-2. Problem / target behavior
-3. In scope
-4. Out of scope
-5. Constraints and risks
-6. Candidate files or domains likely to change
-7. Acceptance criteria
-8. Open questions, if any
+Fill every section:
+- **Objective** — what is being built and why
+- **Constraints** — technical, scope, performance, compatibility
+- **Reuse Strategy** — MANDATORY: document findings from each search step; what will be reused, adapted, or built new
+- **Affected Areas** — files, modules, or systems to be created or modified
+- **Acceptance Criteria** — verifiable, measurable criteria (checkbox format)
+- **Risks** — known risks and unknowns
 
-Keep it short and concrete. If one blocker remains, ask ONE clarifying question.
+Keep it concrete. If one blocker remains, ask ONE clarifying question before writing.
 
-## Step 4: Approval Gate
+## Step 4: Dispatch spec-reviewer Agent
 
-Show the spec summary and ask for explicit approval.
+Dispatch the `agents/spec-reviewer.md` agent with:
+- The full spec text (inlined, not a file reference)
 
-Before approval:
-- `workflow_state.phase` must stay `spec`
-- `spec_status` must stay `draft`
-- `plan_status` must stay `blocked`
+The spec-reviewer will return PASS or FAIL with specific findings.
 
-After approval, update `workflow_state`:
+If FAIL: address the identified issues and re-dispatch spec-reviewer.
+Do not proceed to user approval until spec-reviewer returns PASS.
 
+## Step 5: User Approval Gate
+
+Present the spec to the user with:
+1. The full spec content
+2. The spec-reviewer result (PASS with no issues, or summary of issues already fixed)
+3. Ask: "Does this spec look correct? Approve to proceed to planning, or request changes."
+
+While waiting for approval:
+- `workflow-state.json` phase stays `SPEC_APPROVAL`
+- `spec_status` stays `reviewing`
+
+After user approval, update `workflow-state.json`:
 ```json
 {
-  "phase": "plan",
-  "spec_status": "approved",
-  "plan_status": "required",
-  "plan_mode": null,
-  "next_action": "write_plan"
+  "phase": "PLAN_PENDING",
+  "spec_status": "approved"
 }
 ```
 
@@ -89,4 +90,4 @@ Then hand off to `brain-plan`.
 
 ## Pipeline
 
-`brain-dev -> brain-spec -> brain-plan -> brain-task -> brain-review -> brain-verify`
+`brain-dev → brain-spec → [spec-reviewer] → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`
