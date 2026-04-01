@@ -4,7 +4,14 @@
       {
         "name": "brain-session-start",
         "command": "bash hooks/session-start.sh",
-        "description": "Inject brain orientation + current state"
+        "description": "Inject ForgeFlow Active orientation into session context"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "name": "brain-subagent-start",
+        "command": "bash hooks/subagent-start.sh",
+        "description": "Inject discipline contract into every spawned subagent"
       }
     ],
     "PreToolUse": [

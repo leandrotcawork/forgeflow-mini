@@ -14,12 +14,12 @@ Called by brain-review, or directly via `/brain-verify`.
 ## Hard Gates
 
 1. Read `.brain/working-memory/workflow-state.json` first.
-2. Stop unless `phase = "verify"` and `review_status = "passed"`.
+2. Stop unless `phase = "VERIFYING"` and `review_status = "passed"`.
 3. If the gate fails, stop and return to `brain-review` without updating `verify_status` or `phase`.
 4. Operational evidence only. Run commands and report results.
 5. No design judgment, no architecture review, no plan approval.
 6. No GO verdict without actual command output.
-7. On success, update `.brain/working-memory/workflow-state.json` with `verify_status: "passed"` and `phase: "document"`.
+7. On success, update `.brain/working-memory/workflow-state.json` with `verify_status: "passed"` and `phase: "DOCUMENTING"`.
 
 ## Execution
 
@@ -123,9 +123,15 @@ If verdict is `GO`, update `.brain/working-memory/workflow-state.json`:
 
 ```json
 {
-  "phase": "document",
+  "phase": "DOCUMENTING",
   "verify_status": "passed"
 }
 ```
 
-If verdict is `NO-GO`, do not advance to document.
+Also write the verification report to `.brain/verifications/verification-{task_id}.md` using the template at `templates/verification.md`.
+
+If verdict is `NO-GO`, do not advance to DOCUMENTING.
+
+## Pipeline
+
+`brain-dev → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`

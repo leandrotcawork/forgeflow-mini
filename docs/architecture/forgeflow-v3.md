@@ -1,67 +1,116 @@
-# ForgeFlow v3 Architecture
+# ForgeFlow Mini — V1 Architecture
 
-ForgeFlow v3 is a deterministic execution kernel with consultive memory. Public commands stay simple; the internal workflow is fixed, explicit, and linear.
+## Product Vision
 
-## Principles
+ForgeFlow Mini is a Claude Code plugin that enforces professional software development discipline through a rigid, deterministic workflow. It prevents the common LLM failure modes: skipping planning, ignoring existing patterns, producing fragile solutions, and degrading quality over long tasks.
 
-- Deterministic control flow: the kernel follows the same stage order every time.
-- Consultive memory: prior knowledge can inform decisions, but it cannot silently change the workflow.
-- Explicit handoffs: each stage reads a named artifact and writes the next one.
-- Narrow public surface: users interact through a small set of commands, not internal phases.
-- Verification before documentation: memory updates happen after checks, not before.
-- No hidden branching: failures stop or redirect the pipeline openly.
+The goal is not just "make it work" — it is code that meets senior engineering standards: correct architecture, reuse over reinvention, consistency across modules, and maintainability over time.
 
-## Public Commands
+## Core Principles
+
+1. **No phase skipping** — spec → approval → plan → implement → review → verify → document. Every task, no exceptions.
+2. **Spec before plan** — no plan without an approved spec.
+3. **User approval gate** — spec must be approved by the user before any code is written.
+4. **Review ≠ verify** — review is qualitative judgment; verify is objective evidence.
+5. **Write gate** — Write/Edit blocked before plan_approved. Stop blocked without verify_passed.
+6. **Search-first, reuse-first** — repo → .claude/rules/ → .brain/ → libs → web. Mandatory before spec.
+7. **Worktree per task** — every code-writing task runs in forgeflow/{task_id} on its own branch.
+8. **Auto-commit, manual merge** — commit generated after verify passes; merge is always manual.
+9. **Memory is consultive** — brain enriches spec and plan; never authorizes skipping phases.
+10. **Rules vs brain** — .claude/rules/ holds normative stable conventions; .brain/ holds memory, episodes, proposals.
+
+## Public Commands (V1)
 
 | Command | Purpose |
-|---|---|
-| `/brain-dev` | Main entry point for build, fix, and plan requests. |
-| `/brain-debug` | Deterministic diagnostic path for stuck or failing work. |
-| `/brain-improve` | Review and reconcile existing work against conventions. |
-| `/brain-consult` | Ask questions or request guidance from memory and context. |
-| `/brain-config` | Configure the brain system and project settings. |
-| `/brain-health` | Inspect health, staleness, and review status. |
+|---------|---------|
+| `/brain-dev` | Main entry — classifies intent and starts the development flow |
+| `/brain-config` | Bootstrap or upgrade project structure |
 
 ## Internal Pipeline
 
-The v3 kernel uses a fixed internal sequence:
+```
+brain-dev (classify + state + worktree)
+  → brain-spec (search-first, generate, dispatch spec-reviewer)
+  → USER APPROVAL
+  → brain-plan (execution strategy, allowed_files, TDD steps)
+  → brain-task (dispatch implementer agent)
+  → brain-review (spec-compliance-reviewer → code-quality-reviewer)
+  → brain-verify (build, types, lint, tests, security, diff)
+  → brain-document (episode, sinapse proposals, auto-commit)
+```
 
-`brain-dev -> brain-spec -> brain-plan -> brain-task -> brain-review -> brain-verify -> brain-document`
+## Phase State Machine
 
-### `brain-dev`
+```
+SPEC_PENDING → SPEC_REVIEW → SPEC_APPROVAL → PLAN_PENDING
+  → IMPLEMENTING → REVIEWING → VERIFYING → DOCUMENTING → COMPLETED
+```
 
-Classifies the request, captures the goal, and decides whether the flow needs planning or can proceed directly.
+Writes are gated on plan_status = "approved" (set when entering IMPLEMENTING).
+Session end is gated on verify_status = "passed" (set when entering DOCUMENTING).
 
-### `brain-spec`
+## Agents
 
-Turns the user request into a bounded specification: scope, constraints, acceptance criteria, and risks.
+| Agent | When | Responsibility |
+|-------|------|---------------|
+| `spec-reviewer` | After brain-spec, before user approval | Spec quality: gaps, ambiguities, consistency |
+| `implementer` | brain-task | Write code per spec + plan, within allowed_files |
+| `spec-compliance-reviewer` | First stage of brain-review | Does implementation match spec? |
+| `code-quality-reviewer` | Second stage of brain-review | Is implementation well-engineered? |
 
-### `brain-plan`
+## Hooks
 
-Converts the specification into an execution plan with concrete steps, file targets, and validation checks.
+| Hook | Event | Responsibility |
+|------|-------|---------------|
+| `session-start.sh` | SessionStart | Inject ForgeFlow orientation |
+| `subagent-start.sh` | SubagentStart | Inject discipline contract into every agent |
+| `pre-tool-use.sh` | PreToolUse: Write\|Edit | Block writes before plan approved; block writes outside allowed_files |
+| `stop.sh` | Stop | Block session end before verify passes |
 
-### `brain-task`
+## Directory Layout
 
-Implements the plan. This stage changes files, runs local checks, and records the concrete result of the work.
+### Plugin (`forgeflow-mini/`)
 
-### `brain-review`
+```
+agents/          — 4 specialized agent files
+skills/          — 11 skill files
+hooks/           — 4 bash/Python hook scripts + hooks.json
+templates/       — artifact templates + stack rule packs
+scripts/         — workflow-state.js, build_brain_db.py, release.sh
+tests/           — unit tests + smoke scenarios
+docs/            — architecture, specs, plans
+```
 
-Checks the implementation against the spec and plan before verification. This is a structural review of correctness and scope.
+### User Project
 
-### `brain-verify`
+```
+.claude/
+  CLAUDE.md                  — ForgeFlow active declaration
+  rules/
+    workflow-core.md
+    testing.md
+    architecture-reuse.md
+    stacks/{stack}.md
 
-Runs the deterministic quality gate. Verification must rely on actual outputs, not on the implementation summary.
+.brain/
+  hippocampus/               — immutable conventions (never auto-modified)
+  cortex/                    — domain knowledge
+  sinapses/                  — cross-cutting patterns
+  instincts/                 — learned behaviors (v2+)
+  working-memory/            — active task state (workflow-state.json)
+  specs/                     — approved spec artifacts
+  plans/                     — approved plan artifacts
+  reviews/                   — review reports
+  verifications/             — verification reports
+  episodes/                  — execution records
+  proposals/                 — pending sinapse updates
+  progress/                  — activity log, health reports
+  brain.config.json
+```
 
-### `brain-document`
+## Phased Roadmap
 
-Writes the approved knowledge update after the work is verified. This is the only stage that promotes new memory.
-
-## Workflow Guarantees
-
-- A stage only consumes the artifact produced by the previous stage.
-- Memory is advisory, not authoritative.
-- Public commands do not expose internal implementation details.
-- Verification is required before documentation updates.
-- Review findings must be visible before a change is accepted.
-- The pipeline is linear and repeatable; reruns produce the same stage order.
-- If a stage fails, the failure is explicit and the next stage does not run.
+**V1 (this plan):** Rigid flow, 4 agents, worktree isolation, 3 stack packs, smoke tests.
+**V1.5:** Episodes, sinapse proposals, memory feeds spec/plan quality.
+**V2:** brain-debug, brain-improve, brain-consult public commands.
+**Vision:** Advanced agents (architect, security, frontend), risk scoring, brain-health observability.

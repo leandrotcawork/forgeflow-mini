@@ -83,11 +83,15 @@ plan_status = str(state.get("plan_status") or "").strip()
 allowed_files = state.get("allowed_files") or []
 unrestricted = bool(state.get("unrestricted"))
 
-if phase in {"spec", "plan"} or plan_status != "approved":
+if plan_status != "approved":
     print(json.dumps({
         "hookSpecificOutput": {
             "permissionDecision": "deny",
-            "reason": "Source writes are locked until the workflow reaches an approved plan outside spec/plan phases."
+            "reason": (
+                f"Write blocked: plan_status is '{plan_status}' (must be 'approved'). "
+                f"Current phase: {phase!r}. "
+                "Complete brain-spec, get user approval, then run brain-plan before writing code."
+            )
         }
     }))
     raise SystemExit(0)
@@ -96,7 +100,11 @@ if not allowed_files and not unrestricted:
     print(json.dumps({
         "hookSpecificOutput": {
             "permissionDecision": "deny",
-            "reason": "Source writes require a populated allowed_files list, or an explicit unrestricted flag in workflow-state.json."
+            "reason": (
+                f"Write blocked: no allowed_files defined in workflow-state.json and unrestricted is not set. "
+                f"Current phase: {phase!r}. "
+                "The plan must define allowed_files before implementation can proceed."
+            )
         }
     }))
     raise SystemExit(0)
@@ -115,7 +123,10 @@ if allowed_files:
         print(json.dumps({
             "hookSpecificOutput": {
                 "permissionDecision": "deny",
-                "reason": "This write is outside the workflow state's allowed_files allowlist."
+                "reason": (
+                    f"Write blocked: '{target_raw}' is not in the allowed_files list for this task. "
+                    "Only files listed in workflow-state.json allowed_files may be written."
+                )
             }
         }))
         raise SystemExit(0)

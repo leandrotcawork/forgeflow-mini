@@ -199,3 +199,57 @@ Protected constraint:
 5. Safe hook merge only. Never overwrite non-brain hooks.
 6. Idempotent. Existing `.brain/` switches to Edit Mode.
 7. Never store project memory. Memory belongs in `.brain/` in the repository, never in the plugin install directory.
+
+---
+
+## .claude/ Generation
+
+After generating `.brain/`, generate the `.claude/` structure in the user's project directory.
+
+### Write .claude/CLAUDE.md
+
+Write `.claude/CLAUDE.md` with:
+
+```markdown
+# ForgeFlow Mini Active
+
+This project uses ForgeFlow Mini for structured development.
+
+## Required Workflow
+
+Before any implementation task, use `/brain-dev`.
+
+The full flow is mandatory:
+`/brain-dev → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`
+
+Writing code without an approved plan is blocked by hooks.
+Ending a session without passing verification is blocked by hooks.
+
+## Rules
+
+Project rules are in `.claude/rules/`. They define conventions, testing standards, and architecture principles for this project.
+```
+
+### Copy common rules
+
+Copy these templates to `.claude/rules/`:
+- `templates/rules/common/workflow-core.md` → `.claude/rules/workflow-core.md`
+- `templates/rules/common/testing.md` → `.claude/rules/testing.md`
+- `templates/rules/common/architecture-reuse.md` → `.claude/rules/architecture-reuse.md`
+
+### Install stack pack
+
+Ask the user: "Which stack does this project use? (go / python / typescript-react / skip)"
+
+Based on answer, copy the matching pack:
+- `go` → copy `templates/rules/go/` contents → `.claude/rules/stacks/go/`
+- `python` → copy `templates/rules/python/` contents → `.claude/rules/stacks/python/`
+- `typescript-react` → copy `templates/rules/typescript-react/` contents → `.claude/rules/stacks/typescript-react/`
+- `skip` → no stack pack installed
+
+### --upgrade flag
+
+If brain-config is run with `--upgrade`:
+- Add any missing directories to `.brain/` without overwriting existing content
+- Add any missing rule files to `.claude/rules/` without overwriting
+- Do NOT regenerate `CLAUDE.md` if it already exists

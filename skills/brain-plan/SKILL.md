@@ -1,105 +1,72 @@
 ---
 name: brain-plan
-description: Generate mutable implementation plans only after an approved spec exists in workflow_state.
+description: Generate implementation plan after spec is approved. Defines allowed_files, TDD micro-steps, and verify plan. Saves to .brain/plans/.
 ---
 
 # brain-plan
 
-Write the mutable implementation plan after the spec is approved.
+Write the implementation plan after the spec is approved.
 
 ## Trigger
 
-- Routed from `brain-spec`
-- Never invoked directly from `brain-dev`
+Routed from `brain-spec` after user approves the spec. `workflow-state.json` must have `phase: PLAN_PENDING` and `spec_status: approved`.
 
 ## Hard Gates
 
-1. Read `.brain/working-memory/workflow-state.json` first.
-2. Stop unless `workflow_state.phase = "plan"` and `workflow_state.spec_status = "approved"`.
-3. No mutable plan before approved spec.
-4. Plan is incomplete until `allowed_files`, `verify_commands`, `plan_status`, and `plan_mode` are written to `workflow_state`.
+1. Read `workflow-state.json` first.
+2. Stop unless `phase = "PLAN_PENDING"` and `spec_status = "approved"`.
+3. No plan without an approved spec.
+4. `allowed_files` must be exhaustive — every file the implementer will touch.
+5. Plan is saved to `.brain/plans/` — not `.brain/working-memory/`.
 
 ## Required Input
 
-- `.brain/working-memory/spec-{task_id}.md`
+- `.brain/specs/spec-{task_id}.md`
 - `.brain/working-memory/dev-context-{task_id}.md`
 - `.brain/working-memory/workflow-state.json`
+- Active stack pack from `.claude/rules/stacks/` (if present)
 
-If any item is missing, stop and return to `brain-spec`.
+If spec is missing, stop and return to `brain-spec`.
 
-## Step 1: Load Spec, Then Plan
+## Step 1: Load Spec and Context
 
-Extract from the approved spec:
-- scope
-- constraints
-- candidate files
-- acceptance criteria
+Read the approved spec and extract:
+- Objective and constraints
+- Reuse decisions (from Reuse Strategy section)
+- Affected areas and acceptance criteria
 
-If the spec is vague, ask ONE clarifying question before writing the plan.
+Load stack pack rules if present in `.claude/rules/stacks/`. These define test framework, lint commands, and verify expectations.
 
 ## Step 2: Write the Plan
 
-Write `.brain/working-memory/implementation-plan-{task_id}.md` with:
+Write `.brain/plans/plan-{task_id}.md` using the template at `templates/plan.md`.
 
-1. Goal
-2. File list with exact paths
-3. Ordered execution steps
-4. TDD checkpoints where applicable
-5. Explicit `plan_mode`: `inline` | `subagent` | `subagent+review`
-6. Exact verification commands
-7. Risks or follow-up notes
+Fill every section:
+- **Execution Strategy** — overall approach in 2-3 sentences
+- **Agent Selection** — always `implementer` for code-writing tasks
+- **Allowed Files** — exhaustive list of every file to be created or modified
+- **TDD Micro-Steps** — numbered steps, each independently testable:
+  - write failing test → implement → pass → commit
+  - be specific: exact test names, exact commands, expected output
+- **Verify Plan** — exact commands for: build, types, lint, tests, security, diff
 
-Every mutable file must have an exact path.
-Every verification step must be an executable command.
-Every plan must choose exactly one `plan_mode`.
+The plan must explicitly reference reuse decisions from the spec.
 
-## Step 3: Write workflow_state
+## Step 3: Update workflow-state and Hand Off
 
-Before approval, write:
-
+Update `workflow-state.json`:
 ```json
 {
-  "phase": "plan",
-  "spec_status": "approved",
-  "plan_status": "draft",
-  "plan_mode": "inline | subagent | subagent+review",
-  "next_action": "approve_plan",
-  "allowed_files": [
-    "exact/path/one",
-    "exact/path/two"
-  ],
-  "verify_commands": [
-    "exact command one",
-    "exact command two"
-  ]
-}
-```
-
-Rules:
-- `allowed_files` must be exhaustive for all planned source changes
-- `verify_commands` must cover the acceptance criteria
-- `plan_mode` must be one of `inline`, `subagent`, or `subagent+review`
-- Empty `allowed_files` is only acceptable for a no-code plan
-
-## Step 4: Approval Gate
-
-Ask for explicit plan approval.
-
-Only after approval, update `workflow_state`:
-
-```json
-{
-  "phase": "task",
+  "phase": "IMPLEMENTING",
   "plan_status": "approved",
-  "plan_mode": "inline | subagent | subagent+review",
-  "next_action": "execute_task",
-  "allowed_files": [...],
-  "verify_commands": [...]
+  "allowed_files": ["path/to/file1", "path/to/file2"]
 }
 ```
+
+Note: In V1, plan approval is automatic (no separate user gate for the plan). The spec user approval is the control point.
 
 Then hand off to `brain-task`.
 
 ## Pipeline
 
-`brain-dev -> brain-spec -> brain-plan -> brain-task -> brain-review -> brain-verify`
+`brain-dev → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`

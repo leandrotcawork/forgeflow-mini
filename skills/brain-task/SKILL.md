@@ -1,102 +1,68 @@
 ---
 name: brain-task
-description: Execute approved implementation plans only. No inline fallback that bypasses plan approval or workflow_state file gates.
+description: Dispatch the implementer agent to execute the approved plan. Always uses subagent. Updates phase to REVIEWING on completion.
 ---
 
-# brain-task -- Approved Plan Execution
+# brain-task
 
-Execute the approved plan. Nothing else.
+Dispatch the implementer agent to execute the approved plan.
 
 ## Trigger
 
-- Routed from `brain-plan` after explicit approval
-- Never routed directly from `brain-dev`
+Routed from `brain-plan` after plan is written. `workflow-state.json` must have `phase: IMPLEMENTING` and `plan_status: approved`.
 
 ## Hard Gates
 
-1. No inline fallback.
-2. Stop unless `workflow_state.phase = "task"`.
-3. Stop unless `workflow_state.plan_status = "approved"`.
-4. Stop unless `workflow_state.plan_mode` is present and valid.
-5. Stop if `allowed_files` is missing and the task requires source changes.
-6. Never edit a source file that is not listed in `allowed_files`.
+1. Read `workflow-state.json` first.
+2. Stop unless `phase = "IMPLEMENTING"` and `plan_status = "approved"`.
+3. ALWAYS dispatch the implementer as a subagent — no inline execution.
+4. Never edit source files directly in this skill.
+5. Only allowed_files may be written by the implementer.
 
 ## Required Input
 
-- `.brain/working-memory/implementation-plan-{task_id}.md`
+- `.brain/plans/plan-{task_id}.md`
+- `.brain/specs/spec-{task_id}.md`
 - `.brain/working-memory/workflow-state.json`
 - `.brain/working-memory/dev-context-{task_id}.md`
 
-If any item is missing, stop and return to `brain-plan`.
+If plan or spec is missing, stop and return to `brain-plan`.
 
-## Step 1: Validate workflow_state
+## Step 1: Assemble Context Packet
 
-Read `workflow_state` first and confirm:
+Prepare a context packet for the implementer subagent. Include INLINE (not file references):
+- The full approved spec text
+- The full approved plan text
+- task_id, intent, phase, allowed_files list
 
+The subagent must receive everything it needs inline. Do not tell it to "read the plan file" — paste the content.
+
+## Step 2: Dispatch implementer Subagent
+
+Dispatch the `agents/implementer.md` agent with the context packet.
+
+The SubagentStart hook will automatically inject the discipline contract (allowed_files, phase).
+
+Handle implementer status:
+- **DONE** — proceed to Step 3
+- **DONE_WITH_CONCERNS** — read the concerns; if about correctness, address before review; if observational, note and proceed
+- **NEEDS_CONTEXT** — provide the missing context and re-dispatch implementer
+- **BLOCKED** — stop; present the blocker to the user before proceeding
+
+## Step 3: Update State and Hand Off
+
+After implementer reports DONE (or DONE_WITH_CONCERNS with no correctness issues):
+
+Update `workflow-state.json`:
 ```json
 {
-  "phase": "task",
-  "plan_status": "approved",
-  "plan_mode": "inline | subagent | subagent+review",
-  "allowed_files": [...],
-  "verify_commands": [...]
+  "phase": "REVIEWING",
+  "review_status": "pending"
 }
 ```
-
-If `verify_commands` is empty for a code task, stop and return to `brain-plan`.
-If `plan_mode` is absent or invalid, stop and return to `brain-plan`.
-
-If `workflow_state.next_action = "rework_task"`, treat this as re-entry from review.
-Rework still follows the approved plan and stays inside `allowed_files` unless `brain-plan` updates the plan.
-
-## Step 2: Enforce File Boundaries
-
-Before each edit:
-- check whether the target file is in `allowed_files`
-- if yes, proceed
-- if no, stop and return to `brain-plan` for plan revision
-
-No opportunistic edits. No "while I am here" cleanup.
-
-## Step 3: Execute the Plan
-
-Execution mode comes from `workflow_state.plan_mode`, not from fallback routing.
-
-| Plan mode | Action |
-|---|---|
-| `inline` | Execute the approved steps in the current session |
-| `subagent` | Dispatch implementer against the approved plan only |
-| `subagent+review` | Dispatch implementer, then continue to `brain-review` |
-
-The plan remains the source of truth for sequence and scope.
-
-## Step 4: Write Task Handoff
-
-Write `.brain/working-memory/task-completion-{task_id}.md`:
-
-```md
-task: {original request verbatim}
-status: complete | partial | failed
-files_changed: [list]
-verify_commands: [list from workflow_state]
-```
-
-Update `workflow_state` for review:
-
-```json
-{
-  "phase": "review",
-  "plan_status": "approved",
-  "plan_mode": "inline | subagent | subagent+review",
-  "review_status": "pending",
-  "next_action": "run_review"
-}
-```
-
-## Step 5: Invoke brain-review
 
 Hand off to `brain-review`.
 
 ## Pipeline
 
-`brain-dev -> brain-spec -> brain-plan -> brain-task -> brain-review -> brain-verify`
+`brain-dev → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document`

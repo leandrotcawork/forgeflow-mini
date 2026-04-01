@@ -1,13 +1,15 @@
 {
   "task_id": null,
+  "worktree_name": null,
+  "branch_name": null,
   "intent": null,
-  "phase": "spec",
+  "phase": "SPEC_PENDING",
   "spec_status": "pending",
   "plan_status": "pending",
   "review_status": "pending",
   "verify_status": "pending",
   "allowed_files": [],
-  "needs_user_validation": false,
-  "verify_commands": [],
+  "needs_user_approval": true,
+  "commit_sha": null,
   "last_error": null
 }

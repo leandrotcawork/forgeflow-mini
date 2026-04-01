@@ -35,11 +35,16 @@ if task_id in (None, ""):
     print(json.dumps({"hookSpecificOutput": {"permissionDecision": "allow"}}))
     raise SystemExit(0)
 
-if verify_status != "passed" and phase not in {"idle", "document"}:
+risky_phases = {"IMPLEMENTING", "REVIEWING", "VERIFYING", "DOCUMENTING"}
+if phase in risky_phases and verify_status != "passed":
     print(json.dumps({
         "hookSpecificOutput": {
             "permissionDecision": "deny",
-            "reason": "Verification has not passed yet. Finalization is only allowed in idle or document phases."
+            "reason": (
+                f"Session end blocked: task '{task_id}' is in phase '{phase}' with verify_status='{verify_status}'. "
+                "Run brain-verify to completion before ending the session. "
+                "Required action: complete brain-verify → brain-document → phase COMPLETED."
+            )
         }
     }))
 else:
