@@ -1,40 +1,33 @@
 #!/usr/bin/env bash
-# ForgeFlow Mini - SessionStart hook
-# Injects brain orientation + current project state into session context.
+# ForgeFlow Mini - SessionStart hook (v3)
+# Injects ForgeFlow Active orientation into every session context.
 # Modern output schema: hookSpecificOutput.additionalContext
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-ORIENTATION_FILE="${PLUGIN_DIR}/skills/brain-orientation/SKILL.md"
-STATE_FILE="${PROJECT_DIR}/.brain/progress/brain-project-state.json"
-
-ORIENTATION_FILE="$ORIENTATION_FILE" STATE_FILE="$STATE_FILE" python3 - <<'PY'
+python3 - <<'PY'
 import json
-import os
-from pathlib import Path
 
-orientation_file = Path(os.environ["ORIENTATION_FILE"])
-state_file = Path(os.environ["STATE_FILE"])
+context = """# ForgeFlow Mini — Active
 
-def read_text(path):
-    try:
-        return path.read_text(encoding="utf-8").strip()
-    except (FileNotFoundError, OSError):
-        return ""
+This project uses ForgeFlow Mini V1. The rigid development flow is enforced.
 
-parts = []
+## Required Entry Point
+Use `/brain-dev` for ALL development tasks. Do NOT write code directly.
 
-orientation = read_text(orientation_file)
-if orientation:
-    parts.append("# Brain Orientation\n\n" + orientation)
+## Flow (Non-Negotiable)
+`/brain-dev` → brain-spec → USER APPROVAL → brain-plan → brain-task → brain-review → brain-verify → brain-document
 
-state = read_text(state_file)
-if state:
-    parts.append("# Current Project State\n\n" + state)
+## Phase Gates
+- Write/Edit are BLOCKED until `plan_status = approved`
+- Session end is BLOCKED until `verify_status = passed`
+- Every phase must complete before the next begins
 
-context = "\n\n---\n\n".join(parts)
+## Rules
+- No phase skipping — every task, no exceptions
+- No inline implementation — always route through brain-dev
+- Spec must be approved by user before plan begins
+- Implementation only proceeds with an approved plan"""
+
 print(json.dumps({"hookSpecificOutput": {"additionalContext": context}}))
 PY
